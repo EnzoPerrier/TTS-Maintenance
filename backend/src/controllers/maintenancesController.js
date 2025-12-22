@@ -11,7 +11,7 @@ exports.getAllMaintenances = async (req, res) => {
   }
 };
 
-// GET /maintenances/:id → une maintenance
+// GET /maintenances/:id  
 exports.getMaintenanceById = async (req, res) => {
   const { id } = req.params;
 
@@ -31,7 +31,43 @@ exports.getMaintenanceById = async (req, res) => {
   }
 };
 
-// POST /maintenances → créer une maintenance
+// GET /maintenances/AllMaintenancesBySiteID/:id 
+exports.getAllMaintenancesBySiteID = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM maintenances WHERE id_site = ? ORDER BY date_maintenance DESC",
+      [id]
+    );
+
+    // Toujours renvoyer un tableau (vide si aucune maintenance)
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// GET /maintenances/ProductsByMaintenance/:id 
+exports.getProductsByMaintenance = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      "SELECT id_produit FROM maintenance_produits WHERE id_maintenance = ? ORDER BY id_produit DESC",
+      [id]
+    );
+
+    // Toujours renvoyer un tableau (vide si aucune maintenance)
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// POST /maintenances 
 exports.createMaintenance = async (req, res) => {
   const {
     id_produit,
@@ -46,10 +82,9 @@ exports.createMaintenance = async (req, res) => {
   try {
     const [result] = await db.query(
       `INSERT INTO maintenances 
-      (id_produit, id_site, date_maintenance, type, etat, commentaire, ri_interne)
+      (id_site, date_maintenance, type, etat, commentaire, ri_interne)
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        id_produit,
         id_site,
         date_maintenance,
         type,
@@ -61,7 +96,6 @@ exports.createMaintenance = async (req, res) => {
 
     res.status(201).json({
       id_maintenance: result.insertId,
-      id_produit,
       id_site,
       date_maintenance,
       type,
@@ -75,11 +109,10 @@ exports.createMaintenance = async (req, res) => {
   }
 };
 
-// PUT /maintenances/:id → modifier une maintenance
+// PUT /maintenances/:id 
 exports.updateMaintenance = async (req, res) => {
   const { id } = req.params;
   const {
-    id_produit,
     id_site,
     date_maintenance,
     type,
@@ -91,11 +124,10 @@ exports.updateMaintenance = async (req, res) => {
   try {
     const [result] = await db.query(
       `UPDATE maintenances
-       SET id_produit = ?, id_site = ?, date_maintenance = ?, type = ?, 
+       SET id_site = ?, date_maintenance = ?, type = ?, 
            etat = ?, commentaire = ?, ri_interne = ?
        WHERE id_maintenance = ?`,
       [
-        id_produit,
         id_site,
         date_maintenance,
         type,
