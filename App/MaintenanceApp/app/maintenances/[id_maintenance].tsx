@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Text,
-    View
+  Text,
+  View
 } from "react-native";
 
 const ipServeur = "192.168.1.127";
@@ -15,7 +15,7 @@ export default function SiteDetails() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadProduits = async () => {
-    const res = await fetch(`http://${ipServeur}:3000/produits/${id_site}`);
+    const res = await fetch(`http://${ipServeur}:3000/maintenances/ProductsByMaintenance/${id_maintenance}`);
     const data = await res.json();
     setProduit(data);
   };
@@ -33,19 +33,15 @@ export default function SiteDetails() {
   return (
     <View style={{ padding: 20 }}>
       <Text style={{ fontSize: 22, fontWeight: "bold" }}>
-        Détail du site
+        MAINTENANCE
       </Text>
 
       {!produit ? (
         <Text style={{ marginTop: 10 }}>Chargement...</Text>
       ) : (
         <>
-          <Text>ID : {produit.id_produit}</Text>
-          <Text>Nom : {produit.nom}</Text>
-          <Text>Type : {produit.type}</Text>
-          <Text>Etat : {produit.etat}</Text>
-          <Text>Description : {produit.description}</Text>
-          <Text>Date de création : {produit.date_creation}</Text>
+          <Text>Produit : {produit.id_produit}</Text>
+          
         </>
       )}
 

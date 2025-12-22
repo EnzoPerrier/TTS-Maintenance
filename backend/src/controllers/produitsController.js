@@ -31,25 +31,44 @@ exports.getProduitById = async (req, res) => {
   }
 };
 
+// GET /produits/ProduitBySiteID/:id --> produit par site ID
+exports.getProduitsBySiteId = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM produits WHERE id_site = ?",
+      [id]
+    );
+
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Produit non trouvé" });
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
 // POST /produits --> créer un produit
 exports.createProduit = async (req, res) => {
   const { id_site, nom, description, date_install, statut, id_qrcode } = req.body;
   
   try {
     const [result] = await db.query(
-      `INSERT INTO produits (id_site, nom, description, date_install, statut, id_qrcode)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id_site, nom, description, date_install, statut, id_qrcode]
+      `INSERT INTO produits (id_site, nom, type, etat, description, date_creation)
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [id_site, nom, type, etat, description]
     );
 
     res.status(201).json({
       id_produit: result.insertId,
       id_site,
       nom,
-      description,
-      date_install,
-      statut,
-      id_qrcode
+      type,
+      etat,
+      description
     });
   } catch (err) {
     console.error(err);
@@ -64,10 +83,10 @@ exports.updateProduit = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      `UPDATE produits 
-       SET id_site=?, nom=?, description=?, date_install=?, statut=?, id_qrcode=?
+      `UPDATE produits
+       SET id_site=?, nom=?, type=?, etat=?, description=?
        WHERE id_produit=?`,
-      [id_site, nom, description, date_install, statut, id_qrcode, id]
+      [id_site, nom, type, etat, description, id]
     );
 
     if (result.affectedRows === 0)
