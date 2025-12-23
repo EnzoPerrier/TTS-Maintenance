@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Maintenance Suite</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <h1>Maintenance App</h1>
+  <nav>
+    <button onclick="showSection('sites')">Sites</button>
+    <button onclick="showSection('produits')">Produits</button>
+    <button onclick="showSection('maintenances')">Maintenances</button>
+  </nav>
+</header>
+
+<main>
+  <!-- SITES -->
+  <section id="sites" class="active">
+  <h2>Sites</h2>
+
+  <!-- Barre de recherche -->
+  <input type="text" id="searchSites" placeholder="Rechercher par nom ou ville..." />
+
+  <ul id="sitesList"></ul>
+
+  <!-- Bouton flottant pour ajouter un site -->
+  <button title="Ajouter un nouveau site" id="addSiteBtn" class="fab" onclick="showAddSiteForm()">+</button>
+
+  <!-- Formulaire masqué par défaut -->
+  <div id="addSiteForm" class="modal">
+    <form onsubmit="addSite(event)">
+        <input type="number" id="siteClientId" placeholder="ID Client" required />
+        <input type="text" id="siteNom" placeholder="Nom du site" required />
+        <input type="text" id="siteAdresse" placeholder="Adresse" required />
+        <input type="number" step="0.000001" id="siteLat" placeholder="Latitude" />
+        <input type="number" step="0.000001" id="siteLng" placeholder="Longitude" />
+        <button class="primary">Ajouter</button>
+        <button type="button" onclick="hideAddSiteForm()">Annuler</button>
+      </form>
+  </div>
+</section>
+
+
+  <!-- PRODUITS -->
+  <section id="produits">
+    <h2>Produits</h2>
+    <ul id="produitsList"></ul>
+
+
+  <!-- MAINTENANCES -->
+  <section id="maintenances">
+    <h2>Maintenances</h2>
+    <ul id="maintenancesList"></ul>
+  </section>
+</main>
+
+<script src="script.js" defer></script>
+</body>
+</html>
