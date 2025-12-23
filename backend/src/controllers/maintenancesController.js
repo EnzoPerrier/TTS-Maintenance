@@ -49,23 +49,6 @@ exports.getAllMaintenancesBySiteID = async (req, res) => {
   }
 };
 
-// GET /maintenances/ProductsByMaintenance/:id 
-exports.getProductsByMaintenance = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const [rows] = await db.query(
-      "SELECT id_produit FROM maintenance_produits WHERE id_maintenance = ? ORDER BY id_produit DESC",
-      [id]
-    );
-
-    // Toujours renvoyer un tableau (vide si aucune maintenance)
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-};
 
 // POST /maintenances 
 exports.createMaintenance = async (req, res) => {

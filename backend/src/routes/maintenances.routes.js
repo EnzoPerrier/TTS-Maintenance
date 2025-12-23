@@ -4,7 +4,6 @@ const maintenancesController = require("../controllers/maintenancesController.js
 
 router.get("/", maintenancesController.getAllMaintenances);
 router.get("/AllMaintenancesBySiteID/:id", maintenancesController.getAllMaintenancesBySiteID);
-router.get("/ProductsByMaintenance/:id", maintenancesController.getProductsByMaintenance);
 router.get("/:id", maintenancesController.getMaintenanceById);
 router.post("/", maintenancesController.createMaintenance);
 router.put("/:id", maintenancesController.updateMaintenance);

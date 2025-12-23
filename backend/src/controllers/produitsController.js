@@ -51,9 +51,27 @@ exports.getProduitsBySiteId = async (req, res) => {
   }
 };
 
+// GET /produits/ProduitsByMaintenance/:id 
+exports.getProduitsByMaintenance = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      "SELECT id_produit FROM maintenance_produits WHERE id_maintenance = ? ORDER BY id_produit DESC",
+      [id]
+    );
+
+    // Toujours renvoyer un tableau (vide si aucune maintenance)
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
 // POST /produits --> créer un produit
 exports.createProduit = async (req, res) => {
-  const { id_site, nom, description, date_install, statut, id_qrcode } = req.body;
+  const { id_site, nom, type, etat, description } = req.body;
   
   try {
     const [result] = await db.query(

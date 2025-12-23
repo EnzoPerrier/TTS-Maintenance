@@ -49,29 +49,41 @@ async function loadMaintenances() {
       return;
     }
 
-    maintenances.forEach(m => {
-      const details = document.createElement("details");
-      details.classList.add("site-detail");
+  maintenances.forEach(m => {
+  const details = document.createElement("details");
+  details.classList.add("site-detail", "maintenance");
 
-      // Le résumé visible
-      const summary = document.createElement("summary");
-      summary.textContent = `ID maintenance : ${m.id_maintenance}`;
-      details.appendChild(summary);
+  // Normalisation de l'état
+  const etat = (m.etat || "").toLowerCase();
 
-      // Le contenu caché
-      const content = document.createElement("div");
-      content.innerHTML = `
-        <div><strong>Date :</strong> ${m.date_maintenance}</div>
-        <div><strong>Type :</strong> ${m.type}</div>
-        <div><strong>Etat :</strong> ${m.etat || "N/A"}</div>
-        <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
-        <div><strong>RI interne :</strong> ${m.ri_interne || "N/A"}</div>
-        <div><a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}">Plus d'infos</a></div>
-      `;
-      details.appendChild(content);
+  if (etat.includes("termin")) {
+    details.classList.add("maintenance-terminee");
+  } else if (etat.includes("cours")) {
+    details.classList.add("maintenance-en-cours");
+  } else {
+    details.classList.add("maintenance-autre");
+  }
 
-      MaintDiv.appendChild(details);
-    });
+  // Le résumé visible
+  const summary = document.createElement("summary");
+  summary.textContent = `ID maintenance : ${m.id_maintenance}`;
+  details.appendChild(summary);
+
+  // Le contenu caché
+  const content = document.createElement("div");
+  content.innerHTML = `
+    <div><strong>Date :</strong> ${m.date_maintenance}</div>
+    <div><strong>Type :</strong> ${m.type}</div>
+    <div><strong>Etat :</strong> ${m.etat || "N/A"}</div>
+    <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
+    <div><strong>RI interne :</strong> ${m.ri_interne || "N/A"}</div>
+    <div><a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}">Plus d'infos</a></div>
+  `;
+  details.appendChild(content);
+
+  MaintDiv.appendChild(details);
+});
+
 
   } catch (err) {
     document.getElementById("MaintenancesList").textContent = err.message;
@@ -92,28 +104,43 @@ async function loadEquipements() {
       return;
     }
 
-    produits.forEach(p => {
-      const details = document.createElement("details");
-      details.classList.add("site-detail");
+  produits.forEach(p => {
+  const details = document.createElement("details");
+  details.classList.add("site-detail", "equipement");
 
-      // Le résumé visible
-      const summary = document.createElement("summary");
-      summary.textContent = `ID produit : ${p.id_produit}`;
-      details.appendChild(summary);
+  // Normalisation de l'état
+  const etat = (p.etat || "").toLowerCase();
 
-      // Le contenu caché
-      const content = document.createElement("div");
-      content.innerHTML = `
-        <div><strong>Nom :</strong> ${p.nom}</div>
-        <div><strong>Type :</strong> ${p.type || "N/A"}</div>
-        <div><strong>Description :</strong> ${p.description || "N/A"}</div>
-        <div><strong>Date création :</strong> ${p.date_creation || "N/A"}</div>
-        <div><a href="../index.html">Plus d'infos</a></div>
-      `;
-      details.appendChild(content);
+  if (etat === "ok") {
+    details.classList.add("equipement-ok");
+  } else if (etat === "nok") {
+    details.classList.add("equipement-nok");
+  } else if (etat === "passable") {
+    details.classList.add("equipement-passable");
+  } else {
+    details.classList.add("equipement-autre");
+  }
 
-      ProdDiv.appendChild(details);
-    });
+  // Résumé
+  const summary = document.createElement("summary");
+  summary.textContent = `ID produit : ${p.id_produit}`;
+  details.appendChild(summary);
+
+  // Contenu
+  const content = document.createElement("div");
+  content.innerHTML = `
+    <div><strong>Nom :</strong> ${p.nom}</div>
+    <div><strong>Type :</strong> ${p.type || "N/A"}</div>
+    <div><strong>Etat :</strong> ${p.etat || "N/A"}</div>
+    <div><strong>Description :</strong> ${p.description || "N/A"}</div>
+    <div><strong>Date création :</strong> ${p.date_creation || "N/A"}</div>
+    <div><a href="../index.html">Plus d'infos</a></div>
+  `;
+  details.appendChild(content);
+
+  ProdDiv.appendChild(details);
+});
+
 
   } catch (err) {
     document.getElementById("EquipementsList").textContent = err.message;
