@@ -1,0 +1,21 @@
+body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+details {
+    margin-top: 20px;
+  margin-bottom: 15px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+summary {
+  font-weight: bold;
+  cursor: pointer;
+  outline: none;
+}
+
+summary:hover {
+  color: #007BFF;
+}
