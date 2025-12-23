@@ -45,9 +45,37 @@
 
 
   <!-- PRODUITS -->
-  <section id="produits">
-    <h2>Produits</h2>
-    <ul id="produitsList"></ul>
+<section id="produits">
+  <h2>Produits</h2>
+
+  <!-- Barre de recherche -->
+  <input type="text" id="searchProduits" placeholder="Rechercher un produit..." />
+
+  <!-- Liste des produits -->
+  <ul id="produitsList"></ul>
+
+  <!-- Bouton flottant pour ajouter un produit -->
+  <button title="Ajouter un nouveau produit" id="addProductBtn" class="fab" onclick="showAddProduitForm()">+</button>
+
+  <!-- Formulaire masqué par défaut -->
+  <div id="addProduitForm" class="modal" style="display:none">
+    <form id="produitForm" onsubmit="addProduit(event)">
+      <input type="text" id="produitNom" placeholder="Nom du produit" required />
+      <input type="number" id="produitSiteId" placeholder="ID Site" required />
+      <input type="text" id="produitType" placeholder="Type" />
+      <select id="produitEtat">
+        <option value="">-- État --</option>
+        <option value="OK">OK</option>
+        <option value="NOK">NOK</option>
+        <option value="Passable">Passable</option>
+      </select>
+      <textarea id="produitDescription" placeholder="Description"></textarea>
+      <button class="primary" type="submit">Ajouter</button>
+      <button type="button" onclick="hideAddProduitForm()">Annuler</button>
+    </form>
+  </div>
+</section>
+
 
 
   <!-- MAINTENANCES -->

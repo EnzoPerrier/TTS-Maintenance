@@ -1,83 +1,99 @@
 const API = "http://localhost:3000"; // adresse du serveur API --> PORT 3000
 
 const params = new URLSearchParams(window.location.search); // Récupère les paramètres de l'URL
-const id_site = params.get("id_site"); // Extrait l'id site de l'URL
+const id_maintenance = params.get("id_maintenance"); // Extrait l'id site de l'URL
 
 document.getElementById("backBtn").addEventListener("click", () => {
   window.history.back();
 });
 
-async function loadSiteDetails() {
-  // Récupérer id_site depuis l'URL
+async function loadMaintenance() {
+  // Récupérer id_maintenance depuis l'URL
 
-  if (!id_site) {
-    document.getElementById("siteDetails").textContent = "ID du site manquant.";
+  if (!id_maintenance) {
+    document.getElementById("MaintenanceDetails").textContent = "ID du site manquant.";
     return;
   }
 
   try {
-    const res = await fetch(`${API}/sites/${id_site}`);
+    const res = await fetch(`${API}/maintenances/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement du site");
 
-    const site = await res.json();
+    const maintenance = await res.json();
 
-    const SiteDiv = document.getElementById("siteDetails");
-    SiteDiv.innerHTML = `
-      <div class="site-detail"><strong>Nom :</strong> ${site.nom}</div>
-      <div class="site-detail"><strong>ID Site :</strong> ${site.id_site}</div>
-      <div class="site-detail"><strong>Adresse :</strong> ${site.adresse}</div>
-      <div class="site-detail"><strong>ID Client :</strong> ${site.id_client}</div>
-      <div class="site-detail"><strong>Latitude :</strong> ${site.gps_lat || "N/A"}</div>
-      <div class="site-detail"><strong>Longitude :</strong> ${site.gps_lng || "N/A"}</div>
+    const MaintDiv = document.getElementById("MaintenanceDetails");
+
+    // Définir la couleur de l'état
+    let etatColor = "";
+    switch (maintenance.etat) {
+      case "OK":
+        etatColor = "green";
+        break;
+      case "NOK":
+        etatColor = "red";
+        break;
+      case "Passable":
+        etatColor = "orange";
+        break;
+      default:
+        etatColor = "gray"; // Si l'état est absent ou inconnu, on met en gris
+    }
+
+    MaintDiv.innerHTML = `
+      <div class="site-detail"><strong>ID Maintenance :</strong> ${maintenance.id_maintenance}</div>
+      <div class="site-detail"><strong>ID Site :</strong> ${maintenance.id_site}</div>
+      <div class="site-detail"><strong>Date maintenance :</strong> ${maintenance.date_maintenance}</div>
+      <div class="site-detail"><strong>Type :</strong> ${maintenance.type}</div>
+      <div class="site-detail"><strong>Etat :</strong> <span style="color: ${etatColor};">${maintenance.etat || "N/A"}</span></div>
+      <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
     `;
   } catch (err) {
     document.getElementById("siteDetails").textContent = err.message;
   }
 }
 
-async function loadMaintenances() {
+async function loadProduits() {
   try {
-    const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${id_site}`);
+    const res = await fetch(`${API}/produits/ProduitsByMaintenance/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement des maintenances");
 
-    const maintenances = await res.json();
-    const MaintDiv = document.getElementById("MaintenancesList");
-    MaintDiv.innerHTML = ""; // vider avant d'ajouter
+    const produits = await res.json();
+    const ProdDiv = document.getElementById("ListeProduits");
+    ProdDiv.innerHTML = ""; // vider avant d'ajouter
 
-    if (maintenances.length === 0) {
-      MaintDiv.textContent = "Aucune maintenance trouvée pour ce site.";
+    if (produits.length === 0) {
+      ProdDiv.textContent = "Aucune maintenance trouvée pour ce site.";
       return;
     }
 
-    maintenances.forEach(m => {
+    produits.forEach(p => {
       const details = document.createElement("details");
       details.classList.add("site-detail");
 
       // Le résumé visible
       const summary = document.createElement("summary");
-      summary.textContent = `ID maintenance : ${m.id_maintenance}`;
+      summary.textContent = `ID produit : ${p.id_produit}`;
       details.appendChild(summary);
 
       // Le contenu caché
       const content = document.createElement("div");
       content.innerHTML = `
-        <div><strong>Date :</strong> ${m.date_maintenance}</div>
-        <div><strong>Type :</strong> ${m.type}</div>
-        <div><strong>Etat :</strong> ${m.etat || "N/A"}</div>
-        <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
-        <div><strong>RI interne :</strong> ${m.ri_interne || "N/A"}</div>
+        <div><strong>Nom :</strong> ${p.nom}</div>
+        <div><strong>Type :</strong> ${p.type}</div>
+        <div><strong>Etat :</strong> ${p.etat || "N/A"}</div>
+        <div><strong>Description :</strong> ${p.description || "N/A"}</div>
+        <div><strong>Date de création :</strong> ${p.date_creation || "N/A"}</div>
         <div><a href="../index.html">Plus d'infos</a></div>
       `;
       details.appendChild(content);
 
-      MaintDiv.appendChild(details);
+      ProdDiv.appendChild(details);
     });
 
   } catch (err) {
-    document.getElementById("MaintenancesList").textContent = err.message;
+    document.getElementById("ListeProduits").textContent = err.message;
   }
 }
 
-
-loadMaintenances();
-loadSiteDetails();
+loadMaintenance();
+loadProduits();

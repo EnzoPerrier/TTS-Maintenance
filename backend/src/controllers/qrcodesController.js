@@ -34,12 +34,11 @@ exports.generateQRCodes = async (req, res) => {
 
       // Insertion dans la base : permet de créer un QR vierge ou déjà prérempli
       const [result] = await db.query(
-        `INSERT INTO qr_codes (produit_id, site_id, type, etat)
-         VALUES (?, ?, ?, ?)`,
+        `INSERT INTO qr_codes (id_produit, etat)
+         VALUES (?, ?)`,
         [
-          prefill?.produit_id || null,
-          prefill?.site_id || null,
-          prefill?.type || null,
+          prefill?.id_produit|| null,
+          prefill?.etat || null,
           prefill ? "associe" : "vierge"
         ]
       );

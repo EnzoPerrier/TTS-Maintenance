@@ -85,34 +85,108 @@ function hideAddSiteForm() {
 }
 
 /* ---------- PRODUITS ---------- */
+
+let allProduits = []; // Stocke tous les produits pour le filtrage
+
+// Charger la liste des produits
 async function loadProduits() {
   const res = await fetch(`${API}/produits`);
-  const produits = await res.json();
+  allProduits = await res.json();
+  renderProduits(allProduits);
+}
+
+// Affichage de la liste des produits
+function renderProduits(produits) {
   const ul = document.getElementById("produitsList");
   ul.innerHTML = "";
 
+  if (produits.length === 0) {
+    ul.innerHTML = "<li>Aucun produit trouvé</li>";
+    return;
+  }
+
   produits.forEach(p => {
     const li = document.createElement("li");
+    li.classList.add("clickable-line");
+
     li.innerHTML = `
-      <span>${p.nom}</span>
-      <button onclick="printQR(${p.id})">QR</button>
+      <span>
+        ${p.nom}
+        ${p.type ? " - " + p.type : ""}
+        ${p.etat ? " - " + p.etat : ""}
+      </span>
+      <button onclick="printQR(${p.id_produit})">QR</button>
     `;
+
     ul.appendChild(li);
   });
 }
 
+// Recherche dans les produits
+const searchProduitsInput = document.getElementById("searchProduits");
+searchProduitsInput.addEventListener("input", e => {
+  const term = e.target.value.toLowerCase();
+
+  const filtered = allProduits.filter(p =>
+    p.nom.toLowerCase().includes(term) ||
+    (p.type && p.type.toLowerCase().includes(term)) ||
+    (p.etat && p.etat.toLowerCase().includes(term))
+  );
+
+  renderProduits(filtered);
+});
+
+// Placement de la barre de recherche
+const produitsSection = document.getElementById("produits");
+produitsSection.insertBefore(
+  searchProduitsInput,
+  document.getElementById("produitsList")
+);
+
+// Ajouter un produit
 async function addProduit(e) {
   e.preventDefault();
-  const nom = document.getElementById("produitNom").value;
 
-  await fetch(`${API}/produits`, {
+  const data = {
+    nom: document.getElementById("produitNom").value,
+    id_site: document.getElementById("produitSiteId").value,
+    type: document.getElementById("produitType").value || null,
+    etat: document.getElementById("produitEtat").value || null,
+    description: document.getElementById("produitDescription").value || null
+  };
+
+  const res = await fetch(`${API}/produits`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nom })
+    body: JSON.stringify(data)
   });
 
-  document.getElementById("produitNom").value = "";
-  loadProduits();
+  const  dataQr = {
+    produit_id: 2,
+    etat: "associe"
+  }
+
+  const resQr = await fetch(`${API}/qrcodes/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(dataQr)
+  });
+
+  if (res.ok && resQr.ok) {
+    hideAddProduitForm();
+    loadProduits();
+    document.getElementById("addProduitForm").reset();
+  } else {
+    alert("Erreur lors de l'ajout du produit");
+  }
+}
+
+function showAddProduitForm() {
+  document.getElementById("addProduitForm").style.display = "block";
+}
+
+function hideAddProduitForm() {
+  document.getElementById("addProduitForm").style.display = "none";
 }
 
 /* ---------- MAINTENANCES ---------- */
