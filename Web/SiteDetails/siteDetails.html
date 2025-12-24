@@ -2,25 +2,41 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Détails du site</title>
-  <link rel="stylesheet" href="../DetailsStyle.css" />
+  <link rel="stylesheet" href="../style.css" />
+  
+  <!-- Leaflet CSS pour la carte -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
   <button id="backBtn">Retour</button>
 
-    <h1>Détails du site</h1>
-    <div id="siteDetails"></div>
+  <main>
+    <section class="active">
+      <h1>Détails du site</h1>
+      <div id="siteDetails"></div>
 
-  <details false>
-    <summary>Maintenances</summary>
-    <div id="MaintenancesList"></div>
-  </details>
+      <!-- Carte GPS -->
+      <h3 class="map-title">📍 Localisation</h3>
+      <div id="mapContainer">
+        <div id="map"></div>
+      </div>
 
-  <details false>
-    <summary>Équipements</summary>
-    <div id="EquipementsList"></div>
-  </details>
+      <details>
+        <summary>Maintenances</summary>
+        <div id="MaintenancesList"></div>
+      </details>
 
+      <details>
+        <summary>Équipements</summary>
+        <div id="EquipementsList"></div>
+      </details>
+    </section>
+  </main>
+
+  <!-- Leaflet JS pour la carte -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="siteDetails.js" defer></script>
 </body>
 </html>

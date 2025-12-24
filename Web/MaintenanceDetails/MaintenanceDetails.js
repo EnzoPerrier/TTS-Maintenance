@@ -1,4 +1,4 @@
-const API = "http://localhost:3000"; // adresse du serveur API --> PORT 3000
+const API = "http://192.168.1.127:3000"; // adresse du serveur API --> PORT 3000
 
 const params = new URLSearchParams(window.location.search); // Récupère les paramètres de l'URL
 const id_maintenance = params.get("id_maintenance"); // Extrait l'id site de l'URL
@@ -43,7 +43,7 @@ async function loadMaintenance() {
       <div class="site-detail"><strong>ID Maintenance :</strong> ${maintenance.id_maintenance}</div>
       <div class="site-detail"><strong>ID Site :</strong> ${maintenance.id_site}</div>
       <div class="site-detail"><strong>Date maintenance :</strong> ${maintenance.date_maintenance}</div>
-      <div class="site-detail"><strong>Type :</strong> ${maintenance.type}</div>
+      <div class="site-detail"><strong>Departement :</strong> ${maintenance.departement}</div>
       <div class="site-detail"><strong>Etat :</strong> <span style="color: ${etatColor};">${maintenance.etat || "N/A"}</span></div>
       <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
     `;
@@ -79,7 +79,7 @@ async function loadProduits() {
       const content = document.createElement("div");
       content.innerHTML = `
         <div><strong>Nom :</strong> ${p.nom}</div>
-        <div><strong>Type :</strong> ${p.type}</div>
+        <div><strong>Departement :</strong> ${p.departement}</div>
         <div><strong>Etat :</strong> ${p.etat || "N/A"}</div>
         <div><strong>Description :</strong> ${p.description || "N/A"}</div>
         <div><strong>Date de création :</strong> ${p.date_creation || "N/A"}</div>

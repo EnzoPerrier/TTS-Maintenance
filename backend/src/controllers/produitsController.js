@@ -3,7 +3,7 @@ const db = require("../config/db.js");
 // GET /produits --> liste tous les produits
 exports.getAllProduits = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM produits");
+    const [rows] = await db.query("SELECT * FROM produits ORDER BY id_produit DESC");
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -71,20 +71,20 @@ exports.getProduitsByMaintenance = async (req, res) => {
 
 // POST /produits --> créer un produit
 exports.createProduit = async (req, res) => {
-  const { id_site, nom, type, etat, description } = req.body;
+  const { id_site, nom, departement, etat, description } = req.body;
   
   try {
     const [result] = await db.query(
-      `INSERT INTO produits (id_site, nom, type, etat, description, date_creation)
+      `INSERT INTO produits (id_site, nom, departement, etat, description, date_creation)
        VALUES (?, ?, ?, ?, ?, NOW())`,
-      [id_site, nom, type, etat, description]
+      [id_site, nom, departement, etat, description]
     );
 
     res.status(201).json({
       id_produit: result.insertId,
       id_site,
       nom,
-      type,
+      departement,
       etat,
       description
     });
@@ -97,25 +97,30 @@ exports.createProduit = async (req, res) => {
 // PUT /produits/:id --> modifier un produit
 exports.updateProduit = async (req, res) => {
   const { id } = req.params;
-  const { id_site, nom, description, date_install, statut, id_qrcode } = req.body;
+  const { id_site, nom, departement, etat, description } = req.body; // on prend toutes les propriétés nécessaires
 
   try {
     const [result] = await db.query(
       `UPDATE produits
-       SET id_site=?, nom=?, type=?, etat=?, description=?
-       WHERE id_produit=?`,
-      [id_site, nom, type, etat, description, id]
+       SET id_site = ?, nom = ?, departement = ?, etat = ?, description = ?
+       WHERE id_produit = ?`,
+      [id_site, nom, departement, etat, description, id]
     );
 
-    if (result.affectedRows === 0)
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Produit non trouvé" });
+    }
 
-    res.json({ message: "Produit mis à jour" });
+    res.json({
+      message: "Produit mis à jour",
+      produit: { id_produit: id, id_site, nom, departement, etat, description }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
+
 
 // DELETE /produits/:id --> supprimer un produit
 exports.deleteProduit = async (req, res) => {

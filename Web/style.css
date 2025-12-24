@@ -1,177 +1,690 @@
+/* ========================================
+   VARIABLES & RESET
+======================================== */
+:root {
+  --primary-blue: #0066CC;
+  --primary-dark: #004A99;
+  --secondary-blue: #3399FF;
+  --accent-orange: #FF6600;
+  --gray-50: #F8F9FA;
+  --gray-100: #E9ECEF;
+  --gray-200: #DEE2E6;
+  --gray-300: #CED4DA;
+  --gray-600: #6C757D;
+  --gray-800: #343A40;
+  --white: #FFFFFF;
+  --success: #28A745;
+  --warning: #FFC107;
+  --danger: #DC3545;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: #f5f7fb;
-  color: #1f2937;
+  font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+  color: var(--gray-800);
+  line-height: 1.6;
+  min-height: 100vh;
 }
 
+/* ========================================
+   HEADER & NAVIGATION
+======================================== */
 header {
-  background: #25cdeb;
-  color: white;
-  padding: 20px;
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  padding: 1.5rem 2rem;
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
 }
 
 header h1 {
-  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  letter-spacing: -0.5px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between; /* titre à gauche, logo à droite */
+  align-items: center;            /* alignement vertical */
+  padding: 10px 20px;
 }
 
 nav {
-  margin-top: 10px;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 nav button {
-  background: white;
-  color: #25cdeb;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  font-weight: 600;
-  margin-right: 8px;
+  transition: var(--transition);
+  backdrop-filter: blur(10px);
 }
 
 nav button:hover {
-  background: #e0e7ff;
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+nav button:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   MAIN CONTENT
+======================================== */
 main {
-  padding: 25px;
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 2rem;
 }
 
 section {
   display: none;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.4s ease;
+  position: relative;
 }
 
 section.active {
   display: block;
 }
 
-h2 {
-  margin-top: 0;
-  color: #25cdeb;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-ul {
+section h2 {
+  color: var(--primary-blue);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid var(--primary-blue);
+  letter-spacing: -0.5px;
+}
+
+/* ========================================
+   SEARCH BAR
+======================================== */
+#searchSites,
+#searchProduits {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+#searchSites:focus,
+#searchProduits:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+#searchSites::placeholder,
+#searchProduits::placeholder {
+  color: var(--gray-600);
+}
+
+/* ========================================
+   LISTS
+======================================== */
+#sitesList,
+#produitsList,
+#maintenancesList {
   list-style: none;
-  padding: 0;
 }
 
-li {
+#sitesList li,
+#produitsList li,
+#maintenancesList li {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+  transition: var(--transition);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 1rem;
 }
 
-li button {
-  background: #25cdeb;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 5px;
+#sitesList li:hover,
+#produitsList li:hover,
+#maintenancesList li:hover {
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(4px);
+}
+
+#sitesList li.clickable-line {
   cursor: pointer;
 }
 
-li button:hover {
-  background: #1e40af;
+#sitesList li.clickable-line:hover {
+  background: linear-gradient(90deg, var(--gray-50) 0%, var(--white) 100%);
 }
 
-form {
-  margin-top: 15px;
+#produitsList li span,
+#sitesList li span,
+#maintenancesList li span {
+  flex: 1;
+  font-weight: 500;
+  color: var(--gray-800);
 }
 
-input {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  margin-right: 6px;
+#produitsList li div {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ========================================
+   BUTTONS GÉNÉRAUX
+======================================== */
+button {
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+button:active {
+  transform: translateY(0);
 }
 
 button.primary {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
+  background: var(--primary-blue);
 }
 
 button.primary:hover {
-  background: #1e40af;
+  background: var(--primary-dark);
 }
 
-/* Bouton flottant rond */
-.fab {
+/* Boutons dans les listes de produits */
+#produitsList button[onclick^="deleteProduit"],
+button#deleteBtn {
+  background: var(--danger);
+}
+
+#produitsList button[onclick^="deleteProduit"]:hover,
+button#deleteBtn:hover {
+  background: #C82333;
+}
+
+#produitsList button[onclick^="editProduit"] {
+  background: var(--gray-600);
+}
+
+#produitsList button[onclick^="editProduit"]:hover {
+  background: var(--gray-800);
+}
+
+#produitsList button[onclick^="printQR"],
+button#editBtn {
+  background: var(--accent-orange);
+}
+
+#produitsList button[onclick^="printQR"]:hover,
+button#editBtn:hover {
+  background: #E65C00;
+}
+
+#backBtn {
+  margin-bottom: 1.5rem;
+  background: var(--gray-600);
+}
+
+#backBtn:hover {
+  background: var(--gray-800);
+}
+
+/* ========================================
+   FLOATING ACTION BUTTON (FAB)
+======================================== */
+#addSiteBtn.fab,
+#addProductBtn.fab {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
+  bottom: 2rem;
+  right: 2rem;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  border: none;
-  background-color: #007bff;
-  color: white;
-  font-size: 30px;
+  background: linear-gradient(135deg, var(--accent-orange) 0%, #FF8533 100%);
+  color: var(--white);
+  font-size: 2rem;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  transition: background-color 0.3s, transform 0.2s;
+  transition: var(--transition);
+  border: none;
+  z-index: 50;
+  padding: 0;
 }
 
-.fab:hover {
-  background-color: #0056b3;
-  transform: scale(1.1);
+#addSiteBtn.fab:hover,
+#addProductBtn.fab:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 12px 32px rgba(255, 102, 0, 0.4);
+  background: linear-gradient(135deg, #FF8533 0%, var(--accent-orange) 100%);
 }
 
-/* Modal simple pour le formulaire */
-.modal {
+#addSiteBtn.fab:active,
+#addProductBtn.fab:active {
+  transform: scale(1.05) rotate(90deg);
+}
+
+/* ========================================
+   MODAL / FORMS
+======================================== */
+#addSiteForm.modal,
+#addProduitForm.modal {
   display: none;
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  z-index: 1000;
-}
-
-.modal form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Style pour les éléments cliquables */
-.clickable-line {
-  padding: 10px;
-  cursor: pointer;       /* change le curseur */
-  user-select: none;     /* empêche la sélection accidentelle */
-  transition: background-color 0.2s;
-}
-
-/* Effet hover : gris clair */
-.clickable-line:hover {
-  background-color: #f0f0f0;  /* gris clair */
-  color: inherit;              /* garder la couleur du texte */
-  text-decoration: none;       /* pas de soulignement */
-}
-
-#searchSites {
+  top: 0;
+  left: 0;
   width: 100%;
-  padding: 8px 12px;
-  margin-bottom: 15px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
 }
 
+#addSiteForm.modal[style*="display: block"],
+#addProduitForm.modal[style*="display: block"] {
+  display: flex !important;
+}
+
+#addSiteForm form,
+#addProduitForm form,
+#produitForm {
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#addSiteForm input,
+#addSiteForm select,
+#addSiteForm textarea,
+#addProduitForm input,
+#addProduitForm select,
+#addProduitForm textarea,
+#produitForm input,
+#produitForm select,
+#produitForm textarea {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  font-family: inherit;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+#addSiteForm input:focus,
+#addSiteForm select:focus,
+#addSiteForm textarea:focus,
+#addProduitForm input:focus,
+#addProduitForm select:focus,
+#addProduitForm textarea:focus,
+#produitForm input:focus,
+#produitForm select:focus,
+#produitForm textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+#addSiteForm textarea,
+#addProduitForm textarea,
+#produitForm textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+#addSiteForm button,
+#addProduitForm button,
+#produitForm button {
+  margin-right: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* ========================================
+   DETAILS (ACCORDIONS)
+======================================== */
+details {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: var(--transition);
+}
+
+details:hover {
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+details[open] {
+  background: var(--gray-50);
+  border-color: var(--primary-blue);
+}
+
+summary {
+  font-weight: 600;
+  color: var(--primary-blue);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  user-select: none;
+}
+
+summary:hover {
+  background: var(--gray-100);
+}
+
+details > div {
+  padding: 1rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.site-detail {
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.site-detail:last-child {
+  border-bottom: none;
+}
+
+.site-detail strong {
+  color: var(--gray-600);
+  font-weight: 600;
+  display: inline-block;
+  min-width: 140px;
+}
+
+/* ========================================
+   STATUS COLORS
+======================================== */
+.maintenance-terminee,
+details.maintenance-terminee {
+  border-left: 4px solid var(--success);
+}
+
+.maintenance-en-cours,
+details.maintenance-en-cours {
+  border-left: 4px solid var(--warning);
+}
+
+.maintenance-autre,
+details.maintenance-autre {
+  border-left: 4px solid var(--gray-300);
+}
+
+.equipement-ok,
+details.equipement-ok {
+  border-left: 4px solid var(--success);
+}
+
+.equipement-nok,
+details.equipement-nok {
+  border-left: 4px solid var(--danger);
+}
+
+.equipement-passable,
+details.equipement-passable {
+  border-left: 4px solid var(--warning);
+}
+
+.equipement-autre,
+details.equipement-autre {
+  border-left: 4px solid var(--gray-300);
+}
+
+/* ========================================
+   LINKS
+======================================== */
+a {
+  color: var(--primary-blue);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+  border-bottom: 2px solid transparent;
+}
+
+a:hover {
+  color: var(--primary-dark);
+  border-bottom-color: var(--primary-dark);
+}
+
+/* ========================================
+   PAGES DÉTAILS
+======================================== */
+#siteDetails,
+#MaintenancesList,
+#EquipementsList,
+#MaintenanceDetails,
+#ListeProduits {
+  margin-top: 1rem;
+}
+
+/* ========================================
+   CARTE GPS
+======================================== */
+#mapContainer {
+  width: 100%;
+  height: 400px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--gray-200);
+  transition: var(--transition);
+}
+
+#mapContainer:hover {
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-lg);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+  border-left: 4px solid var(--primary-blue);
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+@media (max-width: 768px) {
+  header {
+    padding: 1rem 1.5rem;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  main {
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+
+  section {
+    padding: 1.5rem;
+  }
+
+  section h2 {
+    font-size: 1.5rem;
+  }
+
+  #sitesList li,
+  #produitsList li,
+  #maintenancesList li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #produitsList li div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  #addSiteBtn.fab,
+  #addProductBtn.fab {
+    width: 56px;
+    height: 56px;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    font-size: 1.75rem;
+  }
+
+  #addSiteForm form,
+  #addProduitForm form,
+  #produitForm {
+    padding: 1.5rem;
+  }
+
+  .site-detail strong {
+    min-width: 120px;
+  }
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+======================================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-blue);
+}
+
+/* ========================================
+   UTILITIES
+======================================== */
+.text-center {
+  text-align: center;
+}
+
+.mt-1 {
+  margin-top: 0.5rem;
+}
+
+.mt-2 {
+  margin-top: 1rem;
+}
+
+.mb-1 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-2 {
+  margin-bottom: 1rem;
+}
