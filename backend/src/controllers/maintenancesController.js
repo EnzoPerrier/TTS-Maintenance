@@ -53,7 +53,6 @@ exports.getAllMaintenancesBySiteID = async (req, res) => {
 // POST /maintenances 
 exports.createMaintenance = async (req, res) => {
   const {
-    id_produit,
     id_site,
     date_maintenance,
     type,

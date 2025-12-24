@@ -23,7 +23,6 @@ exports.getAllQRCodes = async (req, res) => {
   }
 };
 
-// Générer un ou plusieurs QR codes (vides ou préremplis)
 exports.generateQRCodes = async (req, res) => {
   const { count = 1, prefill } = req.body;
 
@@ -32,25 +31,19 @@ exports.generateQRCodes = async (req, res) => {
 
     for (let i = 0; i < count; i++) {
 
-      // Insertion dans la base : permet de créer un QR vierge ou déjà prérempli
+      const id_produit = prefill?.id_produit ?? null;
+      const etat = id_produit ? "associe" : "vierge";
+
       const [result] = await db.query(
         `INSERT INTO qr_codes (id_produit, etat)
          VALUES (?, ?)`,
-        [
-          prefill?.id_produit|| null,
-          prefill?.etat || null,
-          prefill ? "associe" : "vierge"
-        ]
+        [id_produit, etat]
       );
 
-      // Récupération de l'identifiant généré automatiquement
       const id_qr = result.insertId;
 
-      // Contenu réel du QR code encodé
       const payload = { id_qr };
       const qrContent = JSON.stringify(payload);
-
-      // Génération du QR code en base64
       const qrDataUrl = await QRCode.toDataURL(qrContent);
 
       qrCodes.push({ id_qr, qrDataUrl });
@@ -60,9 +53,10 @@ exports.generateQRCodes = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 // Affichage du QRCode
 exports.showQRCode = async (req, res) => {
