@@ -688,3 +688,488 @@ a:hover {
 .mb-2 {
   margin-bottom: 1rem;
 }
+
+
+/* ========================================
+   CARTES DE STATISTIQUES
+======================================== */
+.stat-card {
+  background: linear-gradient(135deg, var(--white) 0%, var(--gray-50) 100%);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 160px;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card:hover {
+  border-color: var(--primary-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card strong {
+  color: var(--gray-600);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: block;
+}
+
+.stat-card span {
+  color: var(--primary-blue);
+  font-size: 2rem;
+  font-weight: 700;
+  display: block;
+}
+
+/* Statistiques colorées selon l'état */
+.stat-card.stat-terminee {
+  border-left: 4px solid var(--success);
+}
+
+.stat-card.stat-terminee span {
+  color: var(--success);
+}
+
+.stat-card.stat-en-cours {
+  border-left: 4px solid var(--warning);
+}
+
+.stat-card.stat-en-cours span {
+  color: var(--warning);
+}
+
+.stat-card.stat-planifiee {
+  border-left: 4px solid var(--primary-blue);
+}
+
+.stat-card.stat-planifiee span {
+  color: var(--primary-blue);
+}
+
+.stat-card.stat-ok {
+  border-left: 4px solid var(--success);
+}
+
+.stat-card.stat-ok span {
+  color: var(--success);
+}
+
+.stat-card.stat-nok {
+  border-left: 4px solid var(--danger);
+}
+
+.stat-card.stat-nok span {
+  color: var(--danger);
+}
+
+#siteStats {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  flex-wrap: wrap;
+}
+
+/* ========================================
+   AMÉLIORATION DES LISTES D'ÉQUIPEMENTS
+======================================== */
+#EquipementsList {
+  list-style: none;
+  padding: 0;
+}
+
+#EquipementsList li {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+  transition: var(--transition);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+#EquipementsList li:hover {
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(4px);
+}
+
+/* Style pour les maintenances planifiées */
+.maintenance-planifiee {
+  border-left: 4px solid var(--primary-blue) !important;
+}
+
+.maintenance-planifiee summary {
+  color: var(--primary-blue);
+}
+
+/* ========================================
+   MODAL - STYLE POPUP CENTRÉ
+======================================== */
+#addMaintenanceForm.modal,
+#addEquipementForm.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+#addMaintenanceForm.modal[style*="display: block"],
+#addEquipementForm.modal[style*="display: block"] {
+  display: flex !important;
+}
+
+#addMaintenanceForm form,
+#addEquipementForm form {
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#addMaintenanceForm input,
+#addMaintenanceForm select,
+#addMaintenanceForm textarea,
+#addEquipementForm input,
+#addEquipementForm select,
+#addEquipementForm textarea {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  font-family: inherit;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+#addMaintenanceForm input:focus,
+#addMaintenanceForm select:focus,
+#addMaintenanceForm textarea:focus,
+#addEquipementForm input:focus,
+#addEquipementForm select:focus,
+#addEquipementForm textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+#addMaintenanceForm textarea,
+#addEquipementForm textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+#addMaintenanceForm button,
+#addEquipementForm button {
+  margin-right: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* ========================================
+   RESPONSIVE STATS
+======================================== */
+@media (max-width: 768px) {
+  #siteStats {
+    flex-direction: column;
+  }
+  
+  .stat-card {
+    min-width: 100%;
+  }
+  
+  #EquipementsList li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  #EquipementsList li > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  #addMaintenanceForm form,
+  #addEquipementForm form {
+    padding: 1.5rem;
+  }
+}
+
+/* ========================================
+   MODALS POUR MAINTENANCE DETAILS
+======================================== */
+#addProduitForm.modal,
+#editProduitForm.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+#addProduitForm.modal[style*="display: block"],
+#editProduitForm.modal[style*="display: block"] {
+  display: flex !important;
+}
+
+#addProduitForm form,
+#editProduitForm form {
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+#addProduitForm h3,
+#editProduitForm h3 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-blue);
+  font-size: 1.5rem;
+}
+
+#addProduitForm input,
+#addProduitForm select,
+#addProduitForm textarea,
+#editProduitForm input,
+#editProduitForm select,
+#editProduitForm textarea {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  font-family: inherit;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+#addProduitForm input:focus,
+#addProduitForm select:focus,
+#addProduitForm textarea:focus,
+#editProduitForm input:focus,
+#editProduitForm select:focus,
+#editProduitForm textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+#addProduitForm textarea,
+#editProduitForm textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+#addProduitForm button,
+#editProduitForm button {
+  margin-right: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+#editProduitForm p {
+  background: var(--gray-50);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--primary-blue);
+}
+
+#editProduitForm p strong {
+  color: var(--gray-600);
+}
+
+#editProduitForm p span {
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+/* ========================================
+   LISTE PRODUITS DANS MAINTENANCE
+======================================== */
+#ListeProduits details {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: var(--transition);
+}
+
+#ListeProduits details:hover {
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+#ListeProduits details[open] {
+  background: var(--gray-50);
+  border-color: var(--primary-blue);
+}
+
+#ListeProduits summary {
+  font-weight: 600;
+  color: var(--primary-blue);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  user-select: none;
+  font-size: 1.1rem;
+}
+
+#ListeProduits summary:hover {
+  background: var(--gray-100);
+}
+
+#ListeProduits details > div {
+  padding: 1rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+#ListeProduits details > div > div {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+#ListeProduits details > div > div:last-child {
+  border-bottom: none;
+  padding-top: 1rem;
+}
+
+#ListeProduits strong {
+  color: var(--gray-600);
+  font-weight: 600;
+  display: inline-block;
+  min-width: 200px;
+}
+
+/* Boutons dans la liste des produits */
+.btn-edit-produit {
+  background: var(--gray-600) !important;
+}
+
+.btn-edit-produit:hover {
+  background: var(--gray-800) !important;
+}
+
+.btn-remove-produit {
+  background: var(--danger) !important;
+}
+
+.btn-remove-produit:hover {
+  background: #C82333 !important;
+}
+
+/* ========================================
+   HEADER MAINTENANCE DETAILS
+======================================== */
+#MaintenanceDetails {
+  background: var(--white);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+#MaintenanceDetails .site-detail {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+#MaintenanceDetails .site-detail:last-child {
+  border-bottom: none;
+}
+
+/* ========================================
+   SECTION PRODUITS ASSOCIÉS
+======================================== */
+main h2 {
+  color: var(--primary-blue);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid var(--primary-blue);
+}
+
+/* État vide */
+#ListeProduits > p {
+  text-align: center;
+  padding: 2rem;
+  color: var(--gray-600);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--gray-300);
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+@media (max-width: 768px) {
+  #addProduitForm form,
+  #editProduitForm form {
+    padding: 1.5rem;
+  }
+
+  #ListeProduits strong {
+    min-width: 120px;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  #ListeProduits details > div > div {
+    flex-direction: column;
+  }
+
+  .btn-edit-produit,
+  .btn-remove-produit {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}

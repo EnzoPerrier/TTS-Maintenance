@@ -17,23 +17,91 @@
       <h1>Détails du site</h1>
       <div id="siteDetails"></div>
 
+      <!-- Statistiques du site -->
+      <div id="siteStats" style="display: flex; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap;">
+        <div class="stat-card">
+          <strong>📦 Équipements</strong>
+          <span id="statsEquipements">0</span>
+        </div>
+        <div class="stat-card stat-planifiee">
+          <strong>📅 Maintenances planifiées</strong>
+          <span id="statsPlanifiees">0</span>
+        </div>
+        <div class="stat-card stat-en-cours">
+          <strong>⚙️ Maintenances en cours</strong>
+          <span id="statsEnCours">0</span>
+        </div>
+        <div class="stat-card stat-terminee">
+          <strong>✅ Maintenances terminées</strong>
+          <span id="statsTerminees">0</span>
+        </div>
+        <div class="stat-card stat-ok">
+          <strong>✅ Équipements OK</strong>
+          <span id="statsOK">0</span>
+        </div>
+        <div class="stat-card stat-nok">
+          <strong>❌ Équipements NOK</strong>
+          <span id="statsNOK">0</span>
+        </div>
+      </div>
+
       <!-- Carte GPS -->
       <h3 class="map-title">📍 Localisation</h3>
       <div id="mapContainer">
         <div id="map"></div>
       </div>
 
-      <details>
+      <details open>
         <summary>Maintenances</summary>
+        <button class="primary" onclick="showAddMaintenanceForm()" style="margin: 1rem 0;">+ Ajouter une maintenance</button>
         <div id="MaintenancesList"></div>
       </details>
 
-      <details>
+      <details open>
         <summary>Équipements</summary>
+        <button class="primary" onclick="showAddEquipementForm()" style="margin: 1rem 0;">+ Ajouter un équipement</button>
         <div id="EquipementsList"></div>
       </details>
     </section>
   </main>
+
+  <!-- Formulaire ajout/modification maintenance -->
+  <div id="addMaintenanceForm" class="modal">
+    <form id="maintenanceForm" onsubmit="addMaintenance(event)">
+      <h3 id="maintenanceFormTitle">Ajouter une maintenance</h3>
+      <input type="date" id="maintenanceDate" required />
+      <input type="text" id="maintenanceType" placeholder="Type de maintenance" required />
+      <select id="maintenanceEtat">
+        <option value="">-- État --</option>
+        <option value="Terminée">Terminée</option>
+        <option value="En cours">En cours</option>
+        <option value="Planifiée">Planifiée</option>
+      </select>
+      <input type="text" id="maintenanceDepartement" placeholder="Département" />
+      <textarea id="maintenanceCommentaire" placeholder="Commentaire"></textarea>
+      <input type="text" id="maintenanceRI" placeholder="RI interne" />
+      <button class="primary" type="submit" id="maintenanceSubmitBtn">Ajouter</button>
+      <button type="button" onclick="hideAddMaintenanceForm()">Annuler</button>
+    </form>
+  </div>
+
+  <!-- Formulaire ajout/modification équipement -->
+  <div id="addEquipementForm" class="modal">
+    <form id="equipementForm" onsubmit="addEquipement(event)">
+      <h3 id="equipementFormTitle">Ajouter un équipement</h3>
+      <input type="text" id="equipementNom" placeholder="Nom de l'équipement" required />
+      <input type="text" id="equipementDepartement" placeholder="Département" />
+      <select id="equipementEtat">
+        <option value="">-- État --</option>
+        <option value="OK">OK</option>
+        <option value="NOK">NOK</option>
+        <option value="Passable">Passable</option>
+      </select>
+      <textarea id="equipementDescription" placeholder="Description"></textarea>
+      <button class="primary" type="submit" id="equipementSubmitBtn">Ajouter</button>
+      <button type="button" onclick="hideAddEquipementForm()">Annuler</button>
+    </form>
+  </div>
 
   <!-- Leaflet JS pour la carte -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

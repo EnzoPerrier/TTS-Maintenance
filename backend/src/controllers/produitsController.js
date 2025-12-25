@@ -31,37 +31,17 @@ exports.getProduitById = async (req, res) => {
   }
 };
 
-// GET /produits/ProduitBySiteID/:id --> produit par site ID
+// GET /produits/ProduitsBySiteID/:id --> produits par site ID
 exports.getProduitsBySiteId = async (req, res) => {
   const { id } = req.params;
 
   try {
     const [rows] = await db.query(
-      "SELECT * FROM produits WHERE id_site = ?",
+      "SELECT * FROM produits WHERE id_site = ? ORDER BY nom ASC",
       [id]
     );
 
-    if (rows.length === 0)
-      return res.status(404).json({ error: "Produit non trouvé" });
-
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-// GET /produits/ProduitsByMaintenance/:id 
-exports.getProduitsByMaintenance = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const [rows] = await db.query(
-      "SELECT id_produit FROM maintenance_produits WHERE id_maintenance = ? ORDER BY id_produit DESC",
-      [id]
-    );
-
-    // Toujours renvoyer un tableau (vide si aucune maintenance)
+    // Toujours renvoyer un tableau (vide si aucun produit)
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -97,7 +77,7 @@ exports.createProduit = async (req, res) => {
 // PUT /produits/:id --> modifier un produit
 exports.updateProduit = async (req, res) => {
   const { id } = req.params;
-  const { id_site, nom, departement, etat, description } = req.body; // on prend toutes les propriétés nécessaires
+  const { id_site, nom, departement, etat, description } = req.body;
 
   try {
     const [result] = await db.query(
@@ -120,7 +100,6 @@ exports.updateProduit = async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
-
 
 // DELETE /produits/:id --> supprimer un produit
 exports.deleteProduit = async (req, res) => {
