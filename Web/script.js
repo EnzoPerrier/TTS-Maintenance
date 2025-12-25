@@ -271,7 +271,7 @@ function editProduit(id_produit) {
   // Pré-remplir le formulaire
   document.getElementById("produitNom").value = produit.nom;
   document.getElementById("produitSiteId").value = produit.id_site;
-  document.getElementById("produitDepartement").value = produit.type || "";
+  document.getElementById("produitDepartement").value = produit.departement || "";
   document.getElementById("produitEtat").value = produit.etat || "";
   document.getElementById("produitDescription").value = produit.description || "";
 
@@ -311,7 +311,7 @@ async function updateProduit(id_produit, data) {
       return;
     }
 
-    alert("Produit modifié avec succès");
+    //alert("Produit modifié avec succès");
     hideAddProduitForm();
     loadProduits();
     document.getElementById("produitForm").reset();
