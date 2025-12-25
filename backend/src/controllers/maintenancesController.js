@@ -63,18 +63,18 @@ exports.createMaintenance = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      `INSERT INTO maintenances 
-      (id_site, date_maintenance, type, etat, commentaire, ri_interne)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO maintenances (id_site, date_maintenance, type, etat, commentaire, ri_interne, date_creation) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         id_site,
         date_maintenance,
         type,
         etat,
         commentaire,
-        ri_interne
+        ri_interne,
+        new Date().toISOString().split('T')[0] // Date actuelle au format YYYY-MM-DD
       ]
     );
+
 
     res.status(201).json({
       id_maintenance: result.insertId,
@@ -105,10 +105,7 @@ exports.updateMaintenance = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      `UPDATE maintenances
-       SET id_site = ?, date_maintenance = ?, type = ?, 
-           etat = ?, commentaire = ?, ri_interne = ?
-       WHERE id_maintenance = ?`,
+      `UPDATE maintenances SET id_site = ?, date_maintenance = ?, type = ?, etat = ?, commentaire = ?, ri_interne = ? WHERE id_maintenance = ?`,
       [
         id_site,
         date_maintenance,
