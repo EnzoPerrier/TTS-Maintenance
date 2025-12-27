@@ -18,30 +18,65 @@
       <div id="siteDetails"></div>
 
       <!-- Statistiques du site -->
-      <div id="siteStats" style="display: flex; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap;">
-        <div class="stat-card">
-          <strong>📦 Équipements</strong>
-          <span id="statsEquipements">0</span>
-        </div>
-        <div class="stat-card stat-planifiee">
-          <strong>📅 Maintenances planifiées</strong>
-          <span id="statsPlanifiees">0</span>
-        </div>
-        <div class="stat-card stat-en-cours">
-          <strong>⚙️ Maintenances en cours</strong>
-          <span id="statsEnCours">0</span>
-        </div>
-        <div class="stat-card stat-terminee">
-          <strong>✅ Maintenances terminées</strong>
-          <span id="statsTerminees">0</span>
-        </div>
-        <div class="stat-card stat-ok">
-          <strong>✅ Équipements OK</strong>
-          <span id="statsOK">0</span>
-        </div>
-        <div class="stat-card stat-nok">
-          <strong>❌ Équipements NOK</strong>
-          <span id="statsNOK">0</span>
+      <div class="site-stats-container">
+        <h3 class="stats-section-title">📊 Vue d'ensemble</h3>
+        
+        <div class="stats-grid-site">
+          <!-- Équipements -->
+          <div class="stat-card-modern stat-card-info">
+            <div class="stat-header">
+              <span class="stat-icon-modern">📦</span>
+              <span class="stat-label-modern">Équipements</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-main-value" id="statsEquipements">0</div>
+              <div class="stat-breakdown">
+                <div class="stat-item stat-success">
+                  <span class="dot"></span>
+                  <span class="label">OK</span>
+                  <span class="value" id="statsOK">0</span>
+                </div>
+                <div class="stat-item stat-warning">
+                  <span class="dot"></span>
+                  <span class="label">Passable</span>
+                  <span class="value" id="statsPassable">0</span>
+                </div>
+                <div class="stat-item stat-danger">
+                  <span class="dot"></span>
+                  <span class="label">NOK</span>
+                  <span class="value" id="statsNOK">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Maintenances -->
+          <div class="stat-card-modern stat-card-primary">
+            <div class="stat-header">
+              <span class="stat-icon-modern">🔧</span>
+              <span class="stat-label-modern">Maintenances</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-main-value" id="statsMaintenances">0</div>
+              <div class="stat-breakdown">
+                <div class="stat-item stat-success">
+                  <span class="dot"></span>
+                  <span class="label">Terminées</span>
+                  <span class="value" id="statsTerminees">0</span>
+                </div>
+                <div class="stat-item stat-warning">
+                  <span class="dot"></span>
+                  <span class="label">En cours</span>
+                  <span class="value" id="statsEnCours">0</span>
+                </div>
+                <div class="stat-item stat-info">
+                  <span class="dot"></span>
+                  <span class="label">Planifiées</span>
+                  <span class="value" id="statsPlanifiees">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -62,8 +62,8 @@ header h1 {
 
 .header-top {
   display: flex;
-  justify-content: space-between; /* titre à gauche, logo à droite */
-  align-items: center;            /* alignement vertical */
+  justify-content: space-between;
+  align-items: center;
   padding: 10px 20px;
 }
 
@@ -256,7 +256,6 @@ button.primary:hover {
   background: var(--primary-dark);
 }
 
-/* Boutons dans les listes de produits */
 #produitsList button[onclick^="deleteProduit"],
 button#deleteBtn {
   background: var(--danger);
@@ -336,7 +335,10 @@ button#editBtn:hover {
    MODAL / FORMS
 ======================================== */
 #addSiteForm.modal,
-#addProduitForm.modal {
+#addProduitForm.modal,
+#addMaintenanceForm.modal,
+#addEquipementForm.modal,
+#editProduitForm.modal {
   display: none;
   position: fixed;
   top: 0;
@@ -345,20 +347,28 @@ button#editBtn:hover {
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 200;
+  z-index: 9999;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.3s ease;
 }
 
 #addSiteForm.modal[style*="display: block"],
-#addProduitForm.modal[style*="display: block"] {
+#addProduitForm.modal[style*="display: block"],
+#addMaintenanceForm.modal[style*="display: block"],
+#addEquipementForm.modal[style*="display: block"],
+#editProduitForm.modal[style*="display: block"] {
   display: flex !important;
 }
 
 #addSiteForm form,
 #addProduitForm form,
-#produitForm {
+#addMaintenanceForm form,
+#addEquipementForm form,
+#editProduitForm form,
+#produitForm,
+#maintenanceForm,
+#equipementForm {
   background: var(--white);
   padding: 2.5rem;
   border-radius: var(--radius-lg);
@@ -368,6 +378,8 @@ button#editBtn:hover {
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+  position: relative;
+  z-index: 10000;
 }
 
 @keyframes slideUp {
@@ -387,9 +399,24 @@ button#editBtn:hover {
 #addProduitForm input,
 #addProduitForm select,
 #addProduitForm textarea,
+#addMaintenanceForm input,
+#addMaintenanceForm select,
+#addMaintenanceForm textarea,
+#addEquipementForm input,
+#addEquipementForm select,
+#addEquipementForm textarea,
+#editProduitForm input,
+#editProduitForm select,
+#editProduitForm textarea,
 #produitForm input,
 #produitForm select,
-#produitForm textarea {
+#produitForm textarea,
+#maintenanceForm input,
+#maintenanceForm select,
+#maintenanceForm textarea,
+#equipementForm input,
+#equipementForm select,
+#equipementForm textarea {
   width: 100%;
   padding: 0.875rem;
   border: 2px solid var(--gray-200);
@@ -407,9 +434,24 @@ button#editBtn:hover {
 #addProduitForm input:focus,
 #addProduitForm select:focus,
 #addProduitForm textarea:focus,
+#addMaintenanceForm input:focus,
+#addMaintenanceForm select:focus,
+#addMaintenanceForm textarea:focus,
+#addEquipementForm input:focus,
+#addEquipementForm select:focus,
+#addEquipementForm textarea:focus,
+#editProduitForm input:focus,
+#editProduitForm select:focus,
+#editProduitForm textarea:focus,
 #produitForm input:focus,
 #produitForm select:focus,
-#produitForm textarea:focus {
+#produitForm textarea:focus,
+#maintenanceForm input:focus,
+#maintenanceForm select:focus,
+#maintenanceForm textarea:focus,
+#equipementForm input:focus,
+#equipementForm select:focus,
+#equipementForm textarea:focus {
   outline: none;
   border-color: var(--primary-blue);
   background: var(--white);
@@ -418,16 +460,50 @@ button#editBtn:hover {
 
 #addSiteForm textarea,
 #addProduitForm textarea,
-#produitForm textarea {
+#addMaintenanceForm textarea,
+#addEquipementForm textarea,
+#editProduitForm textarea,
+#produitForm textarea,
+#maintenanceForm textarea,
+#equipementForm textarea {
   resize: vertical;
   min-height: 100px;
 }
 
 #addSiteForm button,
 #addProduitForm button,
-#produitForm button {
+#addMaintenanceForm button,
+#addEquipementForm button,
+#editProduitForm button,
+#produitForm button,
+#maintenanceForm button,
+#equipementForm button {
   margin-right: 0.75rem;
   margin-top: 0.5rem;
+}
+
+#addProduitForm h3,
+#editProduitForm h3 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-blue);
+  font-size: 1.5rem;
+}
+
+#editProduitForm p {
+  background: var(--gray-50);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--primary-blue);
+}
+
+#editProduitForm p strong {
+  color: var(--gray-600);
+}
+
+#editProduitForm p span {
+  color: var(--primary-blue);
+  font-weight: 600;
 }
 
 /* ========================================
@@ -501,6 +577,11 @@ details.maintenance-en-cours {
   border-left: 4px solid var(--warning);
 }
 
+.maintenance-planifiee,
+details.maintenance-planifiee {
+  border-left: 4px solid var(--secondary-blue);
+}
+
 .maintenance-autre,
 details.maintenance-autre {
   border-left: 4px solid var(--gray-300);
@@ -553,6 +634,23 @@ a:hover {
   margin-top: 1rem;
 }
 
+#MaintenanceDetails {
+  background: var(--white);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+#MaintenanceDetails .site-detail {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+#MaintenanceDetails .site-detail:last-child {
+  border-bottom: none;
+}
+
 /* ========================================
    CARTE GPS
 ======================================== */
@@ -566,6 +664,8 @@ a:hover {
   box-shadow: var(--shadow-md);
   border: 2px solid var(--gray-200);
   transition: var(--transition);
+  position: relative;
+  z-index: 1;
 }
 
 #mapContainer:hover {
@@ -576,6 +676,8 @@ a:hover {
 #map {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .map-title {
@@ -589,189 +691,169 @@ a:hover {
 }
 
 /* ========================================
-   RESPONSIVE
+   STATISTIQUES - SITE DETAILS
 ======================================== */
-@media (max-width: 768px) {
-  header {
-    padding: 1rem 1.5rem;
-  }
-
-  header h1 {
-    font-size: 1.5rem;
-  }
-
-  main {
-    padding: 0 1rem;
-    margin: 1rem auto;
-  }
-
-  section {
-    padding: 1.5rem;
-  }
-
-  section h2 {
-    font-size: 1.5rem;
-  }
-
-  #sitesList li,
-  #produitsList li,
-  #maintenancesList li {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  #produitsList li div {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  #addSiteBtn.fab,
-  #addProductBtn.fab {
-    width: 56px;
-    height: 56px;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    font-size: 1.75rem;
-  }
-
-  #addSiteForm form,
-  #addProduitForm form,
-  #produitForm {
-    padding: 1.5rem;
-  }
-
-  .site-detail strong {
-    min-width: 120px;
-  }
+.site-stats-container {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
 }
 
-/* ========================================
-   SCROLLBAR STYLING
-======================================== */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+.stats-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--gray-100);
+.stats-grid-site {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--gray-300);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-blue);
-}
-
-/* ========================================
-   UTILITIES
-======================================== */
-.text-center {
-  text-align: center;
-}
-
-.mt-1 {
-  margin-top: 0.5rem;
-}
-
-.mt-2 {
-  margin-top: 1rem;
-}
-
-.mb-1 {
-  margin-bottom: 0.5rem;
-}
-
-.mb-2 {
-  margin-bottom: 1rem;
-}
-
-
-/* ========================================
-   CARTES DE STATISTIQUES
-======================================== */
-.stat-card {
-  background: linear-gradient(135deg, var(--white) 0%, var(--gray-50) 100%);
+.stat-card-modern {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
   border: 2px solid var(--gray-200);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+}
+
+.stat-card-modern.stat-card-info::before {
+  background: linear-gradient(90deg, var(--secondary-blue), var(--primary-blue));
+}
+
+.stat-card-modern.stat-card-primary::before {
+  background: linear-gradient(90deg, var(--accent-orange), #FF8533);
+}
+
+.stat-card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-blue);
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.stat-icon-modern {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
   border-radius: var(--radius-md);
-  padding: 1.25rem;
+}
+
+.stat-label-modern {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  letter-spacing: -0.3px;
+}
+
+.stat-details {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-width: 160px;
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
-}
-
-.stat-card:hover {
-  border-color: var(--primary-blue);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.stat-card strong {
-  color: var(--gray-600);
-  font-size: 0.9rem;
-  font-weight: 600;
-  display: block;
-}
-
-.stat-card span {
-  color: var(--primary-blue);
-  font-size: 2rem;
-  font-weight: 700;
-  display: block;
-}
-
-/* Statistiques colorées selon l'état */
-.stat-card.stat-terminee {
-  border-left: 4px solid var(--success);
-}
-
-.stat-card.stat-terminee span {
-  color: var(--success);
-}
-
-.stat-card.stat-en-cours {
-  border-left: 4px solid var(--warning);
-}
-
-.stat-card.stat-en-cours span {
-  color: var(--warning);
-}
-
-.stat-card.stat-planifiee {
-  border-left: 4px solid var(--primary-blue);
-}
-
-.stat-card.stat-planifiee span {
-  color: var(--primary-blue);
-}
-
-.stat-card.stat-ok {
-  border-left: 4px solid var(--success);
-}
-
-.stat-card.stat-ok span {
-  color: var(--success);
-}
-
-.stat-card.stat-nok {
-  border-left: 4px solid var(--danger);
-}
-
-.stat-card.stat-nok span {
-  color: var(--danger);
-}
-
-#siteStats {
-  display: flex;
   gap: 1rem;
-  margin: 1.5rem 0;
-  flex-wrap: wrap;
+}
+
+.stat-main-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.stat-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem;
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.stat-item:hover {
+  background: var(--gray-100);
+  transform: translateX(4px);
+}
+
+.stat-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-item.stat-success .dot {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+}
+
+.stat-item.stat-danger .dot {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
+}
+
+.stat-item.stat-warning .dot {
+  background: var(--warning);
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+}
+
+.stat-item.stat-info .dot {
+  background: var(--secondary-blue);
+  box-shadow: 0 0 8px rgba(51, 153, 255, 0.4);
+}
+
+.stat-item .label {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.stat-item .value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  min-width: 40px;
+  text-align: right;
 }
 
 /* ========================================
@@ -799,234 +881,6 @@ a:hover {
   border-color: var(--primary-blue);
   box-shadow: var(--shadow-sm);
   transform: translateX(4px);
-}
-
-/* Style pour les maintenances planifiées */
-.maintenance-planifiee {
-  border-left: 4px solid var(--primary-blue) !important;
-}
-
-.maintenance-planifiee summary {
-  color: var(--primary-blue);
-}
-
-/* ========================================
-   MODAL - STYLE POPUP CENTRÉ
-======================================== */
-#addMaintenanceForm.modal,
-#addEquipementForm.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease;
-}
-
-#addMaintenanceForm.modal[style*="display: block"],
-#addEquipementForm.modal[style*="display: block"] {
-  display: flex !important;
-}
-
-#addMaintenanceForm form,
-#addEquipementForm form {
-  background: var(--white);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-#addMaintenanceForm input,
-#addMaintenanceForm select,
-#addMaintenanceForm textarea,
-#addEquipementForm input,
-#addEquipementForm select,
-#addEquipementForm textarea {
-  width: 100%;
-  padding: 0.875rem;
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  font-family: inherit;
-  transition: var(--transition);
-  background: var(--gray-50);
-}
-
-#addMaintenanceForm input:focus,
-#addMaintenanceForm select:focus,
-#addMaintenanceForm textarea:focus,
-#addEquipementForm input:focus,
-#addEquipementForm select:focus,
-#addEquipementForm textarea:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  background: var(--white);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-}
-
-#addMaintenanceForm textarea,
-#addEquipementForm textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-#addMaintenanceForm button,
-#addEquipementForm button {
-  margin-right: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-/* ========================================
-   RESPONSIVE STATS
-======================================== */
-@media (max-width: 768px) {
-  #siteStats {
-    flex-direction: column;
-  }
-  
-  .stat-card {
-    min-width: 100%;
-  }
-  
-  #EquipementsList li {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  #EquipementsList li > div:last-child {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  #addMaintenanceForm form,
-  #addEquipementForm form {
-    padding: 1.5rem;
-  }
-}
-
-/* ========================================
-   MODALS POUR MAINTENANCE DETAILS
-======================================== */
-#addProduitForm.modal,
-#editProduitForm.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease;
-}
-
-#addProduitForm.modal[style*="display: block"],
-#editProduitForm.modal[style*="display: block"] {
-  display: flex !important;
-}
-
-#addProduitForm form,
-#editProduitForm form {
-  background: var(--white);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-}
-
-#addProduitForm h3,
-#editProduitForm h3 {
-  margin-bottom: 1.5rem;
-  color: var(--primary-blue);
-  font-size: 1.5rem;
-}
-
-#addProduitForm input,
-#addProduitForm select,
-#addProduitForm textarea,
-#editProduitForm input,
-#editProduitForm select,
-#editProduitForm textarea {
-  width: 100%;
-  padding: 0.875rem;
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  font-family: inherit;
-  transition: var(--transition);
-  background: var(--gray-50);
-}
-
-#addProduitForm input:focus,
-#addProduitForm select:focus,
-#addProduitForm textarea:focus,
-#editProduitForm input:focus,
-#editProduitForm select:focus,
-#editProduitForm textarea:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  background: var(--white);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-}
-
-#addProduitForm textarea,
-#editProduitForm textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-#addProduitForm button,
-#editProduitForm button {
-  margin-right: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-#editProduitForm p {
-  background: var(--gray-50);
-  padding: 1rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
-  border-left: 4px solid var(--primary-blue);
-}
-
-#editProduitForm p strong {
-  color: var(--gray-600);
-}
-
-#editProduitForm p span {
-  color: var(--primary-blue);
-  font-weight: 600;
 }
 
 /* ========================================
@@ -1089,7 +943,15 @@ a:hover {
   min-width: 200px;
 }
 
-/* Boutons dans la liste des produits */
+#ListeProduits > p {
+  text-align: center;
+  padding: 2rem;
+  color: var(--gray-600);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--gray-300);
+}
+
 .btn-edit-produit {
   background: var(--gray-600) !important;
 }
@@ -1107,69 +969,75 @@ a:hover {
 }
 
 /* ========================================
-   HEADER MAINTENANCE DETAILS
-======================================== */
-#MaintenanceDetails {
-  background: var(--white);
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-#MaintenanceDetails .site-detail {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--gray-100);
-}
-
-#MaintenanceDetails .site-detail:last-child {
-  border-bottom: none;
-}
-
-/* ========================================
-   SECTION PRODUITS ASSOCIÉS
-======================================== */
-main h2 {
-  color: var(--primary-blue);
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 3px solid var(--primary-blue);
-}
-
-/* État vide */
-#ListeProduits > p {
-  text-align: center;
-  padding: 2rem;
-  color: var(--gray-600);
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  border: 2px dashed var(--gray-300);
-}
-
-/* ========================================
    RESPONSIVE
 ======================================== */
 @media (max-width: 768px) {
-  #addProduitForm form,
-  #editProduitForm form {
+  header {
+    padding: 1rem 1.5rem;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  main {
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+
+  section {
     padding: 1.5rem;
   }
 
-  #ListeProduits strong {
-    min-width: 120px;
-    display: block;
-    margin-bottom: 0.25rem;
+  section h2 {
+    font-size: 1.5rem;
   }
 
-  #ListeProduits details > div > div {
+  #sitesList li,
+  #produitsList li,
+  #maintenancesList li {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .btn-edit-produit,
-  .btn-remove-produit {
+  #produitsList li div {
     width: 100%;
-    margin-bottom: 0.5rem;
+    justify-content: flex-start;
   }
-}
+
+  #addSiteBtn.fab,
+  #addProductBtn.fab {
+    width: 56px;
+    height: 56px;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    font-size: 1.75rem;
+  }
+
+  #addSiteForm form,
+  #addProduitForm form,
+  #addMaintenanceForm form,
+  #addEquipementForm form,
+  #editProduitForm form,
+  #produitForm,
+  #maintenanceForm,
+  #equipementForm {
+    padding: 1.5rem;
+  }
+
+  .site-detail strong {
+    min-width: 120px;
+  }
+
+  .stats-grid-site {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-main-value {
+    font-size: 2.5rem;
+  }
+
+  .stat-icon-modern {
+    width: 40px;
+    height: 40px;
+    font-size:
