@@ -121,6 +121,7 @@ function renderProduits(produits) {
   <button id="deleteBtn" onclick="deleteProduit(${p.id_produit})">Supprimer</button>
   <button onclick="editProduit(${p.id_produit})">Modifier</button>
   <button id="editBtn" onclick="printQR(${p.id_produit})">QR</button>
+  <button onclick="window.location.href='./ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
 </div>
 
     `;
