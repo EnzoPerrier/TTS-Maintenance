@@ -4,17 +4,488 @@
   <meta charset="UTF-8">
   <title>Détails de la maintenance</title>
   <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* ========================================
+       CONTENEUR PRINCIPAL
+    ======================================== */
+    #MaintenanceDetails {
+      background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-md);
+      border: 2px solid var(--gray-200);
+    }
+
+    /* ========================================
+       GESTION DES PHOTOS
+    ======================================== */
+    .photo-container {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      border: 2px dashed var(--gray-300);
+      transition: var(--transition);
+    }
+
+    .photo-container:hover {
+      border-color: var(--primary-blue);
+      background: var(--white);
+    }
+
+    .photo-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: var(--gray-800);
+      font-size: 1.05rem;
+    }
+
+    .photo-label::before {
+      content: "📷";
+      font-size: 1.5rem;
+    }
+
+    #photoInput, #editPhotoInput {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--white);
+    }
+
+    #photoInput:hover, #editPhotoInput:hover {
+      border-color: var(--primary-blue);
+    }
+
+    #photoInput:focus, #editPhotoInput:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    /* Prévisualisation des photos */
+    .photo-preview {
+      max-width: 100%;
+      max-height: 250px;
+      margin-top: 1rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      display: block;
+      object-fit: contain;
+      border: 3px solid var(--white);
+      transition: var(--transition);
+    }
+
+    .photo-preview:hover {
+      transform: scale(1.02);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Photos dans la liste des produits */
+    .produit-photo-container {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+
+    .produit-photo {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      cursor: pointer;
+      transition: var(--transition);
+      object-fit: contain;
+      border: 3px solid var(--white);
+    }
+
+    .produit-photo:hover {
+      transform: scale(1.05);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .photo-info {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--gray-600);
+      font-style: italic;
+    }
+
+    /* Photo actuelle dans le formulaire d'édition */
+    #currentPhotoContainer {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      border: 2px solid var(--gray-200);
+    }
+
+    #currentPhotoContainer img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ========================================
+       MODAL PHOTO EN GRAND
+    ======================================== */
+    .photo-modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.95);
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .photo-modal-content {
+      max-width: 95%;
+      max-height: 95%;
+      object-fit: contain;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      animation: zoomIn 0.3s ease;
+    }
+
+    @keyframes zoomIn {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .photo-modal-close {
+      position: absolute;
+      top: 30px;
+      right: 50px;
+      color: var(--white);
+      font-size: 50px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: var(--transition);
+      background: rgba(0, 0, 0, 0.5);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      backdrop-filter: blur(10px);
+    }
+
+    .photo-modal-close:hover {
+      background: rgba(220, 53, 69, 0.8);
+      transform: rotate(90deg);
+    }
+
+    /* ========================================
+       LISTE DES PRODUITS AMÉLIORÉE
+    ======================================== */
+    #ListeProduits details {
+      background: var(--white);
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+
+    #ListeProduits details:hover {
+      border-color: var(--primary-blue);
+      box-shadow: var(--shadow-md);
+      transform: translateX(4px);
+    }
+
+    #ListeProduits details[open] {
+      background: var(--gray-50);
+      border-color: var(--primary-blue);
+      box-shadow: var(--shadow-md);
+    }
+
+    #ListeProduits summary {
+      font-weight: 600;
+      color: var(--primary-blue);
+      cursor: pointer;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      user-select: none;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    #ListeProduits summary:hover {
+      background: var(--gray-100);
+      padding-left: 1rem;
+    }
+
+    #ListeProduits details > div {
+      padding: 1.5rem 1rem 1rem 1rem;
+      margin-top: 1rem;
+      border-top: 2px solid var(--gray-200);
+    }
+
+    #ListeProduits details > div > div {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    #ListeProduits details > div > div:last-child {
+      border-bottom: none;
+      padding-top: 1.5rem;
+    }
+
+    #ListeProduits strong {
+      color: var(--gray-600);
+      font-weight: 600;
+      min-width: 200px;
+      flex-shrink: 0;
+    }
+
+    #ListeProduits > p {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--gray-600);
+      background: var(--gray-50);
+      border-radius: var(--radius-lg);
+      border: 2px dashed var(--gray-300);
+      font-size: 1.1rem;
+    }
+
+    /* ========================================
+       BOUTONS SPÉCIFIQUES
+    ======================================== */
+    .btn-edit-produit {
+      background: var(--gray-600) !important;
+    }
+
+    .btn-edit-produit:hover {
+      background: var(--gray-800) !important;
+    }
+
+    .btn-remove-produit {
+      background: var(--danger) !important;
+    }
+
+    .btn-remove-produit:hover {
+      background: #C82333 !important;
+    }
+
+    /* ========================================
+       BADGES D'ÉTAT
+    ======================================== */
+    .etat-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .etat-ok {
+      background: #D4EDDA;
+      color: #155724;
+      border: 1px solid #C3E6CB;
+    }
+
+    .etat-nok {
+      background: #F8D7DA;
+      color: #721C24;
+      border: 1px solid #F5C6CB;
+    }
+
+    .etat-passable {
+      background: #FFF3CD;
+      color: #856404;
+      border: 1px solid #FFEAA7;
+    }
+
+    .etat-autre {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+
+    /* ========================================
+       ICÔNES ET ANIMATIONS
+    ======================================== */
+    .icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Effets de chargement */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem;
+      color: var(--gray-600);
+    }
+
+    .loading-spinner {
+      border: 4px solid var(--gray-200);
+      border-top: 4px solid var(--primary-blue);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-right: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ========================================
+       RESPONSIVE
+    ======================================== */
+    @media (max-width: 768px) {
+      #MaintenanceDetails {
+        padding: 1.5rem;
+      }
+
+      .photo-container {
+        padding: 1rem;
+      }
+
+      .photo-modal-close {
+        top: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        font-size: 40px;
+      }
+
+      #ListeProduits details {
+        padding: 1rem;
+      }
+
+      #ListeProduits strong {
+        min-width: 120px;
+      }
+
+      #ListeProduits details > div > div {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .produit-photo {
+        max-height: 200px;
+      }
+    }
+
+    /* ========================================
+       AMÉLIORATION DES FORMULAIRES
+    ======================================== */
+    .modal form h3 {
+      color: var(--primary-blue);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-blue);
+      font-size: 1.5rem;
+    }
+
+    .modal form p {
+      background: var(--gray-50);
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+      border-left: 4px solid var(--primary-blue);
+    }
+
+    .modal form p strong {
+      color: var(--gray-600);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .modal form p span {
+      color: var(--primary-blue);
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    /* Message de succès/erreur */
+    .alert {
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+      animation: slideDown 0.3s ease;
+    }
+
+    .alert-success {
+      background: #D4EDDA;
+      color: #155724;
+      border: 1px solid #C3E6CB;
+    }
+
+    .alert-error {
+      background: #F8D7DA;
+      color: #721C24;
+      border: 1px solid #F5C6CB;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 <body>
-  <button id="backBtn">Retour</button>
+  <button id="backBtn">← Retour</button>
   
   <main>
     <section class="active">
-      <h1>Détails de la maintenance</h1>
+      <h1>📋 Détails de la maintenance</h1>
       <div id="MaintenanceDetails"></div>
 
-      <h2 style="margin-top: 2rem;">Produits associés</h2>
-      <button class="primary" onclick="showAddProduitForm()" style="margin: 1rem 0;">+ Associer un produit</button>
+      <h2 style="margin-top: 2rem;">🔧 Produits associés</h2>
+      <button class="primary" onclick="showAddProduitForm()" style="margin: 1rem 0;">
+        ➕ Associer un produit
+      </button>
       <div id="ListeProduits"></div>
     </section>
   </main>
@@ -23,19 +494,31 @@
   <div id="addProduitForm" class="modal">
     <form id="produitAssocForm" onsubmit="addProduitToMaintenance(event)">
       <h3>Associer un produit à cette maintenance</h3>
+      
       <select id="produitSelect" required>
         <option value="">-- Sélectionner un produit --</option>
       </select>
+      
       <select id="produitEtat">
         <option value="">-- État --</option>
-        <option value="OK">OK</option>
-        <option value="NOK">NOK</option>
-        <option value="Passable">Passable</option>
-        <option value="Non vérifié">Non vérifié</option>
+        <option value="OK">✅ OK</option>
+        <option value="NOK">❌ NOK</option>
+        <option value="Passable">⚠️ Passable</option>
+        <option value="Non vérifié">❓ Non vérifié</option>
       </select>
+      
       <textarea id="produitCommentaire" placeholder="Commentaire sur l'état du produit"></textarea>
-      <button class="primary" type="submit">Associer</button>
-      <button type="button" onclick="hideAddProduitForm()">Annuler</button>
+      
+      <div class="photo-container">
+        <label class="photo-label" for="photoInput">
+          Ajouter une photo (optionnel)
+        </label>
+        <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(event, 'photoPreview')" />
+        <img id="photoPreview" class="photo-preview" style="display:none;" alt="Aperçu" />
+      </div>
+      
+      <button class="primary" type="submit">✓ Associer</button>
+      <button type="button" onclick="hideAddProduitForm()">✕ Annuler</button>
     </form>
   </div>
 
@@ -43,19 +526,42 @@
   <div id="editProduitForm" class="modal">
     <form id="produitEditForm" onsubmit="updateProduitMaintenance(event)">
       <h3>Modifier l'état du produit</h3>
+      
       <input type="hidden" id="editProduitId" />
-      <p><strong>Produit :</strong> <span id="editProduitNom"></span></p>
+      
+      <p>
+        <strong>Produit :</strong>
+        <span id="editProduitNom"></span>
+      </p>
+      
       <select id="editProduitEtat" required>
         <option value="">-- État --</option>
-        <option value="OK">OK</option>
-        <option value="NOK">NOK</option>
-        <option value="Passable">Passable</option>
-        <option value="Non vérifié">Non vérifié</option>
+        <option value="OK">✅ OK</option>
+        <option value="NOK">❌ NOK</option>
+        <option value="Passable">⚠️ Passable</option>
+        <option value="Non vérifié">❓ Non vérifié</option>
       </select>
+      
       <textarea id="editProduitCommentaire" placeholder="Commentaire sur l'état du produit"></textarea>
-      <button class="primary" type="submit">Mettre à jour</button>
-      <button type="button" onclick="hideEditProduitForm()">Annuler</button>
+      
+      <div class="photo-container">
+        <label class="photo-label" for="editPhotoInput">
+          Modifier la photo (optionnel)
+        </label>
+        <input type="file" id="editPhotoInput" accept="image/*" onchange="previewPhoto(event, 'editPhotoPreview')" />
+        <img id="editPhotoPreview" class="photo-preview" style="display:none;" alt="Aperçu" />
+        <div id="currentPhotoContainer"></div>
+      </div>
+      
+      <button class="primary" type="submit">✓ Mettre à jour</button>
+      <button type="button" onclick="hideEditProduitForm()">✕ Annuler</button>
     </form>
+  </div>
+
+  <!-- Modal pour afficher la photo en grand -->
+  <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
+    <span class="photo-modal-close">&times;</span>
+    <img class="photo-modal-content" id="modalPhoto" alt="Photo agrandie">
   </div>
 
   <script src="MaintenanceDetails.js" defer></script>

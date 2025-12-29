@@ -141,6 +141,7 @@ async function loadMaintenances() {
     document.getElementById("statsPlanifiees").textContent = statsPlanifiees;
     document.getElementById("statsEnCours").textContent = statsEnCours;
     document.getElementById("statsTerminees").textContent = statsTerminees;
+    document.getElementById("statsMaintenances").textContent = allMaintenances.length;
 
     if (allMaintenances.length === 0) {
       MaintDiv.textContent = "Aucune maintenance trouvée pour ce site.";
@@ -344,8 +345,10 @@ async function loadEquipements() {
     // Stats par état
     const statsOK = allEquipements.filter(p => p.etat === "OK").length;
     const statsNOK = allEquipements.filter(p => p.etat === "NOK").length;
+    const statsPassable = allEquipements.filter(p => p.etat === "Passable").length;
     document.getElementById("statsOK").textContent = statsOK;
     document.getElementById("statsNOK").textContent = statsNOK;
+    document.getElementById("statsPassable").textContent = statsPassable;
 
     if (allEquipements.length === 0) {
       ProdDiv.textContent = "Aucun équipement trouvé pour ce site.";
@@ -380,6 +383,7 @@ async function loadEquipements() {
           <button onclick="deleteEquipement(${p.id_produit})" style="background: #DC3545;">Supprimer</button>
           <button onclick="editEquipement(${p.id_produit})" style="background: #6C757D;">Modifier</button>
           <button onclick="printQR(${p.id_produit})" style="background: #FF6600;">QR</button>
+          <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
         </div>
       `;
 

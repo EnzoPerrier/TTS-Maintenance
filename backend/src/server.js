@@ -1,11 +1,18 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
+// Servir les fichiers statiques (images uploadées)
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 
 // Route test
 app.get("/", (req, res) => {
@@ -30,6 +37,10 @@ app.use("/sites", sitesRoutes);
 const maintenancesRoutes = require("./routes/maintenances.routes.js");
 app.use("/maintenances", maintenancesRoutes);
 
+// Maintenance-Produits
+const maintenanceProduitsRoutes = require("./routes/maintenanceProduits.routes.js");
+app.use("/maintenance-produits", maintenanceProduitsRoutes);
+
 // Auth
 const AuthRoutes = require("./routes/auth.routes.js");
 app.use("/auth", AuthRoutes);
@@ -42,4 +53,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Serveur API lancé sur le port " + PORT);
 });
-
