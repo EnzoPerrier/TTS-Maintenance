@@ -1040,4 +1040,89 @@ a:hover {
   .stat-icon-modern {
     width: 40px;
     height: 40px;
-    font-size:
+    font-size: 2.5rem;
+  }
+}
+
+/* ========================================
+   MAP SUR LA PAGE D ACCUEIL
+======================================== */
+
+/* Conteneur de la carte principale */
+#allSitesMapContainer {
+  width: 100%;
+  height: 600px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: 2px solid #DEE2E6;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+#allSitesMapContainer:hover {
+  border-color: #0066CC;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+#allSitesMap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* S'assurer que Leaflet fonctionne correctement */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+/* Style pour les marqueurs personnalisés */
+.custom-marker {
+  transition: all 0.3s ease;
+}
+
+.custom-marker:hover {
+  transform: scale(1.15);
+  z-index: 1000 !important;
+}
+
+/* Style pour les popups Leaflet */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 1rem;
+  font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.leaflet-popup-tip {
+  background: white;
+}
+
+/* Bouton dans la popup */
+.leaflet-popup-content button {
+  margin-top: 0.75rem;
+  background: #0066CC;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.leaflet-popup-content button:hover {
+  background: #004A99;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
