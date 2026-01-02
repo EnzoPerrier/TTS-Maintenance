@@ -22,7 +22,7 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|svg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
@@ -78,6 +78,27 @@ exports.getPhotosByMaintenance = async (req, res) => {
   }
 };
 
+// ========== NOUVEAU: GET /photos/maintenance/:id_maintenance/:id_produit ==========
+// Récupérer les photos d'un produit spécifique dans une maintenance
+exports.getPhotosByMaintenanceProduit = async (req, res) => {
+  const { id_maintenance, id_produit } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      `SELECT pp.*
+       FROM produit_photos pp
+       WHERE pp.id_maintenance = ? AND pp.id_produit = ?
+       ORDER BY pp.date_creation DESC`,
+      [id_maintenance, id_produit]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
 // GET /photos/:id - Récupérer une photo spécifique
 exports.getPhotoById = async (req, res) => {
   const { id } = req.params;
@@ -114,6 +135,23 @@ exports.addPhoto = async (req, res) => {
   }
 
   try {
+    // ========== NOUVEAU: Vérifier la limite de 5 photos si maintenance ==========
+    if (id_maintenance) {
+      const [existingPhotos] = await db.query(
+        `SELECT COUNT(*) as count FROM produit_photos 
+         WHERE id_maintenance = ? AND id_produit = ?`,
+        [id_maintenance, id_produit]
+      );
+
+      if (existingPhotos[0].count >= 5) {
+        // Supprimer le fichier uploadé si limite atteinte
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ 
+          error: "Limite de 5 photos atteinte pour ce produit dans cette maintenance" 
+        });
+      }
+    }
+
     const chemin_photo = `/uploads/produits/${req.file.filename}`;
 
     const [result] = await db.query(
