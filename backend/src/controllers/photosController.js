@@ -22,7 +22,7 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp|svg/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
@@ -35,6 +35,7 @@ const upload = multer({
 
 // Middleware d'upload
 exports.uploadMiddleware = upload.single("photo");
+exports.uploadMultipleMiddleware = upload.array("photos", 5); 
 
 // GET /photos/produit/:id_produit - Récupérer toutes les photos d'un produit
 exports.getPhotosByProduit = async (req, res) => {
@@ -78,10 +79,12 @@ exports.getPhotosByMaintenance = async (req, res) => {
   }
 };
 
-// ========== NOUVEAU: GET /photos/maintenance/:id_maintenance/:id_produit ==========
 // Récupérer les photos d'un produit spécifique dans une maintenance
 exports.getPhotosByMaintenanceProduit = async (req, res) => {
   const { id_maintenance, id_produit } = req.params;
+  
+  /*console.log("Route appelée: /photos/maintenance/:id_maintenance/:id_produit");
+  console.log("Params reçus:", { id_maintenance, id_produit });*/ DEBUG
 
   try {
     const [rows] = await db.query(
@@ -91,7 +94,8 @@ exports.getPhotosByMaintenanceProduit = async (req, res) => {
        ORDER BY pp.date_creation DESC`,
       [id_maintenance, id_produit]
     );
-
+    
+    console.log("📸 Photos trouvées:", rows.length);
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -170,6 +174,78 @@ exports.addPhoto = async (req, res) => {
   } catch (err) {
     // Supprimer le fichier en cas d'erreur
     fs.unlinkSync(req.file.path);
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// POST /photos/multiple - Ajouter plusieurs photos à la fois
+exports.addMultiplePhotos = async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: "Aucun fichier uploadé" });
+  }
+
+  const { id_produit, id_maintenance, commentaire } = req.body;
+
+  if (!id_produit) {
+    // Supprimer tous les fichiers uploadés
+    req.files.forEach(file => fs.unlinkSync(file.path));
+    return res.status(400).json({ error: "ID produit requis" });
+  }
+
+  try {
+    // Vérifier la limite de 5 photos si maintenance
+    if (id_maintenance) {
+      const [existingPhotos] = await db.query(
+        `SELECT COUNT(*) as count FROM produit_photos 
+         WHERE id_maintenance = ? AND id_produit = ?`,
+        [id_maintenance, id_produit]
+      );
+
+      const currentCount = existingPhotos[0].count;
+      const newCount = currentCount + req.files.length;
+
+      if (newCount > 5) {
+        // Supprimer tous les fichiers uploadés
+        req.files.forEach(file => fs.unlinkSync(file.path));
+        return res.status(400).json({ 
+          error: `Limite de 5 photos dépassée. Vous avez ${currentCount} photo(s), vous tentez d'en ajouter ${req.files.length}. Maximum autorisé: ${5 - currentCount} photo(s) supplémentaire(s).`
+        });
+      }
+    }
+
+    const photosAdded = [];
+
+    // Insérer toutes les photos
+    for (const file of req.files) {
+      const chemin_photo = `/uploads/produits/${file.filename}`;
+
+      const [result] = await db.query(
+        `INSERT INTO produit_photos (id_produit, id_maintenance, chemin_photo, commentaire)
+         VALUES (?, ?, ?, ?)`,
+        [id_produit, id_maintenance || null, chemin_photo, commentaire || null]
+      );
+
+      photosAdded.push({
+        id_photo: result.insertId,
+        chemin_photo
+      });
+    }
+
+    res.status(201).json({
+      message: `${photosAdded.length} photo(s) ajoutée(s) avec succès`,
+      photos: photosAdded,
+      id_produit,
+      id_maintenance: id_maintenance || null
+    });
+
+  } catch (err) {
+    // Supprimer tous les fichiers en cas d'erreur
+    req.files.forEach(file => {
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+    });
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
