@@ -92,7 +92,7 @@ async function loadProduitsAssocies() {
         <div id="photos-grid-${p.id_produit}" class="photos-grid">
           ${photos.map(photo => `
             <div class="photo-item">
-              <img src="${API}${photo.chemin_photo}" alt="Photo" />
+              <img src="${API}${photo.chemin_photo}" alt="Photo" onclick="openPhotoModal('${API}${photo.chemin_photo}')" style="cursor: pointer;" />
               <div class="photo-actions">
                 <button onclick="deletePhoto(${photo.id_photo}, ${p.id_produit})" class="btn-remove-produit" title="Supprimer">🗑️</button>
               </div>
@@ -135,9 +135,11 @@ function showAddPhotoForm(id_produit) {
   
   formModal.innerHTML = `
     <form id="photoForm" onsubmit="addPhoto(event)" style="max-width: 600px;">
-      <h3>📷 Ajouter une photo</h3>
-      <input type="file" id="photoFile" accept="image/*" required />
-      <textarea id="photoDescription" placeholder="Commentaire sur la photo (optionnel)"></textarea>
+      <h3>📷 Ajouter des photos</h3>
+      <p style="color: #6C757D; margin-bottom: 1rem;">Vous pouvez sélectionner jusqu'à 5 photos</p>
+      <input type="file" id="photoFile" accept="image/*" multiple required />
+      <div id="fileCount" style="margin-bottom: 1rem; color: #0066CC; font-weight: 500;"></div>
+      <textarea id="photoDescription" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
       <div id="photoPreview" style="max-width: 100%; margin: 1rem 0;"></div>
       <button class="primary" type="submit">Ajouter</button>
       <button type="button" onclick="hideAddPhotoForm()">Annuler</button>
@@ -146,18 +148,36 @@ function showAddPhotoForm(id_produit) {
   
   document.body.appendChild(formModal);
 
-  // Prévisualisation de l'image
+  // Prévisualisation des images multiples
   document.getElementById("photoFile").addEventListener("change", function(e) {
-    const file = e.target.files[0];
-    if (file) {
+    const files = e.target.files;
+    const fileCount = document.getElementById("fileCount");
+    const preview = document.getElementById("photoPreview");
+    
+    if (files.length > 5) {
+      alert("Maximum 5 photos autorisées");
+      e.target.value = "";
+      fileCount.textContent = "";
+      preview.innerHTML = "";
+      return;
+    }
+    
+    fileCount.textContent = `${files.length} photo(s) sélectionnée(s)`;
+    preview.innerHTML = "";
+    
+    Array.from(files).forEach((file, index) => {
       const reader = new FileReader();
       reader.onload = function(event) {
-        document.getElementById("photoPreview").innerHTML = `
-          <img src="${event.target.result}" style="max-width: 100%; border-radius: 8px;" />
-        `;
+        const img = document.createElement("img");
+        img.src = event.target.result;
+        img.style.maxWidth = "150px";
+        img.style.margin = "0.5rem";
+        img.style.borderRadius = "8px";
+        img.style.border = "2px solid #DEE2E6";
+        preview.appendChild(img);
       };
       reader.readAsDataURL(file);
-    }
+    });
   });
 }
 
@@ -172,16 +192,26 @@ async function addPhoto(event) {
 
   const fileInput = document.getElementById("photoFile");
   const commentaire = document.getElementById("photoDescription").value;
-  const file = fileInput.files[0];
+  const files = fileInput.files;
 
-  if (!file) {
-    alert("Veuillez sélectionner une photo");
+  if (files.length === 0) {
+    alert("Veuillez sélectionner au moins une photo");
+    return;
+  }
+
+  if (files.length > 5) {
+    alert("Maximum 5 photos autorisées");
     return;
   }
 
   // Créer FormData pour l'upload
   const formData = new FormData();
-  formData.append("photo", file);
+  
+  // Ajouter tous les fichiers
+  Array.from(files).forEach(file => {
+    formData.append("photos", file);
+  });
+  
   formData.append("id_maintenance", id_maintenance);
   formData.append("id_produit", currentProduitPhotos);
   if (commentaire) {
@@ -189,17 +219,20 @@ async function addPhoto(event) {
   }
 
   try {
-    const res = await fetch(`${API}/photos`, {
+    const res = await fetch(`${API}/photos/multiple`, {
       method: "POST",
       body: formData
     });
 
     if (!res.ok) {
       const error = await res.json();
-      alert(error.error || "Erreur lors de l'ajout de la photo");
+      alert(error.error || "Erreur lors de l'ajout des photos");
       return;
     }
 
+    const result = await res.json();
+    alert(result.message);
+    
     hideAddPhotoForm();
     loadProduitsAssocies();
   } catch (err) {
@@ -226,6 +259,36 @@ async function deletePhoto(id_photo, id_produit) {
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
+  }
+}
+
+// ========== MODAL PHOTO EN GRAND ==========
+function openPhotoModal(photoUrl) {
+  const modal = document.getElementById("photoModal");
+  const modalImg = document.getElementById("modalPhoto");
+  modal.style.display = "flex";
+  modalImg.src = photoUrl;
+}
+
+function closePhotoModal() {
+  const modal = document.getElementById("photoModal");
+  modal.style.display = "none";
+}
+
+// Fonction de prévisualisation pour les formulaires
+function previewPhoto(event, previewId) {
+  const file = event.target.files[0];
+  const preview = document.getElementById(previewId);
+  
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = "none";
   }
 }
 

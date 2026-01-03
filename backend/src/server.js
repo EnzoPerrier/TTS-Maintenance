@@ -41,6 +41,10 @@ app.use("/maintenances", maintenancesRoutes);
 const maintenanceProduitsRoutes = require("./routes/maintenanceProduits.routes.js");
 app.use("/maintenance-produits", maintenanceProduitsRoutes);
 
+// photos
+const photosRoutes = require("./routes/photos.routes.js");
+app.use("/photos", photosRoutes);
+
 // Auth
 const AuthRoutes = require("./routes/auth.routes.js");
 app.use("/auth", AuthRoutes);

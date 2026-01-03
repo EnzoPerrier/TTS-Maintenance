@@ -13,22 +13,47 @@
       border-radius: var(--radius-lg);
     }
 
-    .photo-main {
-      width: 100%;
-      max-width: 800px;
-      height: 500px;
-      object-fit: contain;
+    .latest-photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .latest-photo-item {
+      position: relative;
       border-radius: var(--radius-md);
+      overflow: hidden;
       background: var(--white);
       box-shadow: var(--shadow-md);
-      margin: 0 auto;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .latest-photo-item:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .latest-photo-item img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
       display: block;
+    }
+
+    .latest-photo-comment {
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      background: var(--white);
+      border-top: 1px solid var(--gray-200);
     }
 
     .photo-placeholder {
       width: 100%;
       max-width: 800px;
-      height: 500px;
+      height: 300px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -41,11 +66,11 @@
     }
 
     .photo-info {
-      margin-top: 1rem;
+      margin-bottom: 1rem;
       padding: 1rem;
       background: var(--white);
       border-radius: var(--radius-md);
-      text-align: center;
+      border-left: 4px solid var(--primary-blue);
     }
 
     .photo-gallery {
@@ -131,6 +156,29 @@
     .file-input-label.has-file {
       border-color: var(--success);
       background: var(--white);
+      padding: 2rem;
+    }
+
+    #fileCount {
+      margin: 1rem 0;
+      padding: 0.75rem;
+      background: #E3F2FD;
+      border-radius: var(--radius-md);
+      text-align: center;
+      font-weight: 600;
+      color: var(--primary-blue);
+    }
+
+    #photoPreviewUpload {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      min-height: 50px;
     }
 
     .modal-photo {
@@ -202,9 +250,9 @@
       <h1>Détails du produit</h1>
       <div id="produitDetails"></div>
 
-      <!-- Photo principale -->
+      <!-- Photos récentes -->
       <div class="photo-main-container">
-        <h3>📸 Photo actuelle</h3>
+        <h3>📸 Photos récentes</h3>
         <div id="photoMainContainer">
           <div class="photo-placeholder">
             <span>📷 Aucune photo disponible</span>
@@ -214,28 +262,31 @@
 
       <!-- Formulaire d'upload -->
       <details open>
-        <summary>📤 Ajouter une photo</summary>
+        <summary>📤 Ajouter des photos</summary>
         <div class="upload-form">
           <form id="uploadForm" onsubmit="uploadPhoto(event)">
             <div class="file-input-wrapper">
-              <input type="file" id="photoInput" name="photo" accept="image/*" required />
+              <input type="file" id="photoInput" name="photos" accept="image/*" multiple required />
               <label for="photoInput" class="file-input-label" id="fileLabel">
                 <div>
-                  <strong>📁 Cliquez pour sélectionner une photo</strong>
+                  <strong>📁 Cliquez pour sélectionner des photos</strong>
                   <p style="margin-top: 0.5rem; color: var(--gray-600);">
-                    Formats acceptés: JPG, PNG, GIF, WEBP (Max 10MB)
+                    Formats acceptés: JPG, PNG, GIF, WEBP (Max 10MB par photo, 5 photos max)
                   </p>
                 </div>
               </label>
             </div>
             
+            <div id="fileCount"></div>
+            <div id="photoPreviewUpload"></div>
+            
             <select id="maintenanceSelect" style="margin-top: 1rem;">
               <option value="">-- Associer à une maintenance (optionnel) --</option>
             </select>
             
-            <textarea id="photoCommentaire" placeholder="Commentaire sur la photo (optionnel)" style="margin-top: 1rem;"></textarea>
+            <textarea id="photoCommentaire" placeholder="Commentaire pour toutes les photos (optionnel)" style="margin-top: 1rem;"></textarea>
             
-            <button class="primary" type="submit" style="margin-top: 1rem;">Envoyer la photo</button>
+            <button class="primary" type="submit" style="margin-top: 1rem;">📤 Envoyer les photos</button>
           </form>
         </div>
       </details>
@@ -248,7 +299,7 @@
 
       <!-- Galerie de photos -->
       <details open>
-        <summary>🖼️ Historique des photos</summary>
+        <summary>🖼️ Historique complet des photos</summary>
         <div id="photoGallery" class="photo-gallery"></div>
       </details>
     </section>

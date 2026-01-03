@@ -53,7 +53,9 @@ function formatDate(dateStr) {
   return date.toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
-    year: "numeric"
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
   });
 }
 
@@ -64,7 +66,7 @@ async function loadPhotos() {
     
     if (res.status === 404) {
       allPhotos = [];
-      renderMainPhoto(null);
+      renderLatestPhotos([]);
       renderPhotoGallery([]);
       return;
     }
@@ -73,11 +75,13 @@ async function loadPhotos() {
 
     allPhotos = await res.json();
     
-    // Photo la plus récente
+    // Récupérer toutes les photos de la date la plus récente
     if (allPhotos.length > 0) {
-      renderMainPhoto(allPhotos[0]);
+      const latestDate = allPhotos[0].date_creation;
+      const latestPhotos = allPhotos.filter(photo => photo.date_creation === latestDate);
+      renderLatestPhotos(latestPhotos);
     } else {
-      renderMainPhoto(null);
+      renderLatestPhotos([]);
     }
     
     renderPhotoGallery(allPhotos);
@@ -86,10 +90,10 @@ async function loadPhotos() {
   }
 }
 
-function renderMainPhoto(photo) {
+function renderLatestPhotos(photos) {
   const container = document.getElementById("photoMainContainer");
   
-  if (!photo) {
+  if (!photos || photos.length === 0) {
     container.innerHTML = `
       <div class="photo-placeholder">
         <span>📷 Aucune photo disponible</span>
@@ -98,12 +102,27 @@ function renderMainPhoto(photo) {
     return;
   }
 
+  // Afficher le nombre de photos et la date
+  const dateStr = formatDate(photos[0].date_creation);
+  const maintenanceInfo = photos[0].maintenance_type 
+    ? `<div><strong>Maintenance :</strong> ${photos[0].maintenance_type} (${formatDate(photos[0].date_maintenance)})</div>` 
+    : '<div style="color: var(--gray-500);">Photo indépendante (hors maintenance)</div>';
+
   container.innerHTML = `
-    <img src="${API}${photo.chemin_photo}" alt="Photo principale" class="photo-main" onclick="openPhotoModal('${API}${photo.chemin_photo}')" />
-    <div class="photo-info">
-      <div><strong>Date :</strong> ${formatDate(photo.date_creation)}</div>
-      ${photo.maintenance_type ? `<div><strong>Maintenance :</strong> ${photo.maintenance_type} (${formatDate(photo.date_maintenance)})</div>` : ''}
-      ${photo.commentaire ? `<div><strong>Commentaire :</strong> ${photo.commentaire}</div>` : ''}
+    <div class="photo-info" style="margin-bottom: 1rem;">
+      <div style="font-size: 1.1rem; font-weight: 600; color: var(--primary-blue);">
+        📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} récente${photos.length > 1 ? 's' : ''}
+      </div>
+      <div><strong>Date :</strong> ${dateStr}</div>
+      ${maintenanceInfo}
+    </div>
+    <div class="latest-photos-grid">
+      ${photos.map(photo => `
+        <div class="latest-photo-item">
+          <img src="${API}${photo.chemin_photo}" alt="Photo" onclick="openPhotoModal('${API}${photo.chemin_photo}')" />
+          ${photo.commentaire ? `<div class="latest-photo-comment">${photo.commentaire}</div>` : ''}
+        </div>
+      `).join('')}
     </div>
   `;
 }
@@ -136,21 +155,32 @@ function renderPhotoGallery(photos) {
   });
 }
 
-// ========== UPLOAD PHOTO ==========
+// ========== UPLOAD PHOTOS MULTIPLES ==========
 async function uploadPhoto(event) {
   event.preventDefault();
 
   const fileInput = document.getElementById("photoInput");
   const maintenanceSelect = document.getElementById("maintenanceSelect");
   const commentaire = document.getElementById("photoCommentaire").value;
+  const files = fileInput.files;
 
-  if (!fileInput.files[0]) {
-    alert("Veuillez sélectionner une photo");
+  if (files.length === 0) {
+    alert("Veuillez sélectionner au moins une photo");
+    return;
+  }
+
+  if (files.length > 5) {
+    alert("Maximum 5 photos à la fois");
     return;
   }
 
   const formData = new FormData();
-  formData.append("photo", fileInput.files[0]);
+  
+  // Ajouter tous les fichiers
+  Array.from(files).forEach(file => {
+    formData.append("photos", file);
+  });
+  
   formData.append("id_produit", id_produit);
   
   if (maintenanceSelect.value) {
@@ -162,7 +192,7 @@ async function uploadPhoto(event) {
   }
 
   try {
-    const res = await fetch(`${API}/photos`, {
+    const res = await fetch(`${API}/photos/multiple`, {
       method: "POST",
       body: formData
     });
@@ -173,16 +203,19 @@ async function uploadPhoto(event) {
       return;
     }
 
-    alert("Photo ajoutée avec succès!");
+    const result = await res.json();
+    alert(result.message);
     
     // Réinitialiser le formulaire
     document.getElementById("uploadForm").reset();
     document.getElementById("fileLabel").classList.remove("has-file");
+    document.getElementById("fileCount").textContent = "";
+    document.getElementById("photoPreviewUpload").innerHTML = "";
     document.getElementById("fileLabel").innerHTML = `
       <div>
-        <strong>📁 Cliquez pour sélectionner une photo</strong>
+        <strong>📁 Cliquez pour sélectionner des photos</strong>
         <p style="margin-top: 0.5rem; color: var(--gray-600);">
-          Formats acceptés: JPG, PNG, GIF, WEBP (Max 10MB)
+          Formats acceptés: JPG, PNG, GIF, WEBP (Max 10MB par photo, 5 photos max)
         </p>
       </div>
     `;
@@ -195,21 +228,56 @@ async function uploadPhoto(event) {
   }
 }
 
-// Gestion du changement de fichier
+// Gestion du changement de fichiers multiples
 document.getElementById("photoInput").addEventListener("change", (e) => {
-  const file = e.target.files[0];
+  const files = e.target.files;
   const label = document.getElementById("fileLabel");
+  const fileCount = document.getElementById("fileCount");
+  const preview = document.getElementById("photoPreviewUpload");
   
-  if (file) {
+  if (files.length > 0) {
+    if (files.length > 5) {
+      alert("Maximum 5 photos autorisées");
+      e.target.value = "";
+      label.classList.remove("has-file");
+      fileCount.textContent = "";
+      preview.innerHTML = "";
+      return;
+    }
+    
     label.classList.add("has-file");
-    label.innerHTML = `
-      <div>
-        <strong style="color: var(--success);">✅ Fichier sélectionné</strong>
-        <p style="margin-top: 0.5rem; color: var(--gray-600);">
-          ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
-        </p>
-      </div>
-    `;
+    
+    let totalSize = 0;
+    Array.from(files).forEach(file => {
+      totalSize += file.size;
+    });
+    
+    fileCount.textContent = `✅ ${files.length} photo${files.length > 1 ? 's' : ''} sélectionnée${files.length > 1 ? 's' : ''} (${(totalSize / 1024 / 1024).toFixed(2)} MB)`;
+    fileCount.style.color = "var(--success)";
+    fileCount.style.fontWeight = "600";
+    
+    // Prévisualisation des images
+    preview.innerHTML = "";
+    Array.from(files).forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = document.createElement("img");
+        img.src = event.target.result;
+        img.style.maxWidth = "120px";
+        img.style.height = "120px";
+        img.style.objectFit = "cover";
+        img.style.margin = "0.5rem";
+        img.style.borderRadius = "8px";
+        img.style.border = "2px solid #28A745";
+        img.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+        preview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  } else {
+    label.classList.remove("has-file");
+    fileCount.textContent = "";
+    preview.innerHTML = "";
   }
 });
 
