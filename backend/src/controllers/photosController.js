@@ -84,7 +84,7 @@ exports.getPhotosByMaintenanceProduit = async (req, res) => {
   const { id_maintenance, id_produit } = req.params;
   
   /*console.log("Route appelée: /photos/maintenance/:id_maintenance/:id_produit");
-  console.log("Params reçus:", { id_maintenance, id_produit });*/ DEBUG
+  console.log("Params reçus:", { id_maintenance, id_produit });*/ //DEBUG
 
   try {
     const [rows] = await db.query(
@@ -95,7 +95,7 @@ exports.getPhotosByMaintenanceProduit = async (req, res) => {
       [id_maintenance, id_produit]
     );
     
-    console.log("📸 Photos trouvées:", rows.length);
+    console.log("Photos trouvées:", rows.length);
     res.json(rows);
   } catch (err) {
     console.error(err);
