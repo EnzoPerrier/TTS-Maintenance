@@ -21,8 +21,8 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: { 
-    fileSize: 5 * 1024 * 1024, // 5MB max
-    fields: 10 // Nombre maximum de champs non-fichiers
+    fileSize: 5 * 1024 * 1024,
+    fields: 10
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -37,7 +37,6 @@ const upload = multer({
   }
 });
 
-// Middleware Multer pour l'upload - accepte un fichier + champs texte
 exports.uploadMiddleware = upload.single("photo");
 
 // GET /maintenance-produits/:id_maintenance - Récupérer tous les produits d'une maintenance
@@ -82,9 +81,8 @@ exports.getMaintenancesByProduit = async (req, res) => {
   }
 };
 
-// POST /maintenance-produits - Associer un produit à une maintenance (avec photo optionnelle)
+// POST /maintenance-produits - Associer un produit à une maintenance
 exports.addProduitToMaintenance = async (req, res) => {
-  // Avec multer, les champs texte sont dans req.body
   const id_maintenance = req.body.id_maintenance;
   const id_produit = req.body.id_produit;
   const etat = req.body.etat;
@@ -93,7 +91,6 @@ exports.addProduitToMaintenance = async (req, res) => {
 
   console.log("Données reçues:", { id_maintenance, id_produit, etat, commentaire, photo });
 
-  // Validation
   if (!id_maintenance || !id_produit) {
     if (photo) {
       const photoPath = `uploads/maintenance_produits/${photo}`;
@@ -113,7 +110,6 @@ exports.addProduitToMaintenance = async (req, res) => {
     );
 
     if (existing.length > 0) {
-      // Supprimer le fichier uploadé si l'association existe déjà
       if (photo) {
         const photoPath = `uploads/maintenance_produits/${photo}`;
         if (fs.existsSync(photoPath)) {
@@ -123,11 +119,21 @@ exports.addProduitToMaintenance = async (req, res) => {
       return res.status(400).json({ error: "Ce produit est déjà associé à cette maintenance" });
     }
 
+    // Insérer l'association maintenance-produit
     await db.query(
       `INSERT INTO maintenance_produits (id_maintenance, id_produit, etat, commentaire, photo)
        VALUES (?, ?, ?, ?, ?)`,
       [id_maintenance, id_produit, etat || 'N/A', commentaire || null, photo]
     );
+
+    // ⭐ NOUVEAU: Mettre à jour l'état du produit si un état est fourni
+    if (etat && etat !== 'N/A') {
+      await db.query(
+        `UPDATE produits SET etat = ? WHERE id_produit = ?`,
+        [etat, id_produit]
+      );
+      console.log(`État du produit ${id_produit} mis à jour: ${etat}`);
+    }
 
     res.status(201).json({
       message: "Produit associé à la maintenance",
@@ -139,7 +145,6 @@ exports.addProduitToMaintenance = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    // Supprimer le fichier uploadé en cas d'erreur
     if (photo) {
       const photoPath = `uploads/maintenance_produits/${photo}`;
       if (fs.existsSync(photoPath)) {
@@ -154,7 +159,6 @@ exports.addProduitToMaintenance = async (req, res) => {
 exports.updateProduitMaintenance = async (req, res) => {
   const { id_maintenance, id_produit } = req.params;
   
-  // Avec multer, les champs texte sont dans req.body
   const etat = req.body.etat;
   const commentaire = req.body.commentaire;
   const newPhoto = req.file ? req.file.filename : null;
@@ -162,7 +166,7 @@ exports.updateProduitMaintenance = async (req, res) => {
   console.log("Données reçues pour update:", { id_maintenance, id_produit, etat, commentaire, newPhoto });
 
   try {
-    // Récupérer l'ancienne photo pour la supprimer si une nouvelle est uploadée
+    // Récupérer l'ancienne photo
     const [existing] = await db.query(
       `SELECT photo FROM maintenance_produits
        WHERE id_maintenance = ? AND id_produit = ?`,
@@ -193,7 +197,16 @@ exports.updateProduitMaintenance = async (req, res) => {
     query += ` WHERE id_maintenance = ? AND id_produit = ?`;
     params.push(id_maintenance, id_produit);
 
-    const [result] = await db.query(query, params);
+    await db.query(query, params);
+
+    // NOUVEAU: Mettre à jour l'état du produit dans la table produits
+    if (etat && etat !== 'N/A') {
+      await db.query(
+        `UPDATE produits SET etat = ? WHERE id_produit = ?`,
+        [etat, id_produit]
+      );
+      console.log(`État du produit ${id_produit} mis à jour: ${etat}`);
+    }
 
     // Supprimer l'ancienne photo si une nouvelle a été uploadée
     if (newPhoto && oldPhoto) {
@@ -237,7 +250,7 @@ exports.removeProduitFromMaintenance = async (req, res) => {
 
     const photo = existing[0].photo;
 
-    const [result] = await db.query(
+    await db.query(
       `DELETE FROM maintenance_produits
        WHERE id_maintenance = ? AND id_produit = ?`,
       [id_maintenance, id_produit]

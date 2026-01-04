@@ -4,6 +4,8 @@ const params = new URLSearchParams(window.location.search);
 const id_maintenance = params.get("id_maintenance");
 
 let allProduits = [];
+let produitsAssocies = [];
+let maintenance = [];
 let currentProduitPhotos = null;
 
 document.getElementById("backBtn").addEventListener("click", () => {
@@ -21,7 +23,7 @@ async function loadMaintenanceDetails() {
     const res = await fetch(`${API}/maintenances/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement de la maintenance");
 
-    const maintenance = await res.json();
+    maintenance = await res.json();
 
     const MaintenanceDiv = document.getElementById("MaintenanceDetails");
     MaintenanceDiv.innerHTML = `
@@ -32,6 +34,10 @@ async function loadMaintenanceDetails() {
       <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
       <div class="site-detail"><strong>RI interne :</strong> ${maintenance.ri_interne || "N/A"}</div>
     `;
+
+    await loadProduits();
+    await loadProduitsAssocies();
+
   } catch (err) {
     document.getElementById("MaintenanceDetails").textContent = err.message;
   }
@@ -40,7 +46,7 @@ async function loadMaintenanceDetails() {
 // ========== PRODUITS ASSOCIÉS ==========
 async function loadProduits() {
   try {
-    const res = await fetch(`${API}/produits`);
+    const res = await fetch(`${API}/produits/ProduitsBySiteID/${maintenance.id_site}`); // A VOIR
     if (!res.ok) throw new Error("Erreur lors du chargement des produits");
     allProduits = await res.json();
   } catch (err) {
@@ -53,16 +59,16 @@ async function loadProduitsAssocies() {
     const res = await fetch(`${API}/maintenance-produits/maintenance/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement des produits");
 
-    const produits = await res.json();
+    produitsAssocies = await res.json();
     const ListeProduits = document.getElementById("ListeProduits");
     ListeProduits.innerHTML = "";
 
-    if (produits.length === 0) {
+    if (produitsAssocies.length === 0) {
       ListeProduits.innerHTML = "<p>Aucun produit associé à cette maintenance.</p>";
       return;
     }
 
-    for (const p of produits) {
+    for (const p of produitsAssocies) {
       // Charger les photos pour chaque produit
       const photosRes = await fetch(`${API}/photos/maintenance/${id_maintenance}/${p.id_produit}`);
       const photos = photosRes.ok ? await photosRes.json() : [];
@@ -140,7 +146,7 @@ function showAddPhotoForm(id_produit) {
       <input type="file" id="photoFile" accept="image/*" multiple required />
       <div id="fileCount" style="margin-bottom: 1rem; color: #0066CC; font-weight: 500;"></div>
       <textarea id="photoDescription" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
-      <div id="photoPreview" style="max-width: 100%; margin: 1rem 0;"></div>
+      <div id="photoPreviewModal" style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-width: 100%; margin: 1rem 0;"></div>
       <button class="primary" type="submit">Ajouter</button>
       <button type="button" onclick="hideAddPhotoForm()">Annuler</button>
     </form>
@@ -152,7 +158,7 @@ function showAddPhotoForm(id_produit) {
   document.getElementById("photoFile").addEventListener("change", function(e) {
     const files = e.target.files;
     const fileCount = document.getElementById("fileCount");
-    const preview = document.getElementById("photoPreview");
+    const preview = document.getElementById("photoPreviewModal");
     
     if (files.length > 5) {
       alert("Maximum 5 photos autorisées");
@@ -162,8 +168,12 @@ function showAddPhotoForm(id_produit) {
       return;
     }
     
-    fileCount.textContent = `${files.length} photo(s) sélectionnée(s)`;
+    fileCount.textContent = files.length > 0 ? `${files.length} photo(s) sélectionnée(s)` : "";
     preview.innerHTML = "";
+    
+    if (files.length === 0) {
+      return;
+    }
     
     Array.from(files).forEach((file, index) => {
       const reader = new FileReader();
@@ -171,9 +181,11 @@ function showAddPhotoForm(id_produit) {
         const img = document.createElement("img");
         img.src = event.target.result;
         img.style.maxWidth = "150px";
+        img.style.maxHeight = "150px";
         img.style.margin = "0.5rem";
         img.style.borderRadius = "8px";
         img.style.border = "2px solid #DEE2E6";
+        img.style.objectFit = "cover";
         preview.appendChild(img);
       };
       reader.readAsDataURL(file);
@@ -192,9 +204,9 @@ async function addPhoto(event) {
 
   const fileInput = document.getElementById("photoFile");
   const commentaire = document.getElementById("photoDescription").value;
-  const files = fileInput.files;
+  const files = fileInput ? fileInput.files : [];
 
-  if (files.length === 0) {
+  if (!files || files.length === 0) {
     alert("Veuillez sélectionner au moins une photo");
     return;
   }
@@ -204,11 +216,14 @@ async function addPhoto(event) {
     return;
   }
 
+  console.log("Ajout de", files.length, "photo(s) au produit", currentProduitPhotos);
+
   // Créer FormData pour l'upload
   const formData = new FormData();
   
   // Ajouter tous les fichiers
-  Array.from(files).forEach(file => {
+  Array.from(files).forEach((file, index) => {
+    console.log(`Fichier ${index + 1}:`, file.name, file.type, file.size);
     formData.append("photos", file);
   });
   
@@ -226,17 +241,19 @@ async function addPhoto(event) {
 
     if (!res.ok) {
       const error = await res.json();
+      console.error("Erreur upload:", error);
       alert(error.error || "Erreur lors de l'ajout des photos");
       return;
     }
 
     const result = await res.json();
-    alert(result.message);
+    console.log("Succès upload:", result);
+    alert(result.message || "Photos ajoutées avec succès");
     
     hideAddPhotoForm();
     loadProduitsAssocies();
   } catch (err) {
-    console.error(err);
+    console.error("Erreur:", err);
     alert("Erreur serveur");
   }
 }
@@ -277,42 +294,106 @@ function closePhotoModal() {
 
 // Fonction de prévisualisation pour les formulaires
 function previewPhoto(event, previewId) {
-  const file = event.target.files[0];
+  const files = event.target.files;
   const preview = document.getElementById(previewId);
   
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = "block";
-    };
-    reader.readAsDataURL(file);
+  // Support pour plusieurs photos
+  if (files.length > 0) {
+    preview.innerHTML = ""; // Vider la prévisualisation
+    preview.style.display = "block";
+    
+    // Limiter à 5 photos
+    if (files.length > 5) {
+      alert("Maximum 5 photos autorisées");
+      event.target.value = "";
+      preview.style.display = "none";
+      return;
+    }
+    
+    Array.from(files).forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.className = "photo-preview";
+        img.style.maxWidth = "150px";
+        img.style.margin = "0.5rem";
+        img.style.display = "inline-block";
+        preview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
   } else {
     preview.style.display = "none";
   }
 }
 
-// ========== ASSOCIER UN PRODUIT ==========
-async function loadProduitsSelect() {
+// ========== ASSOCIER UN PRODUIT (AVEC FILTRE ET PHOTOS MULTIPLES) ==========
+function loadProduitsSelect() {
   const select = document.getElementById("produitSelect");
   select.innerHTML = '<option value="">-- Sélectionner un produit --</option>';
 
-  allProduits.forEach(p => {
+  // Récupérer les IDs des produits déjà associés
+  const produitsAssociesIds = produitsAssocies.map(p => p.id_produit);
+
+  // Filtrer les produits non encore associés
+  const produitsDisponibles = allProduits.filter(p => !produitsAssociesIds.includes(p.id_produit));
+
+  if (produitsDisponibles.length === 0) {
+    select.innerHTML = '<option value="">Tous les produits sont déjà associés</option>';
+    select.disabled = true;
+    
+    // Désactiver aussi le bouton de soumission
+    const submitBtn = document.querySelector("#produitAssocForm button[type='submit']");
+    if (submitBtn) submitBtn.disabled = true;
+    return;
+  }
+
+  select.disabled = false;
+  const submitBtn = document.querySelector("#produitAssocForm button[type='submit']");
+  if (submitBtn) submitBtn.disabled = false;
+
+  produitsDisponibles.forEach(p => {
     const option = document.createElement("option");
     option.value = p.id_produit;
-    option.textContent = `${p.nom} - ${p.departement || ""}`;
+    option.textContent = `${p.nom} - ${p.departement || "N/A"}`;
     select.appendChild(option);
   });
 }
 
 function showAddProduitForm() {
-  loadProduitsSelect();
+  loadProduitsSelect(); // Charge la liste filtrée
+  document.getElementById("produitAssocForm").reset();
+  
+  // Réinitialiser la prévisualisation des photos
+  const preview = document.getElementById("photoPreview");
+  if (preview) {
+    preview.innerHTML = "";
+    preview.style.display = "none";
+  }
+  
+  // Réinitialiser le compteur de fichiers
+  const fileCount = document.getElementById("fileCount");
+  if (fileCount) fileCount.textContent = "";
+  
   document.getElementById("addProduitForm").style.display = "block";
+  
+  // Réinitialiser le gestionnaire d'événements pour les photos
+  setTimeout(() => {
+    initPhotoInput();
+  }, 100);
 }
 
 function hideAddProduitForm() {
   document.getElementById("addProduitForm").style.display = "none";
   document.getElementById("produitAssocForm").reset();
+  
+  // Réinitialiser la prévisualisation
+  const preview = document.getElementById("photoPreview");
+  if (preview) {
+    preview.innerHTML = "";
+    preview.style.display = "none";
+  }
 }
 
 async function addProduitToMaintenance(event) {
@@ -321,9 +402,24 @@ async function addProduitToMaintenance(event) {
   const id_produit = document.getElementById("produitSelect").value;
   const etat = document.getElementById("produitEtat").value;
   const commentaire = document.getElementById("produitCommentaire").value;
+  const photoInput = document.getElementById("photoInput");
+  const photoFiles = photoInput ? photoInput.files : [];
+
+  if (!id_produit) {
+    alert("Veuillez sélectionner un produit");
+    return;
+  }
+
+  if (photoFiles.length > 5) {
+    alert("Maximum 5 photos autorisées");
+    return;
+  }
+
+  console.log("Photos à envoyer:", photoFiles.length);
 
   try {
-    const res = await fetch(`${API}/maintenance-produits`, {
+    // 1. Associer le produit à la maintenance
+    const resAssoc = await fetch(`${API}/maintenance-produits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -334,16 +430,55 @@ async function addProduitToMaintenance(event) {
       })
     });
 
-    if (!res.ok) {
-      const error = await res.json();
+    if (!resAssoc.ok) {
+      const error = await resAssoc.json();
       alert(error.error || "Erreur lors de l'association");
       return;
     }
 
+    console.log("Produit associé, maintenant upload des photos...");
+
+    // 2. Si des photos ont été sélectionnées, les uploader
+    if (photoFiles && photoFiles.length > 0) {
+      const formData = new FormData();
+      
+      // Ajouter tous les fichiers
+      Array.from(photoFiles).forEach((file, index) => {
+        console.log(`Ajout fichier ${index + 1}:`, file.name, file.type, file.size);
+        formData.append("photos", file);
+      });
+      
+      formData.append("id_maintenance", id_maintenance);
+      formData.append("id_produit", id_produit);
+      if (commentaire) {
+        formData.append("commentaire", commentaire);
+      }
+
+      console.log("Envoi de FormData avec", photoFiles.length, "photos");
+
+      const resPhotos = await fetch(`${API}/photos/multiple`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!resPhotos.ok) {
+        const error = await resPhotos.json();
+        console.error("Erreur upload photos:", error);
+        alert(`Produit associé mais erreur photos: ${error.error || 'Erreur inconnue'}`);
+      } else {
+        const result = await resPhotos.json();
+        console.log("Photos uploadées avec succès:", result);
+      }
+    } else {
+      console.log("Aucune photo à uploader");
+    }
+
     hideAddProduitForm();
-    loadProduitsAssocies();
+    await loadProduitsAssocies(); // Recharge la liste
+    alert("Produit associé avec succès !");
+    
   } catch (err) {
-    console.error(err);
+    console.error("Erreur:", err);
     alert("Erreur serveur");
   }
 }
@@ -367,7 +502,7 @@ async function removeProduit(id_produit) {
       return;
     }
 
-    loadProduitsAssocies();
+    await loadProduitsAssocies(); // Recharge la liste
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
@@ -376,5 +511,62 @@ async function removeProduit(id_produit) {
 
 // ========== INIT ==========
 loadMaintenanceDetails();
-loadProduits();
-loadProduitsAssocies();
+
+// Initialiser le gestionnaire d'événements pour les photos
+function initPhotoInput() {
+  const photoInput = document.getElementById("photoInput");
+  if (photoInput) {
+    // Retirer les anciens gestionnaires pour éviter les doublons
+    const newPhotoInput = photoInput.cloneNode(true);
+    photoInput.parentNode.replaceChild(newPhotoInput, photoInput);
+    
+    newPhotoInput.addEventListener("change", function(e) {
+      const files = e.target.files;
+      const fileCount = document.getElementById("fileCount");
+      const preview = document.getElementById("photoPreview");
+      
+      if (files.length > 5) {
+        alert("Maximum 5 photos autorisées");
+        e.target.value = "";
+        if (fileCount) fileCount.textContent = "";
+        if (preview) {
+          preview.innerHTML = "";
+          preview.style.display = "none";
+        }
+        return;
+      }
+      
+      if (fileCount) {
+        fileCount.textContent = files.length > 0 ? `${files.length} photo(s) sélectionnée(s)` : "";
+      }
+      
+      if (preview) {
+        preview.innerHTML = "";
+        
+        if (files.length === 0) {
+          preview.style.display = "none";
+          return;
+        }
+        
+        preview.style.display = "flex";
+        
+        Array.from(files).forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            const img = document.createElement("img");
+            img.src = event.target.result;
+            img.className = "photo-preview";
+            img.style.maxWidth = "150px";
+            img.style.maxHeight = "150px";
+            img.style.margin = "0.5rem";
+            img.style.borderRadius = "8px";
+            img.style.border = "2px solid #DEE2E6";
+            img.style.objectFit = "cover";
+            preview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    });
+  }
+}
