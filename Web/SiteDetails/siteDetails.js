@@ -26,14 +26,21 @@ async function loadSiteDetails() {
 
     const site = await res.json();
 
+    const res1 = await fetch(`${API}/clients/${site.id_client}`);
+    if (!res1.ok) throw new Error("Erreur lors du chargement des infos client");
+
+    const client = await res1.json();
+
     const SiteDiv = document.getElementById("siteDetails");
     SiteDiv.innerHTML = `
       <div class="site-detail"><strong>Nom :</strong> ${site.nom}</div>
-      <div class="site-detail"><strong>ID Site :</strong> ${site.id_site}</div>
+      <div class="site-detail"><strong>Client :</strong> ${client.nom}</div>
+      <div class="site-detail"><strong>Contact :</strong> ${client.contact}</div>
+      <div class="site-detail"><strong>Tel. :</strong> ${client.telephone}</div>
       <div class="site-detail"><strong>Adresse :</strong> ${site.adresse}</div>
-      <div class="site-detail"><strong>ID Client :</strong> ${site.id_client}</div>
       <div class="site-detail"><strong>Latitude :</strong> ${site.gps_lat || "N/A"}</div>
       <div class="site-detail"><strong>Longitude :</strong> ${site.gps_lng || "N/A"}</div>
+      <div class="site-detail"><strong>Date de création :</strong> ${site.date_creation}</div>
     `;
 
     if (site.gps_lat && site.gps_lng) {
