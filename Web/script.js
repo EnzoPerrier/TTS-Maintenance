@@ -1,5 +1,6 @@
 let editingProduitId = null;
 let allSitesMap = null;
+let allClients = []; // stocke tous les clients pour filtrage
 
 const API = "http://192.168.1.127:3000"; // adresse du serveur API --> PORT 3000
 
@@ -55,16 +56,12 @@ async function initAllSitesMap() {
       return;
     }
     
-    //console.log("Conteneur de carte trouvé, dimensions:", mapContainer.offsetWidth, mapContainer.offsetHeight);
-    
     // Calculer le centre de la carte (moyenne des coordonnées)
     const avgLat = sitesWithCoords.reduce((sum, s) => sum + parseFloat(s.gps_lat), 0) / sitesWithCoords.length;
     const avgLng = sitesWithCoords.reduce((sum, s) => sum + parseFloat(s.gps_lng), 0) / sitesWithCoords.length;
     
     // Créer la carte
     allSitesMap = L.map('allSitesMap').setView([avgLat, avgLng], 10);
-    
-    //console.log("Carte créée:", allSitesMap);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -152,6 +149,129 @@ function goToSiteDetails(id_site) {
   window.location.href = `./SiteDetails/siteDetails.html?id_site=${id_site}`;
 }
 
+/* ---------- CLIENTS ---------- */
+// Charger la liste des clients
+async function loadClients() {
+  try {
+    const res = await fetch(`${API}/clients`);
+    allClients = await res.json();
+    renderClients(allClients);
+  } catch (err) {
+    console.error("Erreur lors du chargement des clients:", err);
+  }
+}
+
+// Fonction pour afficher les clients dans la liste
+function renderClients(clients) {
+  const list = document.getElementById("clientsList");
+  list.innerHTML = "";
+
+  if (clients.length === 0) {
+    list.innerHTML = "<li>Aucun client trouvé</li>";
+    return;
+  }
+
+  clients.forEach(client => {
+    const li = document.createElement("li");
+    li.classList.add("clickable-line");
+    
+    li.innerHTML = `
+      <div style="flex: 1;">
+        <strong style="font-size: 1.1rem; color: var(--primary-blue);">${client.nom}</strong><br/>
+        ${client.contact ? `<span style="color: var(--gray-600);">👤 Contact: ${client.contact}</span><br/>` : ''}
+        ${client.email ? `<span style="color: var(--gray-600);">📧 ${client.email}</span><br/>` : ''}
+        ${client.telephone ? `<span style="color: var(--gray-600);">📞 ${client.telephone}</span><br/>` : ''}
+        ${client.adresse ? `<span style="color: var(--gray-600);">📍 ${client.adresse}</span>` : ''}
+      </div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button onclick="event.stopPropagation(); deleteClient(${client.id_client})" style="background: var(--danger);">Supprimer</button>
+      </div>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+// Barre de recherche pour filtrer les clients
+const searchClientsInput = document.getElementById("searchClients");
+if (searchClientsInput) {
+  searchClientsInput.addEventListener("input", (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allClients.filter(client =>
+      client.nom.toLowerCase().includes(searchTerm) ||
+      (client.contact && client.contact.toLowerCase().includes(searchTerm)) ||
+      (client.email && client.email.toLowerCase().includes(searchTerm)) ||
+      (client.telephone && client.telephone.toLowerCase().includes(searchTerm)) ||
+      (client.adresse && client.adresse.toLowerCase().includes(searchTerm))
+    );
+    renderClients(filtered);
+  });
+}
+
+// Ajouter un client
+async function addClient(event) {
+  event.preventDefault();
+
+  const data = {
+    nom: document.getElementById("clientNom").value,
+    contact: document.getElementById("clientContact").value || null,
+    email: document.getElementById("clientEmail").value || null,
+    telephone: document.getElementById("clientTelephone").value || null,
+    adresse: document.getElementById("clientAdresse").value || null
+  };
+
+  try {
+    const res = await fetch(`${API}/clients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+      hideAddClientForm();
+      loadClients(); // recharge la liste des clients
+      alert("Client ajouté avec succès !");
+    } else {
+      alert("Erreur lors de l'ajout du client");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
+}
+
+// Supprimer un client
+async function deleteClient(id_client) {
+  const confirmDelete = confirm("Voulez-vous vraiment supprimer ce client ? Cette action supprimera également tous les sites associés.");
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`${API}/clients/${id_client}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la suppression du client");
+      return;
+    }
+
+    loadClients();
+    alert("Client supprimé avec succès");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur lors de la suppression");
+  }
+}
+
+function showAddClientForm() {
+  document.getElementById("addClientForm").style.display = "block";
+}
+
+function hideAddClientForm() {
+  document.getElementById("addClientForm").style.display = "none";
+  document.getElementById("addClientForm").querySelector("form").reset();
+}
+
 /* ---------- SITES ---------- */
 let allSites = []; // stocke tous les sites pour filtrage
 
@@ -226,11 +346,96 @@ async function addSite(event) {
 }
 
 function showAddSiteForm() {
+  // Charger les clients dans le select
+  loadClientsSelect();
+  
   document.getElementById("addSiteForm").style.display = "block";
+  
+  // Initialiser la recherche de client
+  setTimeout(() => {
+    initClientSearch();
+  }, 100);
 }
 
 function hideAddSiteForm() {
   document.getElementById("addSiteForm").style.display = "none";
+  document.getElementById("addSiteForm").querySelector("form").reset();
+}
+
+// Charger les clients dans le select
+function loadClientsSelect() {
+  const select = document.getElementById("siteClientId");
+  select.innerHTML = '<option value="">-- Sélectionner un client --</option>';
+  
+  allClients.forEach(client => {
+    const option = document.createElement("option");
+    option.value = client.id_client;
+    option.textContent = `${client.nom}${client.contact ? ' - ' + client.contact : ''}`;
+    option.dataset.nom = client.nom.toLowerCase();
+    option.dataset.contact = (client.contact || '').toLowerCase();
+    select.appendChild(option);
+  });
+}
+
+// Initialiser la recherche de client
+function initClientSearch() {
+  const searchInput = document.getElementById("clientSearch");
+  const select = document.getElementById("siteClientId");
+  
+  if (!searchInput) return;
+  
+  // Nettoyer les anciens event listeners
+  const newSearchInput = searchInput.cloneNode(true);
+  searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+  
+  newSearchInput.addEventListener("input", (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const options = select.querySelectorAll("option");
+    
+    options.forEach(option => {
+      if (option.value === "") {
+        option.style.display = "block";
+        return;
+      }
+      
+      const nom = option.dataset.nom || "";
+      const contact = option.dataset.contact || "";
+      
+      if (nom.includes(searchTerm) || contact.includes(searchTerm)) {
+        option.style.display = "block";
+      } else {
+        option.style.display = "none";
+      }
+    });
+    
+    // Ouvrir le select si on tape
+    if (searchTerm.length > 0) {
+      select.size = Math.min(options.length, 8);
+    } else {
+      select.size = 1;
+    }
+  });
+  
+  // Réinitialiser la taille au focus
+  newSearchInput.addEventListener("focus", () => {
+    select.size = Math.min(select.options.length, 8);
+  });
+  
+  // Fermer au blur
+  newSearchInput.addEventListener("blur", () => {
+    setTimeout(() => {
+      select.size = 1;
+    }, 200);
+  });
+  
+  // Sélectionner au clic
+  select.addEventListener("change", () => {
+    select.size = 1;
+    newSearchInput.value = "";
+    // Réafficher toutes les options
+    const options = select.querySelectorAll("option");
+    options.forEach(opt => opt.style.display = "block");
+  });
 }
 
 /* ---------- PRODUITS ---------- */
@@ -268,6 +473,7 @@ function renderProduits(produits) {
   <button id="deleteBtn" onclick="deleteProduit(${p.id_produit})">Supprimer</button>
   <button onclick="editProduit(${p.id_produit})">Modifier</button>
   <button id="editBtn" onclick="printQR(${p.id_produit})">QR</button>
+  <button onclick="window.location.href='./ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
 </div>
 
     `;
@@ -355,12 +561,16 @@ async function addProduit(e) {
   document.getElementById("produitForm").reset();
 }
 
+// Formulaire d'ajout de produit
 function showAddProduitForm() {
   // Réinitialiser le mode édition
   editingProduitId = null;
   
   // Réinitialiser le formulaire
   document.getElementById("produitForm").reset();
+  
+  // Charger les sites dans le select
+  loadSitesSelect();
   
   // Changer le titre du formulaire
   const formTitle = document.querySelector("#addProduitForm h3");
@@ -377,6 +587,81 @@ function showAddProduitForm() {
   submitBtn.textContent = "Ajouter";
   
   document.getElementById("addProduitForm").style.display = "block";
+  
+  // Initialiser la recherche de site
+  initSiteSearch();
+}
+
+// Charger les sites dans le select
+function loadSitesSelect() {
+  const select = document.getElementById("produitSiteId");
+  select.innerHTML = '<option value="">-- Sélectionner un site --</option>';
+  
+  allSites.forEach(site => {
+    const option = document.createElement("option");
+    option.value = site.id_site;
+    option.textContent = `${site.nom} - ${site.adresse || 'Sans adresse'}`;
+    option.dataset.nom = site.nom.toLowerCase();
+    option.dataset.adresse = (site.adresse || '').toLowerCase();
+    select.appendChild(option);
+  });
+}
+
+// Initialiser la recherche de site
+function initSiteSearch() {
+  const searchInput = document.getElementById("siteSearch");
+  const select = document.getElementById("produitSiteId");
+  
+  if (!searchInput) return;
+  
+  searchInput.addEventListener("input", (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const options = select.querySelectorAll("option");
+    
+    options.forEach(option => {
+      if (option.value === "") {
+        option.style.display = "block";
+        return;
+      }
+      
+      const nom = option.dataset.nom || "";
+      const adresse = option.dataset.adresse || "";
+      
+      if (nom.includes(searchTerm) || adresse.includes(searchTerm)) {
+        option.style.display = "block";
+      } else {
+        option.style.display = "none";
+      }
+    });
+    
+    // Ouvrir le select si on tape
+    if (searchTerm.length > 0) {
+      select.size = Math.min(options.length, 8);
+    } else {
+      select.size = 1;
+    }
+  });
+  
+  // Réinitialiser la taille au focus
+  searchInput.addEventListener("focus", () => {
+    select.size = Math.min(select.options.length, 8);
+  });
+  
+  // Fermer au blur
+  searchInput.addEventListener("blur", () => {
+    setTimeout(() => {
+      select.size = 1;
+    }, 200);
+  });
+  
+  // Sélectionner au clic
+  select.addEventListener("change", () => {
+    select.size = 1;
+    searchInput.value = "";
+    // Réafficher toutes les options
+    const options = select.querySelectorAll("option");
+    options.forEach(opt => opt.style.display = "block");
+  });
 }
 
 function hideAddProduitForm() {
@@ -483,12 +768,13 @@ async function loadMaintenances() {
 
   maintenances.forEach(m => {
     const li = document.createElement("li");
-    li.textContent = `${m.description || "Maintenance"} — ${m.date_maintenance}`;
+    li.textContent = `${m.description || "Maintenance"} – ${m.date_maintenance}`;
     ul.appendChild(li);
   });
 }
 
 /* ---------- INIT ---------- */
+loadClients();
 loadProduits();
 loadSites();
 loadMaintenances();
