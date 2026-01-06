@@ -1,10 +1,39 @@
 const db = require("../config/db.js");
 
+// Fonction utilitaire pour formater les dates au format JJ/MM/AAAA
+function formatDateForDisplay(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${day}/${month}/${year}`;
+}
+
+// Fonction pour garder le format YYYY-MM-DD pour les inputs
+function formatDateForInput(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatClientDate(client) {
+  if (client.date_creation) {
+    client.date_creation_input = formatDateForInput(client.date_creation);
+    client.date_creation = formatDateForDisplay(client.date_creation);
+  }
+  return client;
+}
+
 // GET /clients --> liste tous les clients
 exports.getAllClients = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM clients");
-    res.json(rows);
+    const [rows] = await db.query("SELECT * FROM clients ORDER BY nom ASC");
+    const formattedRows = rows.map(formatClientDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -17,7 +46,9 @@ exports.getClientById = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM clients WHERE id_client = ?", [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Client non trouvé" });
-    res.json(rows[0]);
+    
+    const client = formatClientDate(rows[0]);
+    res.json(client);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -64,6 +95,16 @@ exports.updateClient = async (req, res) => {
 exports.deleteClient = async (req, res) => {
   const { id } = req.params;
   try {
+    // Vérifier d'abord si le client a des sites
+    const [sites] = await db.query("SELECT COUNT(*) as count FROM sites WHERE id_client = ?", [id]);
+    
+    if (sites[0].count > 0) {
+      return res.status(400).json({ 
+        error: "Impossible de supprimer ce client car il a des sites associés",
+        sitesCount: sites[0].count
+      });
+    }
+    
     const [result] = await db.query("DELETE FROM clients WHERE id_client = ?", [id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: "Client non trouvé" });
     res.json({ message: "Client supprimé" });

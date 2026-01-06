@@ -70,6 +70,7 @@ function initMap(lat, lng, nom, adresse) {
   }
 
   map = L.map('map').setView([lat, lng], 15);
+  
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -180,7 +181,10 @@ async function loadMaintenances() {
       else if (etat.includes("cours")) icone = "⚙️";
       else if (etat.includes("planif")) icone = "📅";
 
-      summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${m.date_maintenance}`;
+      // La date est déjà au format JJ/MM/AAAA depuis le backend
+      const dateFormatted = m.date_maintenance;
+
+      summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${dateFormatted}`;
       details.appendChild(summary);
 
       // Couleur de l'état
@@ -192,7 +196,7 @@ async function loadMaintenances() {
       const content = document.createElement("div");
       content.innerHTML = `
         <div><strong>ID :</strong> ${m.id_maintenance}</div>
-        <div><strong>Date :</strong> ${m.date_maintenance}</div>
+        <div><strong>Date :</strong> ${dateFormatted}</div>
         <div><strong>Type :</strong> ${m.type}</div>
         <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
         <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
@@ -274,8 +278,8 @@ function editMaintenance(id_maintenance) {
 
   editingMaintenanceId = id_maintenance;
 
-  // Pré-remplir le formulaire
-  document.getElementById("maintenanceDate").value = maintenance.date_maintenance;
+  // Pré-remplir le formulaire - utiliser date_maintenance_input (YYYY-MM-DD) pour l'input
+  document.getElementById("maintenanceDate").value = maintenance.date_maintenance_input || formatDateForInput(maintenance.date_maintenance);
   document.getElementById("maintenanceType").value = maintenance.type;
   document.getElementById("maintenanceEtat").value = maintenance.etat || "";
   document.getElementById("maintenanceDepartement").value = maintenance.departement || "";

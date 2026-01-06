@@ -3,6 +3,38 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+// Fonction utilitaire pour formater les dates au format JJ/MM/AAAA
+function formatDateForDisplay(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${day}/${month}/${year}`;
+}
+
+// Fonction pour garder le format YYYY-MM-DD pour les inputs
+function formatDateForInput(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatPhotoDate(photo) {
+  if (photo.date_creation) {
+    photo.date_creation_input = formatDateForInput(photo.date_creation);
+    photo.date_creation = formatDateForDisplay(photo.date_creation);
+  }
+  if (photo.date_maintenance) {
+    photo.date_maintenance_input = formatDateForInput(photo.date_maintenance);
+    photo.date_maintenance = formatDateForDisplay(photo.date_maintenance);
+  }
+  return photo;
+}
+
 // Configuration du stockage des fichiers
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -51,7 +83,8 @@ exports.getPhotosByProduit = async (req, res) => {
       [id_produit]
     );
 
-    res.json(rows);
+    const formattedRows = rows.map(formatPhotoDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -72,7 +105,8 @@ exports.getPhotosByMaintenance = async (req, res) => {
       [id_maintenance]
     );
 
-    res.json(rows);
+    const formattedRows = rows.map(formatPhotoDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -82,9 +116,6 @@ exports.getPhotosByMaintenance = async (req, res) => {
 // Récupérer les photos d'un produit spécifique dans une maintenance
 exports.getPhotosByMaintenanceProduit = async (req, res) => {
   const { id_maintenance, id_produit } = req.params;
-  
-  /*console.log("Route appelée: /photos/maintenance/:id_maintenance/:id_produit");
-  console.log("Params reçus:", { id_maintenance, id_produit });*/ //DEBUG
 
   try {
     const [rows] = await db.query(
@@ -95,8 +126,8 @@ exports.getPhotosByMaintenanceProduit = async (req, res) => {
       [id_maintenance, id_produit]
     );
     
-    console.log("Photos trouvées:", rows.length);
-    res.json(rows);
+    const formattedRows = rows.map(formatPhotoDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -117,7 +148,8 @@ exports.getPhotoById = async (req, res) => {
       return res.status(404).json({ error: "Photo non trouvée" });
     }
 
-    res.json(rows[0]);
+    const photo = formatPhotoDate(rows[0]);
+    res.json(photo);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -139,7 +171,7 @@ exports.addPhoto = async (req, res) => {
   }
 
   try {
-    // ========== NOUVEAU: Vérifier la limite de 5 photos si maintenance ==========
+    // Vérifier la limite de 5 photos si maintenance
     if (id_maintenance) {
       const [existingPhotos] = await db.query(
         `SELECT COUNT(*) as count FROM produit_photos 
@@ -323,7 +355,8 @@ exports.getLatestPhoto = async (req, res) => {
       return res.status(404).json({ error: "Aucune photo trouvée" });
     }
 
-    res.json(rows[0]);
+    const photo = formatPhotoDate(rows[0]);
+    res.json(photo);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
