@@ -1,10 +1,39 @@
 const db = require("../config/db.js");
 
+// Fonction utilitaire pour formater les dates au format JJ/MM/AAAA
+function formatDateForDisplay(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${day}/${month}/${year}`;
+}
+
+// Fonction pour garder le format YYYY-MM-DD pour les inputs
+function formatDateForInput(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatProduitDate(produit) {
+  if (produit.date_creation) {
+    produit.date_creation_input = formatDateForInput(produit.date_creation);
+    produit.date_creation = formatDateForDisplay(produit.date_creation);
+  }
+  return produit;
+}
+
 // GET /produits --> liste tous les produits
 exports.getAllProduits = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM produits ORDER BY id_produit DESC");
-    res.json(rows);
+    const formattedRows = rows.map(formatProduitDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -24,7 +53,8 @@ exports.getProduitById = async (req, res) => {
     if (rows.length === 0)
       return res.status(404).json({ error: "Produit non trouvé" });
 
-    res.json(rows[0]);
+    const produit = formatProduitDate(rows[0]);
+    res.json(produit);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -41,8 +71,8 @@ exports.getProduitsBySiteId = async (req, res) => {
       [id]
     );
 
-    // Toujours renvoyer un tableau (vide si aucun produit)
-    res.json(rows);
+    const formattedRows = rows.map(formatProduitDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });

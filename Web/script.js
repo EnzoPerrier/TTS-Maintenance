@@ -1,6 +1,7 @@
 let editingProduitId = null;
+let editingClientId = null;
 let allSitesMap = null;
-let allClients = []; // stocke tous les clients pour filtrage
+let allClients = [];
 
 const API = "http://192.168.1.127:3000"; // adresse du serveur API --> PORT 3000
 
@@ -19,6 +20,11 @@ function showSection(id) {
         initAllSitesMap();
       }
     }, 100);
+  }
+  
+  // Si on affiche la section clients, charger les clients
+  if (id === 'clients') {
+    loadClients();
   }
 }
 
@@ -108,7 +114,7 @@ async function initAllSitesMap() {
       // Popup avec lien vers les détails
       marker.bindPopup(`
         <div style="font-family: 'Segoe UI', sans-serif; min-width: 200px;">
-          <strong style="color: #0066CC; font-size: 1.1em;">${site.nom}</strong><br/>
+          <strong style="color: #0066CC; font-size: 1.1em;">${site.nom} - ${site.client_nom}</strong><br/>
           <span style="color: #6C757D;">${site.adresse || 'Adresse non spécifiée'}</span><br/>
           <small style="color: #999;">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</small><br/>
           <button onclick="goToSiteDetails(${site.id_site})" style="
@@ -124,12 +130,6 @@ async function initAllSitesMap() {
           ">Voir les détails</button>
         </div>
       `);
-      
-      // Clic sur le marqueur pour aller vers les détails
-      marker.on('click', () => {
-        // Optionnel : ouvrir directement sans popup
-        // goToSiteDetails(site.id_site);
-      });
     });
     
     // Ajuster la vue pour montrer tous les marqueurs
@@ -150,14 +150,21 @@ function goToSiteDetails(id_site) {
 }
 
 /* ---------- CLIENTS ---------- */
+let allClientsData = []; // stocke tous les clients pour filtrage
+
 // Charger la liste des clients
 async function loadClients() {
   try {
     const res = await fetch(`${API}/clients`);
-    allClients = await res.json();
-    renderClients(allClients);
+    allClientsData = await res.json();
+    renderClients(allClientsData);
+    
+    // Charger aussi pour le select dans le formulaire de sites
+    loadClientsSelect();
   } catch (err) {
-    console.error("Erreur lors du chargement des clients:", err);
+    console.error(err);
+    document.getElementById("clientsList").innerHTML = 
+      '<li style="color: #DC3545;">Erreur lors du chargement des clients</li>';
   }
 }
 
@@ -173,53 +180,80 @@ function renderClients(clients) {
 
   clients.forEach(client => {
     const li = document.createElement("li");
-    li.classList.add("clickable-line");
-    
     li.innerHTML = `
-      <div style="flex: 1;">
-        <strong style="font-size: 1.1rem; color: var(--primary-blue);">${client.nom}</strong><br/>
-        ${client.contact ? `<span style="color: var(--gray-600);">👤 Contact: ${client.contact}</span><br/>` : ''}
-        ${client.email ? `<span style="color: var(--gray-600);">📧 ${client.email}</span><br/>` : ''}
-        ${client.telephone ? `<span style="color: var(--gray-600);">📞 ${client.telephone}</span><br/>` : ''}
-        ${client.adresse ? `<span style="color: var(--gray-600);">📍 ${client.adresse}</span>` : ''}
+      <div style="flex: 1; cursor: pointer;" onclick="viewClientDetails(${client.id_client})">
+        <strong>${client.nom}</strong><br/>
+        <small style="color: #6C757D;">
+          ${client.contact ? client.contact + ' - ' : ''}
+          ${client.telephone ? '📞 ' + client.telephone : ''}
+          ${client.email ? ' - 📧 ' + client.email : ''}
+        </small>
       </div>
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button onclick="event.stopPropagation(); deleteClient(${client.id_client})" style="background: var(--danger);">Supprimer</button>
+      <div style="display: flex; gap: 0.5rem;">
+        <button onclick="editClient(${client.id_client}); event.stopPropagation();" style="background: #6C757D;">Modifier</button>
+        <button onclick="deleteClient(${client.id_client}); event.stopPropagation();" style="background: #DC3545;">Supprimer</button>
       </div>
     `;
-
+    
+    li.classList.add("clickable-line");
     list.appendChild(li);
   });
 }
 
 // Barre de recherche pour filtrer les clients
 const searchClientsInput = document.getElementById("searchClients");
-if (searchClientsInput) {
-  searchClientsInput.addEventListener("input", (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const filtered = allClients.filter(client =>
-      client.nom.toLowerCase().includes(searchTerm) ||
-      (client.contact && client.contact.toLowerCase().includes(searchTerm)) ||
-      (client.email && client.email.toLowerCase().includes(searchTerm)) ||
-      (client.telephone && client.telephone.toLowerCase().includes(searchTerm)) ||
-      (client.adresse && client.adresse.toLowerCase().includes(searchTerm))
-    );
-    renderClients(filtered);
-  });
+searchClientsInput.addEventListener("input", (e) => {
+  const searchTerm = e.target.value.toLowerCase();
+  const filtered = allClientsData.filter(client =>
+    client.nom.toLowerCase().includes(searchTerm) ||
+    (client.contact && client.contact.toLowerCase().includes(searchTerm)) ||
+    (client.email && client.email.toLowerCase().includes(searchTerm)) ||
+    (client.telephone && client.telephone.toLowerCase().includes(searchTerm))
+  );
+  renderClients(filtered);
+});
+
+// Voir les détails d'un client (optionnel - pour l'instant juste un log)
+function viewClientDetails(id_client) {
+  console.log("Voir client:", id_client);
+  // TODO: Créer une page clientDetails.html si nécessaire
 }
 
-// Ajouter un client
+// Afficher le formulaire d'ajout de client
+function showAddClientForm() {
+  editingClientId = null;
+  document.getElementById("clientFormTitle").textContent = "Ajouter un client";
+  document.getElementById("clientSubmitBtn").textContent = "Ajouter";
+  document.querySelector("#addClientForm form").reset();
+  document.getElementById("addClientForm").style.display = "block";
+}
+
+// Masquer le formulaire d'ajout de client
+function hideAddClientForm() {
+  document.getElementById("addClientForm").style.display = "none";
+  editingClientId = null;
+  document.querySelector("#addClientForm form").reset();
+}
+
+// Ajouter ou modifier un client
 async function addClient(event) {
   event.preventDefault();
 
   const data = {
     nom: document.getElementById("clientNom").value,
-    contact: document.getElementById("clientContact").value || null,
+    contact: document.getElementById("clientContact").value,
+    adresse: document.getElementById("clientAdresse").value || null,
     email: document.getElementById("clientEmail").value || null,
-    telephone: document.getElementById("clientTelephone").value || null,
-    adresse: document.getElementById("clientAdresse").value || null
+    telephone: document.getElementById("clientTelephone").value || null
   };
 
+  // Si on est en mode édition
+  if (editingClientId !== null) {
+    await updateClient(editingClientId, data);
+    return;
+  }
+
+  // Création du client
   try {
     const res = await fetch(`${API}/clients`, {
       method: "POST",
@@ -227,13 +261,60 @@ async function addClient(event) {
       body: JSON.stringify(data)
     });
 
-    if (res.ok) {
-      hideAddClientForm();
-      loadClients(); // recharge la liste des clients
-      alert("Client ajouté avec succès !");
-    } else {
+    if (!res.ok) {
       alert("Erreur lors de l'ajout du client");
+      return;
     }
+
+    hideAddClientForm();
+    loadClients();
+    alert("Client ajouté avec succès !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
+}
+
+// Modifier un client
+function editClient(id_client) {
+  const client = allClientsData.find(c => c.id_client === id_client);
+  if (!client) return alert("Client non trouvé");
+
+  editingClientId = id_client;
+
+  // Pré-remplir le formulaire
+  document.getElementById("clientNom").value = client.nom;
+  document.getElementById("clientContact").value = client.contact || "";
+  document.getElementById("clientAdresse").value = client.adresse || "";
+  document.getElementById("clientEmail").value = client.email || "";
+  document.getElementById("clientTelephone").value = client.telephone || "";
+
+  document.getElementById("clientFormTitle").textContent = "Modifier un client";
+  document.getElementById("clientSubmitBtn").textContent = "Valider";
+
+  document.getElementById("addClientForm").style.display = "block";
+}
+
+// Mettre à jour un client
+async function updateClient(id_client, data) {
+  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier ce client ?");
+  if (!confirmUpdate) return;
+
+  try {
+    const res = await fetch(`${API}/clients/${id_client}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la modification du client");
+      return;
+    }
+
+    hideAddClientForm();
+    loadClients();
+    alert("Client modifié avec succès !");
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
@@ -242,10 +323,20 @@ async function addClient(event) {
 
 // Supprimer un client
 async function deleteClient(id_client) {
-  const confirmDelete = confirm("Voulez-vous vraiment supprimer ce client ? Cette action supprimera également tous les sites associés.");
-  if (!confirmDelete) return;
-
   try {
+    // Vérifier d'abord si le client a des sites
+    const resSites = await fetch(`${API}/sites`);
+    const allSites = await resSites.json();
+    const clientSites = allSites.filter(site => site.id_client == id_client);
+
+    if (clientSites.length > 0) {
+      alert(`❌ Impossible de supprimer ce client.\n\nIl a ${clientSites.length} site(s) associé(s):\n${clientSites.map(s => '- ' + s.nom).join('\n')}\n\nVeuillez d'abord supprimer ces sites.`);
+      return;
+    }
+
+    const confirmDelete = confirm("Voulez-vous vraiment supprimer ce client ?");
+    if (!confirmDelete) return;
+
     const res = await fetch(`${API}/clients/${id_client}`, {
       method: "DELETE"
     });
@@ -256,24 +347,35 @@ async function deleteClient(id_client) {
     }
 
     loadClients();
-    alert("Client supprimé avec succès");
+    alert("Client supprimé avec succès !");
   } catch (err) {
     console.error(err);
-    alert("Erreur serveur lors de la suppression");
+    alert("Erreur serveur");
   }
-}
-
-function showAddClientForm() {
-  document.getElementById("addClientForm").style.display = "block";
-}
-
-function hideAddClientForm() {
-  document.getElementById("addClientForm").style.display = "none";
-  document.getElementById("addClientForm").querySelector("form").reset();
 }
 
 /* ---------- SITES ---------- */
 let allSites = []; // stocke tous les sites pour filtrage
+
+// Charger la liste des clients pour le select
+async function loadClientsSelect() {
+  try {
+    const res = await fetch(`${API}/clients`);
+    allClients = await res.json();
+    
+    const select = document.getElementById("siteClientId");
+    select.innerHTML = '<option value="">-- Sélectionner un client --</option>';
+    
+    allClients.forEach(client => {
+      const option = document.createElement("option");
+      option.value = client.id_client;
+      option.textContent = client.nom;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 // Charger la liste des sites
 async function loadSites() {
@@ -289,7 +391,7 @@ function renderSites(sites) {
 
   sites.forEach(site => {
     const li = document.createElement("li");
-    li.textContent = `${site.nom} - ${site.adresse || ""} - ${site.id_site}`;
+    li.textContent = `${site.nom} - ${site.client_nom} - ${site.adresse || ""}`;
 
     // Rendre toute la ligne cliquable
     li.addEventListener("click", () => {
@@ -346,96 +448,12 @@ async function addSite(event) {
 }
 
 function showAddSiteForm() {
-  // Charger les clients dans le select
-  loadClientsSelect();
-  
+  loadClientsSelect(); // Charger les clients dans le select
   document.getElementById("addSiteForm").style.display = "block";
-  
-  // Initialiser la recherche de client
-  setTimeout(() => {
-    initClientSearch();
-  }, 100);
 }
 
 function hideAddSiteForm() {
   document.getElementById("addSiteForm").style.display = "none";
-  document.getElementById("addSiteForm").querySelector("form").reset();
-}
-
-// Charger les clients dans le select
-function loadClientsSelect() {
-  const select = document.getElementById("siteClientId");
-  select.innerHTML = '<option value="">-- Sélectionner un client --</option>';
-  
-  allClients.forEach(client => {
-    const option = document.createElement("option");
-    option.value = client.id_client;
-    option.textContent = `${client.nom}${client.contact ? ' - ' + client.contact : ''}`;
-    option.dataset.nom = client.nom.toLowerCase();
-    option.dataset.contact = (client.contact || '').toLowerCase();
-    select.appendChild(option);
-  });
-}
-
-// Initialiser la recherche de client
-function initClientSearch() {
-  const searchInput = document.getElementById("clientSearch");
-  const select = document.getElementById("siteClientId");
-  
-  if (!searchInput) return;
-  
-  // Nettoyer les anciens event listeners
-  const newSearchInput = searchInput.cloneNode(true);
-  searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-  
-  newSearchInput.addEventListener("input", (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const options = select.querySelectorAll("option");
-    
-    options.forEach(option => {
-      if (option.value === "") {
-        option.style.display = "block";
-        return;
-      }
-      
-      const nom = option.dataset.nom || "";
-      const contact = option.dataset.contact || "";
-      
-      if (nom.includes(searchTerm) || contact.includes(searchTerm)) {
-        option.style.display = "block";
-      } else {
-        option.style.display = "none";
-      }
-    });
-    
-    // Ouvrir le select si on tape
-    if (searchTerm.length > 0) {
-      select.size = Math.min(options.length, 8);
-    } else {
-      select.size = 1;
-    }
-  });
-  
-  // Réinitialiser la taille au focus
-  newSearchInput.addEventListener("focus", () => {
-    select.size = Math.min(select.options.length, 8);
-  });
-  
-  // Fermer au blur
-  newSearchInput.addEventListener("blur", () => {
-    setTimeout(() => {
-      select.size = 1;
-    }, 200);
-  });
-  
-  // Sélectionner au clic
-  select.addEventListener("change", () => {
-    select.size = 1;
-    newSearchInput.value = "";
-    // Réafficher toutes les options
-    const options = select.querySelectorAll("option");
-    options.forEach(opt => opt.style.display = "block");
-  });
 }
 
 /* ---------- PRODUITS ---------- */
@@ -473,7 +491,6 @@ function renderProduits(produits) {
   <button id="deleteBtn" onclick="deleteProduit(${p.id_produit})">Supprimer</button>
   <button onclick="editProduit(${p.id_produit})">Modifier</button>
   <button id="editBtn" onclick="printQR(${p.id_produit})">QR</button>
-  <button onclick="window.location.href='./ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
 </div>
 
     `;
@@ -561,16 +578,12 @@ async function addProduit(e) {
   document.getElementById("produitForm").reset();
 }
 
-// Formulaire d'ajout de produit
 function showAddProduitForm() {
   // Réinitialiser le mode édition
   editingProduitId = null;
   
   // Réinitialiser le formulaire
   document.getElementById("produitForm").reset();
-  
-  // Charger les sites dans le select
-  loadSitesSelect();
   
   // Changer le titre du formulaire
   const formTitle = document.querySelector("#addProduitForm h3");
@@ -587,81 +600,6 @@ function showAddProduitForm() {
   submitBtn.textContent = "Ajouter";
   
   document.getElementById("addProduitForm").style.display = "block";
-  
-  // Initialiser la recherche de site
-  initSiteSearch();
-}
-
-// Charger les sites dans le select
-function loadSitesSelect() {
-  const select = document.getElementById("produitSiteId");
-  select.innerHTML = '<option value="">-- Sélectionner un site --</option>';
-  
-  allSites.forEach(site => {
-    const option = document.createElement("option");
-    option.value = site.id_site;
-    option.textContent = `${site.nom} - ${site.adresse || 'Sans adresse'}`;
-    option.dataset.nom = site.nom.toLowerCase();
-    option.dataset.adresse = (site.adresse || '').toLowerCase();
-    select.appendChild(option);
-  });
-}
-
-// Initialiser la recherche de site
-function initSiteSearch() {
-  const searchInput = document.getElementById("siteSearch");
-  const select = document.getElementById("produitSiteId");
-  
-  if (!searchInput) return;
-  
-  searchInput.addEventListener("input", (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const options = select.querySelectorAll("option");
-    
-    options.forEach(option => {
-      if (option.value === "") {
-        option.style.display = "block";
-        return;
-      }
-      
-      const nom = option.dataset.nom || "";
-      const adresse = option.dataset.adresse || "";
-      
-      if (nom.includes(searchTerm) || adresse.includes(searchTerm)) {
-        option.style.display = "block";
-      } else {
-        option.style.display = "none";
-      }
-    });
-    
-    // Ouvrir le select si on tape
-    if (searchTerm.length > 0) {
-      select.size = Math.min(options.length, 8);
-    } else {
-      select.size = 1;
-    }
-  });
-  
-  // Réinitialiser la taille au focus
-  searchInput.addEventListener("focus", () => {
-    select.size = Math.min(select.options.length, 8);
-  });
-  
-  // Fermer au blur
-  searchInput.addEventListener("blur", () => {
-    setTimeout(() => {
-      select.size = 1;
-    }, 200);
-  });
-  
-  // Sélectionner au clic
-  select.addEventListener("change", () => {
-    select.size = 1;
-    searchInput.value = "";
-    // Réafficher toutes les options
-    const options = select.querySelectorAll("option");
-    options.forEach(opt => opt.style.display = "block");
-  });
 }
 
 function hideAddProduitForm() {
@@ -761,23 +699,27 @@ function printQR(id) {
 
 /* ---------- MAINTENANCES ---------- */
 async function loadMaintenances() {
-  const res = await fetch(`${API}/maintenances`);
+
+  // Charge les maintenances avec les infos clients et site
+  const res = await fetch(`${API}/maintenances/details`);
   const maintenances = await res.json();
+
   const ul = document.getElementById("maintenancesList");
   ul.innerHTML = "";
 
   maintenances.forEach(m => {
+
     const li = document.createElement("li");
-    li.textContent = `${m.description || "Maintenance"} – ${m.date_maintenance}`;
+    li.textContent = `${m.site_nom} — ${m.client_nom} — ${m.date_maintenance} — ${m.etat}`;
     ul.appendChild(li);
   });
 }
 
 /* ---------- INIT ---------- */
-loadClients();
 loadProduits();
 loadSites();
 loadMaintenances();
+loadClients();
 
 // Attendre que la page soit complètement chargée
 window.addEventListener('load', () => {

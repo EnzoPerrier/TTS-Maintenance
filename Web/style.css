@@ -402,6 +402,7 @@ section h2 {
    SEARCH BAR
 ======================================== */
 #searchSites,
+#searchClients,
 #searchProduits {
   width: 100%;
   padding: 0.875rem 1.25rem;
@@ -414,6 +415,7 @@ section h2 {
 }
 
 #searchSites:focus,
+#searchClients:focus,
 #searchProduits:focus {
   outline: none;
   border-color: var(--primary-blue);
@@ -422,6 +424,7 @@ section h2 {
 }
 
 #searchSites::placeholder,
+#searchClients::placeholder,
 #searchProduits::placeholder {
   color: var(--gray-600);
 }

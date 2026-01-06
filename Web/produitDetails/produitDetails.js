@@ -26,11 +26,9 @@ async function loadProduitDetails() {
     const ProduitDiv = document.getElementById("produitDetails");
     ProduitDiv.innerHTML = `
       <div class="site-detail"><strong>Nom :</strong> ${produit.nom}</div>
-      <div class="site-detail"><strong>ID Produit :</strong> ${produit.id_produit}</div>
       <div class="site-detail"><strong>Département :</strong> ${produit.departement || "N/A"}</div>
-      <div class="site-detail"><strong>État :</strong> <span style="color: ${getEtatColor(produit.etat)}; font-weight: 600;">${produit.etat || "N/A"}</span></div>
+      <div class="site-detail"><strong>État Actuel:</strong> <span style="color: ${getEtatColor(produit.etat)}; font-weight: 600;">${produit.etat || "N/A"}</span></div>
       <div class="site-detail"><strong>Description :</strong> ${produit.description || "N/A"}</div>
-      <div class="site-detail"><strong>ID Site :</strong> ${produit.id_site}</div>
       <div class="site-detail"><strong>Date de création :</strong> ${formatDate(produit.date_creation)}</div>
     `;
   } catch (err) {

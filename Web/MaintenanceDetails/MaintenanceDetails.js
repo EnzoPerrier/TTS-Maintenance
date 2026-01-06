@@ -27,12 +27,11 @@ async function loadMaintenanceDetails() {
 
     const MaintenanceDiv = document.getElementById("MaintenanceDetails");
     MaintenanceDiv.innerHTML = `
-      <div class="site-detail"><strong>ID Maintenance :</strong> ${maintenance.id_maintenance}</div>
-      <div class="site-detail"><strong>Date :</strong> ${maintenance.date_maintenance}</div>
+      <div class="site-detail"><strong>RI interne :</strong> ${maintenance.ri_interne || "N/A"}</div>
       <div class="site-detail"><strong>Type :</strong> ${maintenance.type}</div>
       <div class="site-detail"><strong>État :</strong> ${maintenance.etat || "N/A"}</div>
       <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
-      <div class="site-detail"><strong>RI interne :</strong> ${maintenance.ri_interne || "N/A"}</div>
+      <div class="site-detail"><strong>Date :</strong> ${maintenance.date_maintenance}</div>
     `;
 
     await loadProduits();

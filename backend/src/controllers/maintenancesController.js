@@ -1,10 +1,40 @@
 const db = require("../config/db.js");
 
+// Fonction utilitaire pour formater les dates au format JJ/MM/AAAA HH:MM
+function formatDateForDisplay(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${day}/${month}/${year}`;
+}
+
+// Fonction pour garder le format YYYY-MM-DD pour les inputs
+function formatDateForInput(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatMaintenanceDate(maintenance) {
+  if (maintenance.date_maintenance) {
+    // Garder aussi le format original pour les inputs
+    maintenance.date_maintenance_input = formatDateForInput(maintenance.date_maintenance);
+    maintenance.date_maintenance = formatDateForDisplay(maintenance.date_maintenance);
+  }
+  return maintenance;
+}
+
 // GET /maintenances → toutes les maintenances
 exports.getAllMaintenances = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM maintenances");
-    res.json(rows);
+    const formattedRows = rows.map(formatMaintenanceDate);
+    res.json(formattedRows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -24,7 +54,8 @@ exports.getMaintenanceById = async (req, res) => {
       return res.status(404).json({ error: "Maintenance non trouvée" });
     }
 
-    res.json(rows[0]);
+    const maintenance = formatMaintenanceDate(rows[0]);
+    res.json(maintenance);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -41,8 +72,70 @@ exports.getAllMaintenancesBySiteID = async (req, res) => {
       [id]
     );
 
-    // Toujours renvoyer un tableau (vide si aucune maintenance)
-    res.json(rows);
+    const formattedRows = rows.map(formatMaintenanceDate);
+    res.json(formattedRows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// GET /maintenances/details
+exports.getAllMaintenancesDetails = async (req, res) => {
+
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+          m.id_maintenance,
+          m.date_maintenance,
+          m.id_site,
+          m.etat,
+          s.nom AS site_nom,
+          c.id_client,
+          c.nom AS client_nom
+       FROM maintenances m
+       JOIN sites s ON m.id_site = s.id_site
+       JOIN clients c ON s.id_client = c.id_client
+       ORDER BY m.date_maintenance DESC`,
+    );
+
+    // Formatage des dates si nécessaire
+    const formattedRows = rows.map(formatMaintenanceDate);
+
+    res.json(formattedRows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// GET /maintenances/details/:id
+exports.getDetailsMaintenance = async (req, res) => {
+  const { id } = req.params; // id_site ou id_maintenance selon usage
+
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+          m.id_maintenance,
+          m.date_maintenance,
+          m.id_site,
+          s.nom AS site_nom,
+          c.id_client,
+          c.nom AS client_nom
+       FROM maintenances m
+       JOIN sites s ON m.id_site = s.id_site
+       JOIN clients c ON s.id_client = c.id_client
+       WHERE m.id_site = ?
+       ORDER BY m.date_maintenance DESC`,
+      [id]
+    );
+
+    // Formatage des dates si nécessaire
+    const formattedRows = rows.map(formatMaintenanceDate);
+
+    res.json(formattedRows);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -71,10 +164,9 @@ exports.createMaintenance = async (req, res) => {
         etat,
         commentaire,
         ri_interne,
-        new Date().toISOString().split('T')[0] // Date actuelle au format YYYY-MM-DD
+        new Date().toISOString().split('T')[0]
       ]
     );
-
 
     res.status(201).json({
       id_maintenance: result.insertId,
