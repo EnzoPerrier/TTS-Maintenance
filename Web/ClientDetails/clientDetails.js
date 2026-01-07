@@ -1,0 +1,364 @@
+const API = "http://192.168.1.127:3000";
+
+const params = new URLSearchParams(window.location.search);
+const id_client = params.get("id_client");
+
+let allSites = [];
+let allEquipements = [];
+let allMaintenances = [];
+
+document.getElementById("backBtn").addEventListener("click", () => {
+  window.history.back();
+});
+
+// ========== CHARGEMENT CLIENT ==========
+async function loadClientDetails() {
+  if (!id_client) {
+    document.getElementById("clientDetails").textContent = "ID du client manquant.";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/clients/${id_client}`);
+    if (!res.ok) throw new Error("Erreur lors du chargement du client");
+
+    const client = await res.json();
+
+    const ClientDiv = document.getElementById("clientDetails");
+    ClientDiv.innerHTML = `
+      <div class="site-detail"><strong>Nom :</strong> ${client.nom}</div>
+      <div class="site-detail"><strong>Contact :</strong> ${client.contact || "N/A"}</div>
+      <div class="site-detail"><strong>Adresse :</strong> ${client.adresse || "N/A"}</div>
+      <div class="site-detail"><strong>Email :</strong> ${client.email ? `<a href="mailto:${client.email}">${client.email}</a>` : "N/A"}</div>
+      <div class="site-detail"><strong>Téléphone :</strong> ${client.telephone ? `<a href="tel:${client.telephone}">${client.telephone}</a>` : "N/A"}</div>
+      ${client.date_creation ? `<div class="site-detail"><strong>Date de création :</strong> ${client.date_creation}</div>` : ''}
+    `;
+  } catch (err) {
+    document.getElementById("clientDetails").textContent = err.message;
+  }
+}
+
+// ========== SITES ==========
+async function loadSites() {
+  try {
+    // Récupérer tous les sites et filtrer ceux du client
+    const res = await fetch(`${API}/sites`);
+    if (!res.ok) throw new Error("Erreur lors du chargement des sites");
+
+    const allSitesData = await res.json();
+    allSites = allSitesData.filter(site => site.id_client == id_client);
+
+    const SitesDiv = document.getElementById("SitesList");
+    SitesDiv.innerHTML = "";
+
+    // Mettre à jour les stats
+    document.getElementById("statsSites").textContent = allSites.length;
+
+    if (allSites.length === 0) {
+      SitesDiv.innerHTML = "<p>Aucun site associé à ce client.</p>";
+      return;
+    }
+
+    // Créer une liste de sites
+    const ul = document.createElement("ul");
+    ul.style.listStyle = "none";
+    ul.style.padding = "0";
+
+    allSites.forEach(site => {
+      const li = document.createElement("li");
+      li.classList.add("site-detail");
+      li.style.cursor = "pointer";
+      li.style.padding = "1rem";
+      li.style.marginBottom = "0.5rem";
+      li.style.background = "var(--gray-50)";
+      li.style.borderRadius = "var(--radius-md)";
+      li.style.border = "1px solid var(--gray-200)";
+      li.style.transition = "var(--transition)";
+
+      li.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: var(--primary-blue); font-size: 1.1rem;">🏢 ${site.nom}</strong><br/>
+            <span style="color: var(--gray-600);">${site.adresse || "Adresse non spécifiée"}</span>
+          </div>
+          <button onclick="window.location.href='../SiteDetails/siteDetails.html?id_site=${site.id_site}'" style="background: var(--primary-blue);">
+            Voir détails
+          </button>
+        </div>
+      `;
+
+      li.addEventListener("mouseenter", () => {
+        li.style.borderColor = "var(--primary-blue)";
+        li.style.transform = "translateX(4px)";
+      });
+
+      li.addEventListener("mouseleave", () => {
+        li.style.borderColor = "var(--gray-200)";
+        li.style.transform = "translateX(0)";
+      });
+
+      ul.appendChild(li);
+    });
+
+    SitesDiv.appendChild(ul);
+
+    // Charger les équipements et maintenances pour chaque site
+    await loadAllEquipements();
+    await loadAllMaintenances();
+
+  } catch (err) {
+    document.getElementById("SitesList").textContent = err.message;
+  }
+}
+
+// ========== ÉQUIPEMENTS ==========
+async function loadAllEquipements() {
+  try {
+    allEquipements = [];
+
+    // Pour chaque site, récupérer les équipements
+    for (const site of allSites) {
+      const res = await fetch(`${API}/produits/ProduitsBySiteID/${site.id_site}`);
+      if (res.ok) {
+        const produits = await res.json();
+        allEquipements = allEquipements.concat(produits);
+      }
+    }
+
+    const EquipDiv = document.getElementById("EquipementsList");
+    EquipDiv.innerHTML = "";
+
+    // Calcul des stats
+    const statsOK = allEquipements.filter(p => p.etat === "OK").length;
+    const statsNOK = allEquipements.filter(p => p.etat === "NOK").length;
+    const statsPassable = allEquipements.filter(p => p.etat === "Passable").length;
+
+    document.getElementById("statsEquipements").textContent = allEquipements.length;
+    document.getElementById("statsOK").textContent = statsOK;
+    document.getElementById("statsNOK").textContent = statsNOK;
+    document.getElementById("statsPassable").textContent = statsPassable;
+
+    if (allEquipements.length === 0) {
+      EquipDiv.innerHTML = "<p>Aucun équipement associé à ce client.</p>";
+      return;
+    }
+
+    // Grouper par site
+    const equipementsBySite = {};
+    allEquipements.forEach(eq => {
+      if (!equipementsBySite[eq.id_site]) {
+        equipementsBySite[eq.id_site] = [];
+      }
+      equipementsBySite[eq.id_site].push(eq);
+    });
+
+    // Afficher par site
+    for (const site of allSites) {
+      if (!equipementsBySite[site.id_site] || equipementsBySite[site.id_site].length === 0) continue;
+
+      const siteSection = document.createElement("div");
+      siteSection.style.marginBottom = "1.5rem";
+
+      const siteTitle = document.createElement("h4");
+      siteTitle.textContent = `🏢 ${site.nom}`;
+      siteTitle.style.color = "var(--primary-blue)";
+      siteTitle.style.marginBottom = "0.75rem";
+      siteSection.appendChild(siteTitle);
+
+      const ul = document.createElement("ul");
+      ul.style.listStyle = "none";
+      ul.style.padding = "0";
+
+      equipementsBySite[site.id_site].forEach(eq => {
+        const li = document.createElement("li");
+        li.classList.add("equipement");
+        
+        const etat = (eq.etat || "").toLowerCase();
+        if (etat === "ok") li.classList.add("equipement-ok");
+        else if (etat === "nok") li.classList.add("equipement-nok");
+        else if (etat === "passable") li.classList.add("equipement-passable");
+        else li.classList.add("equipement-autre");
+
+        let etatColor = "#6C757D";
+        if (etat === "ok") etatColor = "#28A745";
+        else if (etat === "nok") etatColor = "#DC3545";
+        else if (etat === "passable") etatColor = "#FFC107";
+
+        li.innerHTML = `
+          <div style="flex: 1;">
+            <strong>${eq.nom}</strong>
+            ${eq.departement ? " - " + eq.departement : ""}
+            ${eq.etat ? ` - <span style="color: ${etatColor}; font-weight: 600;">${eq.etat}</span>` : ""}
+            <br/>
+            <small style="color: #6C757D;">${eq.description || ""}</small>
+          </div>
+          <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${eq.id_produit}'" style="background: var(--secondary-blue);">
+            Détails
+          </button>
+        `;
+
+        ul.appendChild(li);
+      });
+
+      siteSection.appendChild(ul);
+      EquipDiv.appendChild(siteSection);
+    }
+
+  } catch (err) {
+    document.getElementById("EquipementsList").textContent = err.message;
+  }
+}
+
+// ========== MAINTENANCES ==========
+async function loadAllMaintenances() {
+  try {
+    allMaintenances = [];
+
+    // Pour chaque site, récupérer les maintenances
+    for (const site of allSites) {
+      const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${site.id_site}`);
+      if (res.ok) {
+        const maintenances = await res.json();
+        // Ajouter le nom du site à chaque maintenance
+        maintenances.forEach(m => m.site_nom = site.nom);
+        allMaintenances = allMaintenances.concat(maintenances);
+      }
+    }
+
+    const MaintDiv = document.getElementById("MaintenancesList");
+    MaintDiv.innerHTML = "";
+
+    // Calcul des stats
+    const statsPlanifiees = allMaintenances.filter(m => {
+      const etat = (m.etat || "").toLowerCase();
+      return etat.includes("planif");
+    }).length;
+
+    const statsEnCours = allMaintenances.filter(m => {
+      const etat = (m.etat || "").toLowerCase();
+      return etat.includes("cours");
+    }).length;
+
+    const statsTerminees = allMaintenances.filter(m => {
+      const etat = (m.etat || "").toLowerCase();
+      return etat.includes("termin");
+    }).length;
+
+    document.getElementById("statsMaintenances").textContent = allMaintenances.length;
+    document.getElementById("statsPlanifiees").textContent = statsPlanifiees;
+    document.getElementById("statsEnCours").textContent = statsEnCours;
+    document.getElementById("statsTerminees").textContent = statsTerminees;
+
+    if (allMaintenances.length === 0) {
+      MaintDiv.innerHTML = "<p>Aucune maintenance associée à ce client.</p>";
+      return;
+    }
+
+    // Trier par date décroissante
+    allMaintenances.sort((a, b) => {
+      // Convertir les dates JJ/MM/AAAA en objets Date pour comparaison
+      const dateA = parseDate(a.date_maintenance);
+      const dateB = parseDate(b.date_maintenance);
+      return dateB - dateA;
+    });
+
+    // Grouper par site
+    const maintenancesBySite = {};
+    allMaintenances.forEach(m => {
+      if (!maintenancesBySite[m.id_site]) {
+        maintenancesBySite[m.id_site] = [];
+      }
+      maintenancesBySite[m.id_site].push(m);
+    });
+
+    // Afficher par site
+    for (const site of allSites) {
+      if (!maintenancesBySite[site.id_site] || maintenancesBySite[site.id_site].length === 0) continue;
+
+      const siteSection = document.createElement("div");
+      siteSection.style.marginBottom = "1.5rem";
+
+      const siteTitle = document.createElement("h4");
+      siteTitle.textContent = `🏢 ${site.nom}`;
+      siteTitle.style.color = "var(--primary-blue)";
+      siteTitle.style.marginBottom = "0.75rem";
+      siteSection.appendChild(siteTitle);
+
+      maintenancesBySite[site.id_site].forEach(m => {
+        const details = document.createElement("details");
+        details.classList.add("maintenance");
+
+        const etat = (m.etat || "").toLowerCase();
+
+        // Classes CSS pour l'état
+        if (etat.includes("termin")) {
+          details.classList.add("maintenance-terminee");
+        } else if (etat.includes("cours")) {
+          details.classList.add("maintenance-en-cours");
+        } else if (etat.includes("planif")) {
+          details.classList.add("maintenance-planifiee");
+        } else {
+          details.classList.add("maintenance-autre");
+        }
+
+        const summary = document.createElement("summary");
+
+        // Icône selon l'état
+        let icone = "🔧";
+        if (etat.includes("termin")) icone = "✅";
+        else if (etat.includes("cours")) icone = "⚙️";
+        else if (etat.includes("planif")) icone = "📅";
+
+        summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${m.date_maintenance}`;
+        details.appendChild(summary);
+
+        // Couleur de l'état
+        let etatColor = "#6C757D";
+        if (etat.includes("termin")) etatColor = "#28A745";
+        else if (etat.includes("cours")) etatColor = "#FFC107";
+        else if (etat.includes("planif")) etatColor = "#0066CC";
+
+        const content = document.createElement("div");
+        content.innerHTML = `
+          <div><strong>Date :</strong> ${m.date_maintenance}</div>
+          <div><strong>Type :</strong> ${m.type}</div>
+          <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
+          <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
+          <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
+          <div style="margin-top: 1rem;">
+            <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" 
+               style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">
+              Voir détails
+            </a>
+          </div>
+        `;
+        details.appendChild(content);
+
+        siteSection.appendChild(details);
+      });
+
+      MaintDiv.appendChild(siteSection);
+    }
+
+  } catch (err) {
+    document.getElementById("MaintenancesList").textContent = err.message;
+  }
+}
+
+// Fonction utilitaire pour parser les dates au format JJ/MM/AAAA
+function parseDate(dateStr) {
+  if (!dateStr) return new Date(0);
+  
+  // Si format JJ/MM/AAAA
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('/');
+    return new Date(year, month - 1, day);
+  }
+  
+  // Sinon format ISO
+  return new Date(dateStr);
+}
+
+// ========== INIT ==========
+loadClientDetails();
+loadSites();

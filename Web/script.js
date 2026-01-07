@@ -114,7 +114,7 @@ async function initAllSitesMap() {
       // Popup avec lien vers les détails
       marker.bindPopup(`
         <div style="font-family: 'Segoe UI', sans-serif; min-width: 200px;">
-          <strong style="color: #0066CC; font-size: 1.1em;">${site.nom} - ${site.client_nom}</strong><br/>
+          <strong style="color: #0066CC; font-size: 1.1em;">${site.nom}</strong><br/>
           <span style="color: #6C757D;">${site.adresse || 'Adresse non spécifiée'}</span><br/>
           <small style="color: #999;">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</small><br/>
           <button onclick="goToSiteDetails(${site.id_site})" style="
@@ -190,6 +190,7 @@ function renderClients(clients) {
         </small>
       </div>
       <div style="display: flex; gap: 0.5rem;">
+        <button onclick="window.location.href='./ClientDetails/clientDetails.html?id_client=${client.id_client}'; event.stopPropagation();" style="background: #0066CC;">Détails</button>
         <button onclick="editClient(${client.id_client}); event.stopPropagation();" style="background: #6C757D;">Modifier</button>
         <button onclick="deleteClient(${client.id_client}); event.stopPropagation();" style="background: #DC3545;">Supprimer</button>
       </div>
@@ -356,6 +357,7 @@ async function deleteClient(id_client) {
 
 /* ---------- SITES ---------- */
 let allSites = []; // stocke tous les sites pour filtrage
+let editingSiteId = null;
 
 // Charger la liste des clients pour le select
 async function loadClientsSelect() {
@@ -389,16 +391,25 @@ function renderSites(sites) {
   const list = document.getElementById("sitesList");
   list.innerHTML = "";
 
+  if (sites.length === 0) {
+    list.innerHTML = "<li>Aucun site trouvé</li>";
+    return;
+  }
+
   sites.forEach(site => {
     const li = document.createElement("li");
-    li.textContent = `${site.nom} - ${site.client_nom} - ${site.adresse || ""}`;
+    li.innerHTML = `
+      <div style="flex: 1;">
+        <strong>${site.nom}</strong><br/>
+        <small style="color: #6C757D;">${site.adresse || "Adresse non spécifiée"}</small>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button onclick="window.location.href='./SiteDetails/siteDetails.html?id_site=${site.id_site}'" style="background: #0066CC;">Détails</button>
+        <button onclick="editSite(${site.id_site})" style="background: #6C757D;">Modifier</button>
+        <button onclick="deleteSite(${site.id_site})" style="background: #DC3545;">Supprimer</button>
+      </div>
+    `;
 
-    // Rendre toute la ligne cliquable
-    li.addEventListener("click", () => {
-      window.location.href = `./SiteDetails/siteDetails.html?id_site=${site.id_site}`;
-    });
-
-    li.classList.add("clickable-line");
     list.appendChild(li);
   });
 }
@@ -429,6 +440,12 @@ async function addSite(event) {
     gps_lng: document.getElementById("siteLng").value || null
   };
 
+  // Si on est en mode édition
+  if (editingSiteId !== null) {
+    await updateSite(editingSiteId, data);
+    return;
+  }
+
   const res = await fetch(`${API}/sites`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -442,18 +459,122 @@ async function addSite(event) {
     if (document.getElementById("carte").classList.contains("active")) {
       initAllSitesMap();
     }
+    alert("Site ajouté avec succès !");
   } else {
     alert("Erreur lors de l'ajout du site");
   }
 }
 
 function showAddSiteForm() {
+  editingSiteId = null;
   loadClientsSelect(); // Charger les clients dans le select
+  document.getElementById("siteFormTitle").textContent = "Ajouter un site";
+  document.getElementById("siteSubmitBtn").textContent = "Ajouter";
+  document.querySelector("#addSiteForm form").reset();
   document.getElementById("addSiteForm").style.display = "block";
 }
 
 function hideAddSiteForm() {
   document.getElementById("addSiteForm").style.display = "none";
+  editingSiteId = null;
+  document.querySelector("#addSiteForm form").reset();
+}
+
+// Modifier un site
+function editSite(id_site) {
+  const site = allSites.find(s => s.id_site === id_site);
+  if (!site) return alert("Site non trouvé");
+
+  editingSiteId = id_site;
+
+  // Charger les clients et pré-remplir le formulaire
+  loadClientsSelect().then(() => {
+    document.getElementById("siteClientId").value = site.id_client;
+    document.getElementById("siteNom").value = site.nom;
+    document.getElementById("siteAdresse").value = site.adresse || "";
+    document.getElementById("siteLat").value = site.gps_lat || "";
+    document.getElementById("siteLng").value = site.gps_lng || "";
+
+    document.getElementById("siteFormTitle").textContent = "Modifier un site";
+    document.getElementById("siteSubmitBtn").textContent = "Valider";
+
+    document.getElementById("addSiteForm").style.display = "block";
+  });
+}
+
+// Mettre à jour un site
+async function updateSite(id_site, data) {
+  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier ce site ?");
+  if (!confirmUpdate) return;
+
+  try {
+    const res = await fetch(`${API}/sites/${id_site}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la modification du site");
+      return;
+    }
+
+    hideAddSiteForm();
+    loadSites();
+    // Rafraîchir la carte si elle est affichée
+    if (document.getElementById("carte").classList.contains("active")) {
+      initAllSitesMap();
+    }
+    alert("Site modifié avec succès !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
+}
+
+// Supprimer un site
+async function deleteSite(id_site) {
+  try {
+    // Vérifier d'abord si le site a des produits
+    const resProduits = await fetch(`${API}/produits/ProduitsBySiteID/${id_site}`);
+    const produits = await resProduits.json();
+
+    if (produits.length > 0) {
+      alert(`❌ Impossible de supprimer ce site.\n\nIl a ${produits.length} équipement(s) associé(s):\n${produits.slice(0, 5).map(p => '- ' + p.nom).join('\n')}${produits.length > 5 ? '\n...' : ''}\n\nVeuillez d'abord supprimer ces équipements.`);
+      return;
+    }
+
+    // Vérifier si le site a des maintenances
+    const resMaintenances = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${id_site}`);
+    const maintenances = await resMaintenances.json();
+
+    if (maintenances.length > 0) {
+      alert(`❌ Impossible de supprimer ce site.\n\nIl a ${maintenances.length} maintenance(s) associée(s):\n${maintenances.slice(0, 5).map(m => '- ' + m.type + ' (' + m.date_maintenance + ')').join('\n')}${maintenances.length > 5 ? '\n...' : ''}\n\nVeuillez d'abord supprimer ces maintenances.`);
+      return;
+    }
+
+    const confirmDelete = confirm("Voulez-vous vraiment supprimer ce site ?");
+    if (!confirmDelete) return;
+
+    const res = await fetch(`${API}/sites/${id_site}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la suppression du site");
+      return;
+    }
+
+    loadSites();
+    // Rafraîchir la carte si elle est affichée
+    if (document.getElementById("carte").classList.contains("active")) {
+      initAllSitesMap();
+    }
+    alert("Site supprimé avec succès !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
 }
 
 /* ---------- PRODUITS ---------- */
@@ -699,18 +820,14 @@ function printQR(id) {
 
 /* ---------- MAINTENANCES ---------- */
 async function loadMaintenances() {
-
-  // Charge les maintenances avec les infos clients et site
-  const res = await fetch(`${API}/maintenances/details`);
+  const res = await fetch(`${API}/maintenances`);
   const maintenances = await res.json();
-
   const ul = document.getElementById("maintenancesList");
   ul.innerHTML = "";
 
   maintenances.forEach(m => {
-
     const li = document.createElement("li");
-    li.textContent = `${m.site_nom} — ${m.client_nom} — ${m.date_maintenance} — ${m.etat}`;
+    li.textContent = `${m.description || "Maintenance"} — ${m.date_maintenance}`;
     ul.appendChild(li);
   });
 }

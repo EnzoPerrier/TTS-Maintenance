@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détails du client</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <button id="backBtn">← Retour</button>
+
+  <main>
+    <section class="active">
+      <h1>👤 Détails du client</h1>
+      <div id="clientDetails"></div>
+
+      <!-- Statistiques du client -->
+      <div class="site-stats-container">
+        <h3 class="stats-section-title">📊 Vue d'ensemble</h3>
+        
+        <div class="stats-grid-site">
+          <!-- Sites -->
+          <div class="stat-card-modern stat-card-info">
+            <div class="stat-header">
+              <span class="stat-icon-modern">🏢</span>
+              <span class="stat-label-modern">Sites</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-main-value" id="statsSites">0</div>
+            </div>
+          </div>
+
+          <!-- Équipements -->
+          <div class="stat-card-modern stat-card-info">
+            <div class="stat-header">
+              <span class="stat-icon-modern">📦</span>
+              <span class="stat-label-modern">Équipements</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-main-value" id="statsEquipements">0</div>
+              <div class="stat-breakdown">
+                <div class="stat-item stat-success">
+                  <span class="dot"></span>
+                  <span class="label">OK</span>
+                  <span class="value" id="statsOK">0</span>
+                </div>
+                <div class="stat-item stat-warning">
+                  <span class="dot"></span>
+                  <span class="label">Passable</span>
+                  <span class="value" id="statsPassable">0</span>
+                </div>
+                <div class="stat-item stat-danger">
+                  <span class="dot"></span>
+                  <span class="label">NOK</span>
+                  <span class="value" id="statsNOK">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Maintenances -->
+          <div class="stat-card-modern stat-card-primary">
+            <div class="stat-header">
+              <span class="stat-icon-modern">🔧</span>
+              <span class="stat-label-modern">Maintenances</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-main-value" id="statsMaintenances">0</div>
+              <div class="stat-breakdown">
+                <div class="stat-item stat-success">
+                  <span class="dot"></span>
+                  <span class="label">Terminées</span>
+                  <span class="value" id="statsTerminees">0</span>
+                </div>
+                <div class="stat-item stat-warning">
+                  <span class="dot"></span>
+                  <span class="label">En cours</span>
+                  <span class="value" id="statsEnCours">0</span>
+                </div>
+                <div class="stat-item stat-info">
+                  <span class="dot"></span>
+                  <span class="label">Planifiées</span>
+                  <span class="value" id="statsPlanifiees">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste des sites -->
+      <details open>
+        <summary>🏢 Sites associés</summary>
+        <div id="SitesList"></div>
+      </details>
+
+      <!-- Liste des équipements -->
+      <details open>
+        <summary>📦 Équipements</summary>
+        <div id="EquipementsList"></div>
+      </details>
+
+      <!-- Liste des maintenances -->
+      <details open>
+        <summary>🔧 Maintenances</summary>
+        <div id="MaintenancesList"></div>
+      </details>
+    </section>
+  </main>
+
+  <script src="clientDetails.js" defer></script>
+</body>
+</html>

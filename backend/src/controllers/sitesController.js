@@ -31,7 +31,7 @@ function formatSiteDate(site) {
 // GET /sites --> liste tous les sites
 exports.getAllSites = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT s.*, c.nom AS client_nom FROM sites s JOIN clients c ON s.id_client = c.id_client");
+    const [rows] = await db.query("SELECT * FROM sites");
     const formattedRows = rows.map(formatSiteDate);
     res.json(formattedRows);
   } catch (err) {
