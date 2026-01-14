@@ -66,7 +66,7 @@ exports.getMaintenancesByProduit = async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      `SELECT mp.*, m.date_maintenance, m.type, m.departement, m.commentaire as maintenance_commentaire
+      `SELECT mp.*, m.date_maintenance, m.type, m.commentaire as maintenance_commentaire
        FROM maintenance_produits mp
        JOIN maintenances m ON mp.id_maintenance = m.id_maintenance
        WHERE mp.id_produit = ?
@@ -87,9 +87,21 @@ exports.addProduitToMaintenance = async (req, res) => {
   const id_produit = req.body.id_produit;
   const etat = req.body.etat;
   const commentaire = req.body.commentaire;
+  const etat_constate = req.body.etat_constate;
+  const travaux_effectues = req.body.travaux_effectues;
+  const ri_interne = req.body.ri_interne;
   const photo = req.file ? req.file.filename : null;
 
-  console.log("Données reçues:", { id_maintenance, id_produit, etat, commentaire, photo });
+  console.log("Données reçues:", { 
+    id_maintenance, 
+    id_produit, 
+    etat, 
+    commentaire, 
+    etat_constate,
+    travaux_effectues,
+    ri_interne,
+    photo 
+  });
 
   if (!id_maintenance || !id_produit) {
     if (photo) {
@@ -119,14 +131,31 @@ exports.addProduitToMaintenance = async (req, res) => {
       return res.status(400).json({ error: "Ce produit est déjà associé à cette maintenance" });
     }
 
-    // Insérer l'association maintenance-produit
+    // Insérer l'association maintenance-produit avec les nouveaux champs
     await db.query(
-      `INSERT INTO maintenance_produits (id_maintenance, id_produit, etat, commentaire, photo)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id_maintenance, id_produit, etat || 'N/A', commentaire || null, photo]
+      `INSERT INTO maintenance_produits (
+        id_maintenance, 
+        id_produit, 
+        etat, 
+        commentaire, 
+        photo,
+        etat_constate,
+        travaux_effectues,
+        ri_interne
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_maintenance, 
+        id_produit, 
+        etat || 'N/A', 
+        commentaire || null, 
+        photo,
+        etat_constate || null,
+        travaux_effectues || null,
+        ri_interne || null
+      ]
     );
 
-    // ⭐ NOUVEAU: Mettre à jour l'état du produit si un état est fourni
+    // Mettre à jour l'état du produit si un état est fourni
     if (etat && etat !== 'N/A') {
       await db.query(
         `UPDATE produits SET etat = ? WHERE id_produit = ?`,
@@ -141,6 +170,9 @@ exports.addProduitToMaintenance = async (req, res) => {
       id_produit,
       etat,
       commentaire,
+      etat_constate,
+      travaux_effectues,
+      ri_interne,
       photo
     });
   } catch (err) {
@@ -161,9 +193,21 @@ exports.updateProduitMaintenance = async (req, res) => {
   
   const etat = req.body.etat;
   const commentaire = req.body.commentaire;
+  const etat_constate = req.body.etat_constate;
+  const travaux_effectues = req.body.travaux_effectues;
+  const ri_interne = req.body.ri_interne;
   const newPhoto = req.file ? req.file.filename : null;
 
-  console.log("Données reçues pour update:", { id_maintenance, id_produit, etat, commentaire, newPhoto });
+  console.log("Données reçues pour update:", { 
+    id_maintenance, 
+    id_produit, 
+    etat, 
+    commentaire,
+    etat_constate,
+    travaux_effectues,
+    ri_interne,
+    newPhoto 
+  });
 
   try {
     // Récupérer l'ancienne photo
@@ -186,8 +230,19 @@ exports.updateProduitMaintenance = async (req, res) => {
     const oldPhoto = existing[0].photo;
 
     // Construire la requête SQL dynamiquement
-    let query = `UPDATE maintenance_produits SET etat = ?, commentaire = ?`;
-    let params = [etat || 'N/A', commentaire || null];
+    let query = `UPDATE maintenance_produits SET 
+      etat = ?, 
+      commentaire = ?,
+      etat_constate = ?,
+      travaux_effectues = ?,
+      ri_interne = ?`;
+    let params = [
+      etat || 'N/A', 
+      commentaire || null,
+      etat_constate || null,
+      travaux_effectues || null,
+      ri_interne || null
+    ];
 
     if (newPhoto) {
       query += `, photo = ?`;
@@ -199,7 +254,7 @@ exports.updateProduitMaintenance = async (req, res) => {
 
     await db.query(query, params);
 
-    // NOUVEAU: Mettre à jour l'état du produit dans la table produits
+    // Mettre à jour l'état du produit dans la table produits
     if (etat && etat !== 'N/A') {
       await db.query(
         `UPDATE produits SET etat = ? WHERE id_produit = ?`,

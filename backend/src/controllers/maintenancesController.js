@@ -1,40 +1,10 @@
 const db = require("../config/db.js");
 
-// Fonction utilitaire pour formater les dates au format JJ/MM/AAAA HH:MM
-function formatDateForDisplay(dateString) {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${day}/${month}/${year}`;
-}
-
-// Fonction pour garder le format YYYY-MM-DD pour les inputs
-function formatDateForInput(dateString) {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function formatMaintenanceDate(maintenance) {
-  if (maintenance.date_maintenance) {
-    // Garder aussi le format original pour les inputs
-    maintenance.date_maintenance_input = formatDateForInput(maintenance.date_maintenance);
-    maintenance.date_maintenance = formatDateForDisplay(maintenance.date_maintenance);
-  }
-  return maintenance;
-}
-
 // GET /maintenances → toutes les maintenances
 exports.getAllMaintenances = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM maintenances");
-    const formattedRows = rows.map(formatMaintenanceDate);
-    res.json(formattedRows);
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -54,8 +24,7 @@ exports.getMaintenanceById = async (req, res) => {
       return res.status(404).json({ error: "Maintenance non trouvée" });
     }
 
-    const maintenance = formatMaintenanceDate(rows[0]);
-    res.json(maintenance);
+    res.json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -72,76 +41,13 @@ exports.getAllMaintenancesBySiteID = async (req, res) => {
       [id]
     );
 
-    const formattedRows = rows.map(formatMaintenanceDate);
-    res.json(formattedRows);
+    // Toujours renvoyer un tableau (vide si aucune maintenance)
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
-
-// GET /maintenances/details
-exports.getAllMaintenancesDetails = async (req, res) => {
-
-  try {
-    const [rows] = await db.query(
-      `SELECT 
-          m.id_maintenance,
-          m.date_maintenance,
-          m.id_site,
-          m.etat,
-          s.nom AS site_nom,
-          c.id_client,
-          c.nom AS client_nom
-       FROM maintenances m
-       JOIN sites s ON m.id_site = s.id_site
-       JOIN clients c ON s.id_client = c.id_client
-       ORDER BY m.date_maintenance DESC`,
-    );
-
-    // Formatage des dates si nécessaire
-    const formattedRows = rows.map(formatMaintenanceDate);
-
-    res.json(formattedRows);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-// GET /maintenances/details/:id
-exports.getDetailsMaintenance = async (req, res) => {
-  const { id } = req.params; // id_site ou id_maintenance selon usage
-
-  try {
-    const [rows] = await db.query(
-      `SELECT 
-          m.id_maintenance,
-          m.date_maintenance,
-          m.id_site,
-          s.nom AS site_nom,
-          c.id_client,
-          c.nom AS client_nom
-       FROM maintenances m
-       JOIN sites s ON m.id_site = s.id_site
-       JOIN clients c ON s.id_client = c.id_client
-       WHERE m.id_site = ?
-       ORDER BY m.date_maintenance DESC`,
-      [id]
-    );
-
-    // Formatage des dates si nécessaire
-    const formattedRows = rows.map(formatMaintenanceDate);
-
-    res.json(formattedRows);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
 
 // POST /maintenances 
 exports.createMaintenance = async (req, res) => {
@@ -151,20 +57,61 @@ exports.createMaintenance = async (req, res) => {
     type,
     etat,
     commentaire,
-    ri_interne
+    operateur_1,
+    operateur_2,
+    operateur_3,
+    heure_arrivee_matin,
+    heure_depart_matin,
+    heure_arrivee_aprem,
+    heure_depart_aprem,
+    garantie,
+    commentaire_interne,
+    contact,
+    type_produit,
+    numero_commande
   } = req.body;
 
   try {
     const [result] = await db.query(
-      `INSERT INTO maintenances (id_site, date_maintenance, type, etat, commentaire, ri_interne, date_creation) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO maintenances (
+        id_site, 
+        date_maintenance, 
+        type, 
+        etat, 
+        commentaire,
+        date_creation,
+        operateur_1,
+        operateur_2,
+        operateur_3,
+        heure_arrivee_matin,
+        heure_depart_matin,
+        heure_arrivee_aprem,
+        heure_depart_aprem,
+        garantie,
+        commentaire_interne,
+        contact,
+        type_produit,
+        numero_commande
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_site,
         date_maintenance,
         type,
         etat,
         commentaire,
-        ri_interne,
-        new Date().toISOString().split('T')[0]
+        new Date().toISOString().split('T')[0],
+        operateur_1 || null,
+        operateur_2 || null,
+        operateur_3 || null,
+        heure_arrivee_matin || null,
+        heure_depart_matin || null,
+        heure_arrivee_aprem || null,
+        heure_depart_aprem || null,
+        garantie || 0,
+        commentaire_interne || null,
+        contact || null,
+        type_produit || null,
+        numero_commande || null
       ]
     );
 
@@ -174,8 +121,7 @@ exports.createMaintenance = async (req, res) => {
       date_maintenance,
       type,
       etat,
-      commentaire,
-      ri_interne
+      commentaire
     });
   } catch (err) {
     console.error(err);
@@ -192,19 +138,59 @@ exports.updateMaintenance = async (req, res) => {
     type,
     etat,
     commentaire,
-    ri_interne
+    operateur_1,
+    operateur_2,
+    operateur_3,
+    heure_arrivee_matin,
+    heure_depart_matin,
+    heure_arrivee_aprem,
+    heure_depart_aprem,
+    garantie,
+    commentaire_interne,
+    contact,
+    type_produit,
+    numero_commande
   } = req.body;
 
   try {
     const [result] = await db.query(
-      `UPDATE maintenances SET id_site = ?, date_maintenance = ?, type = ?, etat = ?, commentaire = ?, ri_interne = ? WHERE id_maintenance = ?`,
+      `UPDATE maintenances SET 
+        id_site = ?, 
+        date_maintenance = ?, 
+        type = ?, 
+        etat = ?, 
+        commentaire = ?,
+        operateur_1 = ?,
+        operateur_2 = ?,
+        operateur_3 = ?,
+        heure_arrivee_matin = ?,
+        heure_depart_matin = ?,
+        heure_arrivee_aprem = ?,
+        heure_depart_aprem = ?,
+        garantie = ?,
+        commentaire_interne = ?,
+        contact = ?,
+        type_produit = ?,
+        numero_commande = ?
+      WHERE id_maintenance = ?`,
       [
         id_site,
         date_maintenance,
         type,
         etat,
         commentaire,
-        ri_interne,
+        operateur_1 || null,
+        operateur_2 || null,
+        operateur_3 || null,
+        heure_arrivee_matin || null,
+        heure_depart_matin || null,
+        heure_arrivee_aprem || null,
+        heure_depart_aprem || null,
+        garantie || 0,
+        commentaire_interne || null,
+        contact || null,
+        type_produit || null,
+        numero_commande || null,
         id
       ]
     );
