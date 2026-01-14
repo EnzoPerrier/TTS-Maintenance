@@ -27,11 +27,16 @@ async function loadMaintenanceDetails() {
 
     const MaintenanceDiv = document.getElementById("MaintenanceDetails");
     MaintenanceDiv.innerHTML = `
-      <div class="site-detail"><strong>RI interne :</strong> ${maintenance.ri_interne || "N/A"}</div>
+      <div class="site-detail"><strong>ID Maintenance :</strong> ${maintenance.id_maintenance}</div>
+      <div class="site-detail"><strong>Date :</strong> ${maintenance.date_maintenance}</div>
       <div class="site-detail"><strong>Type :</strong> ${maintenance.type}</div>
       <div class="site-detail"><strong>État :</strong> ${maintenance.etat || "N/A"}</div>
       <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
-      <div class="site-detail"><strong>Date :</strong> ${maintenance.date_maintenance}</div>
+      <div class="site-detail"><strong>Garantie :</strong> ${maintenance.garantie ? "Oui" : "Non"}</div>
+      <div class="site-detail"><strong>Contact :</strong> ${maintenance.contact || "N/A"}</div>
+      <div class="site-detail"><strong>Type produit :</strong> ${maintenance.type_produit || "N/A"}</div>
+      <div class="site-detail"><strong>N° Commande :</strong> ${maintenance.numero_commande || "N/A"}</div>
+      <div class="site-detail"><strong>Commentaire interne :</strong> ${maintenance.commentaire_interne || "N/A"}</div>
     `;
 
     await loadProduits();
@@ -45,7 +50,7 @@ async function loadMaintenanceDetails() {
 // ========== PRODUITS ASSOCIÉS ==========
 async function loadProduits() {
   try {
-    const res = await fetch(`${API}/produits/ProduitsBySiteID/${maintenance.id_site}`); // A VOIR
+    const res = await fetch(`${API}/produits/ProduitsBySiteID/${maintenance.id_site}`);
     if (!res.ok) throw new Error("Erreur lors du chargement des produits");
     allProduits = await res.json();
   } catch (err) {
@@ -87,11 +92,24 @@ async function loadProduitsAssocies() {
 
       const content = document.createElement("div");
       content.innerHTML = `
-        <div><strong>Nom :</strong> ${p.nom}</div>
-        <div><strong>Département :</strong> ${p.departement || "N/A"}</div>
-        <div><strong>Description :</strong> ${p.description || "N/A"}</div>
-        <div><strong>État lors de la maintenance :</strong> ${p.etat || "N/A"}</div>
-        <div><strong>Commentaire maintenance :</strong> ${p.commentaire || "N/A"}</div>
+        <div><strong>Nom :</strong><span>${p.nom}</span></div>
+        <div><strong>Département :</strong><span>${p.departement || "N/A"}</span></div>
+        <div><strong>Description :</strong><span>${p.description || "N/A"}</span></div>
+        <div><strong>État lors de la maintenance :</strong><span>${p.etat || "N/A"}</span></div>
+        <div><strong>Commentaire :</strong><span>${p.commentaire || "N/A"}</span></div>
+        
+        <div class="produit-maintenance-section">
+          <h5>📝 Informations de maintenance</h5>
+          <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--gray-100);">
+            <strong>État constaté :</strong><span>${p.etat_constate || "Non renseigné"}</span>
+          </div>
+          <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--gray-100);">
+            <strong>Travaux effectués :</strong><span>${p.travaux_effectues || "Non renseigné"}</span>
+          </div>
+          <div style="padding: 0.5rem 0;">
+            <strong>RI interne :</strong><span>${p.ri_interne || "Non renseigné"}</span>
+          </div>
+        </div>
         
         <h4 style="margin-top: 1.5rem; margin-bottom: 1rem; color: #0066CC;">📸 Photos (${photos.length}/5)</h4>
         <div id="photos-grid-${p.id_produit}" class="photos-grid">
@@ -113,7 +131,7 @@ async function loadProduitsAssocies() {
         ` : '<p style="color: #FFC107; margin-top: 1rem;">⚠️ Limite de 5 photos atteinte</p>'}
         
         <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="editProduitMaintenance(${p.id_produit})" class="btn-edit-produit">Modifier l'état</button>
+          <button onclick="editProduitMaintenance(${p.id_produit})" class="btn-edit-produit">Modifier les informations</button>
           <button onclick="removeProduit(${p.id_produit})" class="btn-remove-produit">Retirer de la maintenance</button>
         </div>
       `;
@@ -215,14 +233,9 @@ async function addPhoto(event) {
     return;
   }
 
-  console.log("Ajout de", files.length, "photo(s) au produit", currentProduitPhotos);
-
-  // Créer FormData pour l'upload
   const formData = new FormData();
   
-  // Ajouter tous les fichiers
   Array.from(files).forEach((file, index) => {
-    console.log(`Fichier ${index + 1}:`, file.name, file.type, file.size);
     formData.append("photos", file);
   });
   
@@ -240,13 +253,11 @@ async function addPhoto(event) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error("Erreur upload:", error);
       alert(error.error || "Erreur lors de l'ajout des photos");
       return;
     }
 
     const result = await res.json();
-    console.log("Succès upload:", result);
     alert(result.message || "Photos ajoutées avec succès");
     
     hideAddPhotoForm();
@@ -291,17 +302,14 @@ function closePhotoModal() {
   modal.style.display = "none";
 }
 
-// Fonction de prévisualisation pour les formulaires
 function previewPhoto(event, previewId) {
   const files = event.target.files;
   const preview = document.getElementById(previewId);
   
-  // Support pour plusieurs photos
   if (files.length > 0) {
-    preview.innerHTML = ""; // Vider la prévisualisation
+    preview.innerHTML = "";
     preview.style.display = "block";
     
-    // Limiter à 5 photos
     if (files.length > 5) {
       alert("Maximum 5 photos autorisées");
       event.target.value = "";
@@ -327,22 +335,18 @@ function previewPhoto(event, previewId) {
   }
 }
 
-// ========== ASSOCIER UN PRODUIT (AVEC FILTRE ET PHOTOS MULTIPLES) ==========
+// ========== ASSOCIER UN PRODUIT ==========
 function loadProduitsSelect() {
   const select = document.getElementById("produitSelect");
   select.innerHTML = '<option value="">-- Sélectionner un produit --</option>';
 
-  // Récupérer les IDs des produits déjà associés
   const produitsAssociesIds = produitsAssocies.map(p => p.id_produit);
-
-  // Filtrer les produits non encore associés
   const produitsDisponibles = allProduits.filter(p => !produitsAssociesIds.includes(p.id_produit));
 
   if (produitsDisponibles.length === 0) {
     select.innerHTML = '<option value="">Tous les produits sont déjà associés</option>';
     select.disabled = true;
     
-    // Désactiver aussi le bouton de soumission
     const submitBtn = document.querySelector("#produitAssocForm button[type='submit']");
     if (submitBtn) submitBtn.disabled = true;
     return;
@@ -361,23 +365,20 @@ function loadProduitsSelect() {
 }
 
 function showAddProduitForm() {
-  loadProduitsSelect(); // Charge la liste filtrée
+  loadProduitsSelect();
   document.getElementById("produitAssocForm").reset();
   
-  // Réinitialiser la prévisualisation des photos
   const preview = document.getElementById("photoPreview");
   if (preview) {
     preview.innerHTML = "";
     preview.style.display = "none";
   }
   
-  // Réinitialiser le compteur de fichiers
   const fileCount = document.getElementById("fileCount");
   if (fileCount) fileCount.textContent = "";
   
   document.getElementById("addProduitForm").style.display = "block";
   
-  // Réinitialiser le gestionnaire d'événements pour les photos
   setTimeout(() => {
     initPhotoInput();
   }, 100);
@@ -387,7 +388,6 @@ function hideAddProduitForm() {
   document.getElementById("addProduitForm").style.display = "none";
   document.getElementById("produitAssocForm").reset();
   
-  // Réinitialiser la prévisualisation
   const preview = document.getElementById("photoPreview");
   if (preview) {
     preview.innerHTML = "";
@@ -401,6 +401,9 @@ async function addProduitToMaintenance(event) {
   const id_produit = document.getElementById("produitSelect").value;
   const etat = document.getElementById("produitEtat").value;
   const commentaire = document.getElementById("produitCommentaire").value;
+  const etat_constate = document.getElementById("produitEtatConstate").value;
+  const travaux_effectues = document.getElementById("produitTravauxEffectues").value;
+  const ri_interne = document.getElementById("produitRiInterne").value;
   const photoInput = document.getElementById("photoInput");
   const photoFiles = photoInput ? photoInput.files : [];
 
@@ -414,8 +417,6 @@ async function addProduitToMaintenance(event) {
     return;
   }
 
-  console.log("Photos à envoyer:", photoFiles.length);
-
   try {
     // 1. Associer le produit à la maintenance
     const resAssoc = await fetch(`${API}/maintenance-produits`, {
@@ -425,7 +426,10 @@ async function addProduitToMaintenance(event) {
         id_maintenance: id_maintenance,
         id_produit: id_produit,
         etat: etat || null,
-        commentaire: commentaire || null
+        commentaire: commentaire || null,
+        etat_constate: etat_constate || null,
+        travaux_effectues: travaux_effectues || null,
+        ri_interne: ri_interne || null
       })
     });
 
@@ -435,15 +439,11 @@ async function addProduitToMaintenance(event) {
       return;
     }
 
-    console.log("Produit associé, maintenant upload des photos...");
-
     // 2. Si des photos ont été sélectionnées, les uploader
     if (photoFiles && photoFiles.length > 0) {
       const formData = new FormData();
       
-      // Ajouter tous les fichiers
       Array.from(photoFiles).forEach((file, index) => {
-        console.log(`Ajout fichier ${index + 1}:`, file.name, file.type, file.size);
         formData.append("photos", file);
       });
       
@@ -453,8 +453,6 @@ async function addProduitToMaintenance(event) {
         formData.append("commentaire", commentaire);
       }
 
-      console.log("Envoi de FormData avec", photoFiles.length, "photos");
-
       const resPhotos = await fetch(`${API}/photos/multiple`, {
         method: "POST",
         body: formData
@@ -462,18 +460,12 @@ async function addProduitToMaintenance(event) {
 
       if (!resPhotos.ok) {
         const error = await resPhotos.json();
-        console.error("Erreur upload photos:", error);
         alert(`Produit associé mais erreur photos: ${error.error || 'Erreur inconnue'}`);
-      } else {
-        const result = await resPhotos.json();
-        console.log("Photos uploadées avec succès:", result);
       }
-    } else {
-      console.log("Aucune photo à uploader");
     }
 
     hideAddProduitForm();
-    await loadProduitsAssocies(); // Recharge la liste
+    await loadProduitsAssocies();
     alert("Produit associé avec succès !");
     
   } catch (err) {
@@ -484,7 +476,74 @@ async function addProduitToMaintenance(event) {
 
 // ========== MODIFIER L'ÉTAT D'UN PRODUIT ==========
 function editProduitMaintenance(id_produit) {
-  alert("Fonctionnalité de modification à implémenter");
+  const produit = produitsAssocies.find(p => p.id_produit === id_produit);
+  if (!produit) return alert("Produit non trouvé");
+
+  document.getElementById("editProduitId").value = id_produit;
+  document.getElementById("editProduitNom").textContent = produit.nom;
+  document.getElementById("editProduitEtat").value = produit.etat || "";
+  document.getElementById("editProduitCommentaire").value = produit.commentaire || "";
+  document.getElementById("editProduitEtatConstate").value = produit.etat_constate || "";
+  document.getElementById("editProduitTravauxEffectues").value = produit.travaux_effectues || "";
+  document.getElementById("editProduitRiInterne").value = produit.ri_interne || "";
+
+  // Afficher la photo actuelle si elle existe
+  const photoContainer = document.getElementById("currentPhotoContainer");
+  if (produit.photo) {
+    photoContainer.innerHTML = `
+      <p style="margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-600);">Photo actuelle :</p>
+      <img src="${API}/uploads/maintenance_produits/${produit.photo}" alt="Photo actuelle" style="max-width: 100%; max-height: 200px; border-radius: 8px;" />
+    `;
+  } else {
+    photoContainer.innerHTML = '<p style="color: var(--gray-500);">Aucune photo actuellement</p>';
+  }
+
+  document.getElementById("editProduitForm").style.display = "block";
+}
+
+function hideEditProduitForm() {
+  document.getElementById("editProduitForm").style.display = "none";
+}
+
+async function updateProduitMaintenance(event) {
+  event.preventDefault();
+
+  const id_produit = document.getElementById("editProduitId").value;
+  const etat = document.getElementById("editProduitEtat").value;
+  const commentaire = document.getElementById("editProduitCommentaire").value;
+  const etat_constate = document.getElementById("editProduitEtatConstate").value;
+  const travaux_effectues = document.getElementById("editProduitTravauxEffectues").value;
+  const ri_interne = document.getElementById("editProduitRiInterne").value;
+
+  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier ces informations ?");
+  if (!confirmUpdate) return;
+
+  try {
+    const res = await fetch(`${API}/maintenance-produits/${id_maintenance}/${id_produit}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        etat: etat || null,
+        commentaire: commentaire || null,
+        etat_constate: etat_constate || null,
+        travaux_effectues: travaux_effectues || null,
+        ri_interne: ri_interne || null
+      })
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la modification");
+      return;
+    }
+
+    hideEditProduitForm();
+    await loadProduitsAssocies();
+    alert("Informations mises à jour avec succès !");
+
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
 }
 
 async function removeProduit(id_produit) {
@@ -501,7 +560,7 @@ async function removeProduit(id_produit) {
       return;
     }
 
-    await loadProduitsAssocies(); // Recharge la liste
+    await loadProduitsAssocies();
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
@@ -511,11 +570,9 @@ async function removeProduit(id_produit) {
 // ========== INIT ==========
 loadMaintenanceDetails();
 
-// Initialiser le gestionnaire d'événements pour les photos
 function initPhotoInput() {
   const photoInput = document.getElementById("photoInput");
   if (photoInput) {
-    // Retirer les anciens gestionnaires pour éviter les doublons
     const newPhotoInput = photoInput.cloneNode(true);
     photoInput.parentNode.replaceChild(newPhotoInput, photoInput);
     

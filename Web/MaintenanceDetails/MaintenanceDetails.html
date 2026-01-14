@@ -326,8 +326,7 @@
     #ListeProduits details > div > div {
       padding: 0.75rem 0;
       border-bottom: 1px solid var(--gray-100);
-      display: flex;
-      gap: 0.5rem;
+      display: block;
     }
 
     #ListeProduits details > div > div:last-child {
@@ -338,8 +337,14 @@
     #ListeProduits strong {
       color: var(--gray-600);
       font-weight: 600;
-      min-width: 200px;
-      flex-shrink: 0;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    #ListeProduits details > div > div span {
+      display: block;
+      color: var(--gray-800);
+      padding-left: 0.5rem;
     }
 
     #ListeProduits > p {
@@ -349,6 +354,21 @@
       background: var(--gray-50);
       border-radius: var(--radius-lg);
       border: 2px dashed var(--gray-300);
+      font-size: 1.1rem;
+    }
+
+    /* Sections pour les nouveaux champs */
+    .produit-maintenance-section {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      border-left: 4px solid var(--primary-blue);
+    }
+
+    .produit-maintenance-section h5 {
+      color: var(--primary-blue);
+      margin-bottom: 0.75rem;
       font-size: 1.1rem;
     }
 
@@ -474,10 +494,12 @@
     <form id="produitAssocForm" onsubmit="addProduitToMaintenance(event)">
       <h3>Associer un produit à cette maintenance</h3>
       
+      <label for="produitSelect" class="form-label">📦 Produit</label>
       <select id="produitSelect" required>
         <option value="">-- Sélectionner un produit --</option>
       </select>
       
+      <label for="produitEtat" class="form-label">🔍 État du produit</label>
       <select id="produitEtat">
         <option value="">-- État --</option>
         <option value="OK">✅ OK</option>
@@ -486,11 +508,21 @@
         <option value="Non vérifié">❓ Non vérifié</option>
       </select>
       
+      <label for="produitCommentaire" class="form-label">💬 Commentaire général</label>
       <textarea id="produitCommentaire" placeholder="Commentaire sur l'état du produit"></textarea>
+      
+      <label for="produitEtatConstate" class="form-label">📋 État constaté</label>
+      <textarea id="produitEtatConstate" placeholder="Décrivez l'état constaté lors de la maintenance"></textarea>
+      
+      <label for="produitTravauxEffectues" class="form-label">🔧 Travaux effectués</label>
+      <textarea id="produitTravauxEffectues" placeholder="Détaillez les travaux effectués sur ce produit"></textarea>
+      
+      <label for="produitRiInterne" class="form-label">📝 RI interne</label>
+      <input type="text" id="produitRiInterne" placeholder="Numéro de RI interne" />
       
       <div class="photo-container">
         <label class="photo-label" for="photoInput">
-          Ajouter des photos (optionnel)
+          📷 Ajouter des photos (optionnel)
         </label>
         <p class="photo-help-text">💡 Vous pouvez sélectionner jusqu'à 5 photos simultanément</p>
         <input type="file" id="photoInput" accept="image/*" multiple />
@@ -498,7 +530,7 @@
         <div id="photoPreview"></div>
       </div>
       
-      <button class="primary" type="submit">✓ Associer</button>
+      <button class="primary" type="submit">✔ Associer</button>
       <button type="button" onclick="hideAddProduitForm()">✕ Annuler</button>
     </form>
   </div>
@@ -506,7 +538,7 @@
   <!-- Formulaire pour modifier l'état d'un produit -->
   <div id="editProduitForm" class="modal">
     <form id="produitEditForm" onsubmit="updateProduitMaintenance(event)">
-      <h3>Modifier l'état du produit</h3>
+      <h3>Modifier les informations du produit</h3>
       
       <input type="hidden" id="editProduitId" />
       
@@ -515,6 +547,7 @@
         <span id="editProduitNom"></span>
       </p>
       
+      <label for="editProduitEtat" class="form-label">🔍 État du produit</label>
       <select id="editProduitEtat" required>
         <option value="">-- État --</option>
         <option value="OK">✅ OK</option>
@@ -523,18 +556,28 @@
         <option value="Non vérifié">❓ Non vérifié</option>
       </select>
       
+      <label for="editProduitCommentaire" class="form-label">💬 Commentaire général</label>
       <textarea id="editProduitCommentaire" placeholder="Commentaire sur l'état du produit"></textarea>
+      
+      <label for="editProduitEtatConstate" class="form-label">📋 État constaté</label>
+      <textarea id="editProduitEtatConstate" placeholder="Décrivez l'état constaté lors de la maintenance"></textarea>
+      
+      <label for="editProduitTravauxEffectues" class="form-label">🔧 Travaux effectués</label>
+      <textarea id="editProduitTravauxEffectues" placeholder="Détaillez les travaux effectués sur ce produit"></textarea>
+      
+      <label for="editProduitRiInterne" class="form-label">📝 RI interne</label>
+      <input type="text" id="editProduitRiInterne" placeholder="Numéro de RI interne" />
       
       <div class="photo-container">
         <label class="photo-label" for="editPhotoInput">
-          Modifier la photo (optionnel)
+          📷 Modifier les photos (optionnel)
         </label>
-        <input type="file" id="editPhotoInput" accept="image/*" onchange="previewPhoto(event, 'editPhotoPreview')" />
+        <input type="file" id="editPhotoInput" accept="image/*" onchange="previewPhoto(event, 'editPhotoPreview')" multiple/>
         <img id="editPhotoPreview" class="photo-preview" style="display:none;" alt="Aperçu" />
         <div id="currentPhotoContainer"></div>
       </div>
       
-      <button class="primary" type="submit">✓ Mettre à jour</button>
+      <button class="primary" type="submit">✔ Mettre à jour</button>
       <button type="button" onclick="hideEditProduitForm()">✕ Annuler</button>
     </form>
   </div>

@@ -190,9 +190,9 @@ function renderClients(clients) {
         </small>
       </div>
       <div style="display: flex; gap: 0.5rem;">
-        <button onclick="window.location.href='./ClientDetails/clientDetails.html?id_client=${client.id_client}'; event.stopPropagation();" style="background: #0066CC;">Détails</button>
-        <button onclick="editClient(${client.id_client}); event.stopPropagation();" style="background: #6C757D;">Modifier</button>
         <button onclick="deleteClient(${client.id_client}); event.stopPropagation();" style="background: #DC3545;">Supprimer</button>
+        <button onclick="editClient(${client.id_client}); event.stopPropagation();" style="background: #6C757D;">Modifier</button>
+        <button onclick="window.location.href='./ClientDetails/clientDetails.html?id_client=${client.id_client}'; event.stopPropagation();" style="background: var(--secondary-blue);">Détails</button>
       </div>
     `;
     
@@ -404,9 +404,9 @@ function renderSites(sites) {
         <small style="color: #6C757D;">${site.adresse || "Adresse non spécifiée"}</small>
       </div>
       <div style="display: flex; gap: 0.5rem;">
-        <button onclick="window.location.href='./SiteDetails/siteDetails.html?id_site=${site.id_site}'" style="background: #0066CC;">Détails</button>
+      <button onclick="deleteSite(${site.id_site})" style="background: #DC3545;">Supprimer</button>
         <button onclick="editSite(${site.id_site})" style="background: #6C757D;">Modifier</button>
-        <button onclick="deleteSite(${site.id_site})" style="background: #DC3545;">Supprimer</button>
+        <button onclick="window.location.href='./SiteDetails/siteDetails.html?id_site=${site.id_site}'" style="background: var(--secondary-blue);">Détails</button>
       </div>
     `;
 
@@ -612,6 +612,7 @@ function renderProduits(produits) {
   <button id="deleteBtn" onclick="deleteProduit(${p.id_produit})">Supprimer</button>
   <button onclick="editProduit(${p.id_produit})">Modifier</button>
   <button id="editBtn" onclick="printQR(${p.id_produit})">QR</button>
+  <button onclick="window.location.href='./ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
 </div>
 
     `;

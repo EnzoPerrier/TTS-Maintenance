@@ -13,6 +13,29 @@ document.getElementById("backBtn").addEventListener("click", () => {
   window.history.back();
 });
 
+// ========== FONCTION UTILITAIRE POUR LES DATES ==========
+function formatDateForInput(dateString) {
+  if (!dateString) return "";
+  
+  // Si déjà au format YYYY-MM-DD, retourner tel quel
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Si au format JJ/MM/AAAA, convertir en YYYY-MM-DD
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+    const [day, month, year] = dateString.split('/');
+    return `${year}-${month}-${day}`;
+  }
+  
+  // Sinon, convertir depuis ISO
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ========== CHARGEMENT SITE ==========
 async function loadSiteDetails() {
   if (!id_site) {
@@ -36,7 +59,8 @@ async function loadSiteDetails() {
       <div class="site-detail"><strong>Nom :</strong> ${site.nom}</div>
       <div class="site-detail"><strong>Client :</strong> ${client.nom}</div>
       <div class="site-detail"><strong>Contact :</strong> ${client.contact}</div>
-      <div class="site-detail"><strong>Tel. :</strong> ${client.telephone}</div>
+      <div class="site-detail"><strong>Email :</strong> ${client.email ? `<a href="mailto:${client.email}">${client.email}</a>` : "N/A"}</div>
+      <div class="site-detail"><strong>Téléphone :</strong> ${client.telephone ? `<a href="tel:${client.telephone}">${client.telephone}</a>` : "N/A"}</div>
       <div class="site-detail"><strong>Adresse :</strong> ${site.adresse}</div>
       <div class="site-detail"><strong>Latitude :</strong> ${site.gps_lat || "N/A"}</div>
       <div class="site-detail"><strong>Longitude :</strong> ${site.gps_lng || "N/A"}</div>
@@ -70,7 +94,6 @@ function initMap(lat, lng, nom, adresse) {
   }
 
   map = L.map('map').setView([lat, lng], 15);
-  
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -203,8 +226,8 @@ async function loadMaintenances() {
         <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
         <div><strong>RI interne :</strong> ${m.ri_interne || "N/A"}</div>
         <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
           <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
+          <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
           <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
         </div>
       `;
@@ -221,8 +244,8 @@ async function loadMaintenances() {
 function showAddMaintenanceForm() {
   editingMaintenanceId = null;
   document.getElementById("maintenanceForm").reset();
-  document.getElementById("maintenanceFormTitle").textContent = "Ajouter une maintenance";
-  document.getElementById("maintenanceSubmitBtn").textContent = "Ajouter";
+  document.getElementById("maintenanceFormTitle").textContent = "📋 Ajouter une maintenance";
+  document.getElementById("maintenanceSubmitBtn").innerHTML = '<span class="btn-icon">✓</span> Ajouter';
   document.getElementById("addMaintenanceForm").style.display = "block";
 }
 
@@ -242,7 +265,26 @@ async function addMaintenance(event) {
     etat: document.getElementById("maintenanceEtat").value || null,
     departement: document.getElementById("maintenanceDepartement").value || null,
     commentaire: document.getElementById("maintenanceCommentaire").value || null,
-    ri_interne: document.getElementById("maintenanceRI").value || null
+    ri_interne: document.getElementById("maintenanceRI").value || null,
+    
+    // Nouveaux champs
+    operateur_1: document.getElementById("maintenanceOperateur1")?.value.toUpperCase() || null,
+    operateur_2: document.getElementById("maintenanceOperateur2")?.value.toUpperCase() || null,
+    operateur_3: document.getElementById("maintenanceOperateur3")?.value.toUpperCase() || null,
+    
+    heure_arrivee_matin: document.getElementById("maintenanceHeureArriveeMatin")?.value || null,
+    heure_depart_matin: document.getElementById("maintenanceHeureDepartMatin")?.value || null,
+    heure_arrivee_aprem: document.getElementById("maintenanceHeureArriveeAprem")?.value || null,
+    heure_depart_aprem: document.getElementById("maintenanceHeureDepartAprem")?.value || null,
+    
+    garantie: document.getElementById("maintenanceGarantie")?.checked || false,
+    etat_constate: document.getElementById("maintenanceEtatConstate")?.value || null,
+    travaux_effectues: document.getElementById("maintenanceTravauxEffectues")?.value || null,
+    commentaire_interne: document.getElementById("maintenanceCommentaireInterne")?.value || null,
+    
+    contact: document.getElementById("maintenanceContact")?.value || null,
+    type_produit: document.getElementById("maintenanceTypeProduit")?.value || null,
+    numero_commande: document.getElementById("maintenanceNumeroCommande")?.value || null
   };
 
   // Si on est en mode édition
@@ -266,6 +308,7 @@ async function addMaintenance(event) {
     hideAddMaintenanceForm();
     loadMaintenances();
     updateStats();
+    alert("✓ Maintenance ajoutée avec succès !");
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
@@ -278,16 +321,59 @@ function editMaintenance(id_maintenance) {
 
   editingMaintenanceId = id_maintenance;
 
-  // Pré-remplir le formulaire - utiliser date_maintenance_input (YYYY-MM-DD) pour l'input
+  // Pré-remplir les champs de base
   document.getElementById("maintenanceDate").value = maintenance.date_maintenance_input || formatDateForInput(maintenance.date_maintenance);
-  document.getElementById("maintenanceType").value = maintenance.type;
+  document.getElementById("maintenanceType").value = maintenance.type || "";
   document.getElementById("maintenanceEtat").value = maintenance.etat || "";
   document.getElementById("maintenanceDepartement").value = maintenance.departement || "";
   document.getElementById("maintenanceCommentaire").value = maintenance.commentaire || "";
   document.getElementById("maintenanceRI").value = maintenance.ri_interne || "";
+  
+  // Pré-remplir les nouveaux champs (avec vérification d'existence)
+  const operateur1 = document.getElementById("maintenanceOperateur1");
+  if (operateur1) operateur1.value = maintenance.operateur_1 || "";
+  
+  const operateur2 = document.getElementById("maintenanceOperateur2");
+  if (operateur2) operateur2.value = maintenance.operateur_2 || "";
+  
+  const operateur3 = document.getElementById("maintenanceOperateur3");
+  if (operateur3) operateur3.value = maintenance.operateur_3 || "";
+  
+  const heureArriveeMatin = document.getElementById("maintenanceHeureArriveeMatin");
+  if (heureArriveeMatin) heureArriveeMatin.value = maintenance.heure_arrivee_matin || "";
+  
+  const heureDepartMatin = document.getElementById("maintenanceHeureDepartMatin");
+  if (heureDepartMatin) heureDepartMatin.value = maintenance.heure_depart_matin || "";
+  
+  const heureArriveeAprem = document.getElementById("maintenanceHeureArriveeAprem");
+  if (heureArriveeAprem) heureArriveeAprem.value = maintenance.heure_arrivee_aprem || "";
+  
+  const heureDepartAprem = document.getElementById("maintenanceHeureDepartAprem");
+  if (heureDepartAprem) heureDepartAprem.value = maintenance.heure_depart_aprem || "";
+  
+  const garantie = document.getElementById("maintenanceGarantie");
+  if (garantie) garantie.checked = maintenance.garantie || false;
+  
+  const etatConstate = document.getElementById("maintenanceEtatConstate");
+  if (etatConstate) etatConstate.value = maintenance.etat_constate || "";
+  
+  const travauxEffectues = document.getElementById("maintenanceTravauxEffectues");
+  if (travauxEffectues) travauxEffectues.value = maintenance.travaux_effectues || "";
+  
+  const commentaireInterne = document.getElementById("maintenanceCommentaireInterne");
+  if (commentaireInterne) commentaireInterne.value = maintenance.commentaire_interne || "";
+  
+  const contact = document.getElementById("maintenanceContact");
+  if (contact) contact.value = maintenance.contact || "";
+  
+  const typeProduit = document.getElementById("maintenanceTypeProduit");
+  if (typeProduit) typeProduit.value = maintenance.type_produit || "";
+  
+  const numeroCommande = document.getElementById("maintenanceNumeroCommande");
+  if (numeroCommande) numeroCommande.value = maintenance.numero_commande || "";
 
-  document.getElementById("maintenanceFormTitle").textContent = "Modifier une maintenance";
-  document.getElementById("maintenanceSubmitBtn").textContent = "Valider";
+  document.getElementById("maintenanceFormTitle").textContent = "📝 Modifier une maintenance";
+  document.getElementById("maintenanceSubmitBtn").innerHTML = '<span class="btn-icon">✓</span> Valider';
 
   document.getElementById("addMaintenanceForm").style.display = "block";
 }
@@ -312,6 +398,7 @@ async function updateMaintenance(id_maintenance, data) {
     loadMaintenances();
     updateStats();
     editingMaintenanceId = null;
+    alert("✓ Maintenance modifiée avec succès !");
 
   } catch (err) {
     console.error(err);
@@ -335,6 +422,7 @@ async function deleteMaintenance(id_maintenance) {
 
     loadMaintenances();
     updateStats();
+    alert("✓ Maintenance supprimée avec succès !");
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
@@ -554,6 +642,20 @@ function updateStats() {
   loadEquipements();
   loadMaintenances();
 }
+
+// ========== CONVERSION AUTOMATIQUE EN MAJUSCULES ==========
+document.addEventListener('DOMContentLoaded', function() {
+  const operateurInputs = ['maintenanceOperateur1', 'maintenanceOperateur2', 'maintenanceOperateur3'];
+  
+  operateurInputs.forEach(inputId => {
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    }
+  });
+});
 
 // ========== INIT ==========
 loadSiteDetails();

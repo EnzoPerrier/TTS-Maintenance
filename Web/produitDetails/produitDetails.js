@@ -400,6 +400,121 @@ function renderMaintenanceHistory() {
   });
 }
 
+// Ajouter cette fonction pour afficher l'historique des maintenances avec les nouveaux champs
+
+function renderMaintenanceHistory() {
+  const container = document.getElementById("maintenanceHistory");
+  
+  if (allMaintenances.length === 0) {
+    container.innerHTML = "<p style='text-align: center; padding: 2rem; color: var(--gray-600);'>🔧 Aucune maintenance enregistrée</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+  
+  // Parcourir toutes les maintenances pour récupérer les détails spécifiques au produit
+  allMaintenances.forEach(async (m) => {
+    const card = document.createElement("div");
+    card.classList.add("maintenance-card");
+    
+    const etat = (m.etat || "").toLowerCase();
+    let etatColor = "#6C757D";
+    let icone = "🔧";
+    
+    if (etat.includes("termin")) {
+      etatColor = "#28A745";
+      icone = "✅";
+    } else if (etat.includes("cours")) {
+      etatColor = "#FFC107";
+      icone = "⚙️";
+    } else if (etat.includes("planif")) {
+      etatColor = "#0066CC";
+      icone = "📅";
+    }
+    
+    // Récupérer les informations spécifiques de maintenance_produits
+    try {
+      const mpRes = await fetch(`${API}/maintenance-produits/produit/${id_produit}`);
+      if (mpRes.ok) {
+        const mpData = await mpRes.json();
+        const produitMaintenance = mpData.find(pm => pm.id_maintenance === m.id_maintenance);
+        
+        if (produitMaintenance) {
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1;">
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                  ${icone} ${m.type}
+                </div>
+                <div><strong>Date :</strong> ${formatDate(m.date_maintenance)}</div>
+                <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
+                ${m.commentaire ? `<div style="margin-top: 0.5rem; color: var(--gray-600);"><strong>Commentaire général :</strong> ${m.commentaire}</div>` : ''}
+                
+                ${produitMaintenance.etat_constate || produitMaintenance.travaux_effectues || produitMaintenance.ri_interne ? `
+                  <div style="margin-top: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 8px; border-left: 4px solid var(--primary-blue);">
+                    <h5 style="color: var(--primary-blue); margin-bottom: 0.75rem;">📝 Informations spécifiques pour ce produit</h5>
+                    ${produitMaintenance.etat_constate ? `<div style="margin-bottom: 0.5rem;"><strong>État constaté :</strong> ${produitMaintenance.etat_constate}</div>` : ''}
+                    ${produitMaintenance.travaux_effectues ? `<div style="margin-bottom: 0.5rem;"><strong>Travaux effectués :</strong> ${produitMaintenance.travaux_effectues}</div>` : ''}
+                    ${produitMaintenance.ri_interne ? `<div><strong>RI interne :</strong> ${produitMaintenance.ri_interne}</div>` : ''}
+                  </div>
+                ` : ''}
+                
+                ${produitMaintenance.commentaire ? `<div style="margin-top: 0.75rem; padding: 0.75rem; background: #FFF8E1; border-radius: 6px;"><strong>💬 Commentaire :</strong> ${produitMaintenance.commentaire}</div>` : ''}
+              </div>
+              <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" 
+                 style="padding: 0.625rem 1.25rem; background: var(--primary-blue); color: white; border-radius: 8px; text-decoration: none; white-space: nowrap;">
+                Voir détails
+              </a>
+            </div>
+          `;
+        } else {
+          // Maintenance non liée à ce produit spécifiquement
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1;">
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                  ${icone} ${m.type}
+                </div>
+                <div><strong>Date :</strong> ${formatDate(m.date_maintenance)}</div>
+                <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
+                ${m.commentaire ? `<div style="margin-top: 0.5rem; color: var(--gray-600);"><strong>Commentaire :</strong> ${m.commentaire}</div>` : ''}
+                <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--gray-100); border-radius: 6px; font-style: italic; color: var(--gray-600);">
+                  ℹ️ Ce produit n'était pas spécifiquement inclus dans cette maintenance
+                </div>
+              </div>
+              <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" 
+                 style="padding: 0.625rem 1.25rem; background: var(--primary-blue); color: white; border-radius: 8px; text-decoration: none; white-space: nowrap;">
+                Voir détails
+              </a>
+            </div>
+          `;
+        }
+      }
+    } catch (err) {
+      console.error("Erreur récupération données maintenance_produits:", err);
+      // Affichage par défaut en cas d'erreur
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div style="flex: 1;">
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+              ${icone} ${m.type}
+            </div>
+            <div><strong>Date :</strong> ${formatDate(m.date_maintenance)}</div>
+            <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
+            ${m.commentaire ? `<div style="margin-top: 0.5rem; color: var(--gray-600);"><strong>Commentaire :</strong> ${m.commentaire}</div>` : ''}
+          </div>
+          <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" 
+             style="padding: 0.625rem 1.25rem; background: var(--primary-blue); color: white; border-radius: 8px; text-decoration: none; white-space: nowrap;">
+            Voir détails
+          </a>
+        </div>
+      `;
+    }
+    
+    container.appendChild(card);
+  });
+}
+
 // ========== INIT ==========
 loadProduitDetails();
 loadPhotos();
