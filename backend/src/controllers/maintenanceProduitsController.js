@@ -292,7 +292,33 @@ exports.removeProduitFromMaintenance = async (req, res) => {
   const { id_maintenance, id_produit } = req.params;
 
   try {
-    // Récupérer la photo avant de supprimer l'association
+    // 1. Récupérer toutes les photos liées à cette association maintenance-produit
+    const [photos] = await db.query(
+      `SELECT id_photo, chemin_photo FROM produit_photos
+       WHERE id_maintenance = ? AND id_produit = ?`,
+      [id_maintenance, id_produit]
+    );
+
+    // 2. Supprimer les fichiers physiques des photos
+    const fs = require('fs');
+    const path = require('path');
+    
+    photos.forEach(photo => {
+      const filePath = path.join(__dirname, '..', '..', photo.chemin_photo);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Photo supprimée: ${filePath}`);
+      }
+    });
+
+    // 3. Supprimer les entrées des photos dans la base de données
+    await db.query(
+      `DELETE FROM produit_photos
+       WHERE id_maintenance = ? AND id_produit = ?`,
+      [id_maintenance, id_produit]
+    );
+
+    // 4. Vérifier que l'association existe
     const [existing] = await db.query(
       `SELECT photo FROM maintenance_produits
        WHERE id_maintenance = ? AND id_produit = ?`,
@@ -305,21 +331,27 @@ exports.removeProduitFromMaintenance = async (req, res) => {
 
     const photo = existing[0].photo;
 
+    // 5. Supprimer l'association maintenance-produit
     await db.query(
       `DELETE FROM maintenance_produits
        WHERE id_maintenance = ? AND id_produit = ?`,
       [id_maintenance, id_produit]
     );
 
-    // Supprimer la photo si elle existe
+    // 6. Supprimer la photo de l'ancienne table (si elle existe)
     if (photo) {
       const photoPath = `uploads/maintenance_produits/${photo}`;
-      if (fs.existsSync(photoPath)) {
-        fs.unlinkSync(photoPath);
+      const fullPath = path.join(__dirname, '..', '..', photoPath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        console.log(`Ancienne photo supprimée: ${fullPath}`);
       }
     }
 
-    res.json({ message: "Produit retiré de la maintenance" });
+    res.json({ 
+      message: "Produit retiré de la maintenance",
+      photos_supprimees: photos.length
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
