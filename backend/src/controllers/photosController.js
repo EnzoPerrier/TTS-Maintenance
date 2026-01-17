@@ -52,16 +52,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi/; // Photos et vidéos
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
     if (mimetype && extname) {
       return cb(null, true);
     }
-    cb(new Error("Type de fichier non autorisé. Utilisez: JPG, PNG, GIF, WEBP"));
+    cb(new Error("Type de fichier non autorisé. Utilisez: JPG, PNG, GIF, WEBP, MP4, MOV ou AVI"));
   }
 });
 

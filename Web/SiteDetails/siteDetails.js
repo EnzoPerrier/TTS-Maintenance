@@ -218,13 +218,16 @@ async function loadMaintenances() {
 
       const content = document.createElement("div");
       content.innerHTML = `
-        <div><strong>ID :</strong> ${m.id_maintenance}</div>
+        <div><strong>N° RI :</strong> ${m.numero_ri || "N/A"}</div>
+        ${m.operateur_1 ? `<div><strong>Opérateur 1 :</strong> ${m.operateur_1}</div>` : ''}
+        ${m.operateur_2 ? `<div><strong>Opérateur 2 :</strong> ${m.operateur_2}</div>` : ''}
+        ${m.operateur_3 ? `<div><strong>Opérateur 3 :</strong> ${m.operateur_3}</div>` : ''}
         <div><strong>Date :</strong> ${dateFormatted}</div>
         <div><strong>Type :</strong> ${m.type}</div>
         <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
         <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
         <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
-        <div><strong>RI interne :</strong> ${m.ri_interne || "N/A"}</div>
+        ${m.garantie ? `<div><strong>Garantie: </strong> ✅</div>` : '<div><strong>Garantie: </strong> ❌</div>'}
         <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
           <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
           <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
@@ -258,16 +261,19 @@ function hideAddMaintenanceForm() {
 async function addMaintenance(event) {
   event.preventDefault();
 
+  const garantie = document.getElementById("maintenanceGarantie")
+  if (garantie.checked) garantiechoice = 1 // Pour le choix garantie ou non
+  else garantiechoice = 0;
+  
+
   const data = {
     id_site: id_site,
     date_maintenance: document.getElementById("maintenanceDate").value,
     type: document.getElementById("maintenanceType").value,
     etat: document.getElementById("maintenanceEtat").value || null,
     departement: document.getElementById("maintenanceDepartement").value || null,
-    commentaire: document.getElementById("maintenanceCommentaire").value || null,
-    ri_interne: document.getElementById("maintenanceRI").value || null,
+    numero_ri: document.getElementById("maintenanceRI").value || null,
     
-    // Nouveaux champs
     operateur_1: document.getElementById("maintenanceOperateur1")?.value.toUpperCase() || null,
     operateur_2: document.getElementById("maintenanceOperateur2")?.value.toUpperCase() || null,
     operateur_3: document.getElementById("maintenanceOperateur3")?.value.toUpperCase() || null,
@@ -276,15 +282,13 @@ async function addMaintenance(event) {
     heure_depart_matin: document.getElementById("maintenanceHeureDepartMatin")?.value || null,
     heure_arrivee_aprem: document.getElementById("maintenanceHeureArriveeAprem")?.value || null,
     heure_depart_aprem: document.getElementById("maintenanceHeureDepartAprem")?.value || null,
-    
-    garantie: document.getElementById("maintenanceGarantie")?.checked || false,
-    etat_constate: document.getElementById("maintenanceEtatConstate")?.value || null,
-    travaux_effectues: document.getElementById("maintenanceTravauxEffectues")?.value || null,
-    commentaire_interne: document.getElementById("maintenanceCommentaireInterne")?.value || null,
-    
+
+
     contact: document.getElementById("maintenanceContact")?.value || null,
     type_produit: document.getElementById("maintenanceTypeProduit")?.value || null,
-    numero_commande: document.getElementById("maintenanceNumeroCommande")?.value || null
+    numero_commande: document.getElementById("maintenanceNumeroCommande")?.value || null,
+    commentaire: document.getElementById("commentaireMaintenance")?.value || null,
+    garantie: garantiechoice
   };
 
   // Si on est en mode édition
@@ -326,8 +330,8 @@ function editMaintenance(id_maintenance) {
   document.getElementById("maintenanceType").value = maintenance.type || "";
   document.getElementById("maintenanceEtat").value = maintenance.etat || "";
   document.getElementById("maintenanceDepartement").value = maintenance.departement || "";
-  document.getElementById("maintenanceCommentaire").value = maintenance.commentaire || "";
-  document.getElementById("maintenanceRI").value = maintenance.ri_interne || "";
+  document.getElementById("maintenanceRI").value = maintenance.numero_ri || "";
+  document.getElementById("commentaireMaintenance").value = maintenance.commentaire || "";
   
   // Pré-remplir les nouveaux champs (avec vérification d'existence)
   const operateur1 = document.getElementById("maintenanceOperateur1");
@@ -353,15 +357,7 @@ function editMaintenance(id_maintenance) {
   
   const garantie = document.getElementById("maintenanceGarantie");
   if (garantie) garantie.checked = maintenance.garantie || false;
-  
-  const etatConstate = document.getElementById("maintenanceEtatConstate");
-  if (etatConstate) etatConstate.value = maintenance.etat_constate || "";
-  
-  const travauxEffectues = document.getElementById("maintenanceTravauxEffectues");
-  if (travauxEffectues) travauxEffectues.value = maintenance.travaux_effectues || "";
-  
-  const commentaireInterne = document.getElementById("maintenanceCommentaireInterne");
-  if (commentaireInterne) commentaireInterne.value = maintenance.commentaire_interne || "";
+
   
   const contact = document.getElementById("maintenanceContact");
   if (contact) contact.value = maintenance.contact || "";

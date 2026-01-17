@@ -68,7 +68,9 @@ exports.createMaintenance = async (req, res) => {
     commentaire_interne,
     contact,
     type_produit,
-    numero_commande
+    numero_commande,
+    numero_ri,
+    departement
   } = req.body;
 
   try {
@@ -91,8 +93,10 @@ exports.createMaintenance = async (req, res) => {
         commentaire_interne,
         contact,
         type_produit,
-        numero_commande
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        numero_commande,
+        numero_ri,
+        departement
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_site,
         date_maintenance,
@@ -111,7 +115,9 @@ exports.createMaintenance = async (req, res) => {
         commentaire_interne || null,
         contact || null,
         type_produit || null,
-        numero_commande || null
+        numero_commande || null,
+        numero_ri || null,
+        departement || null
       ]
     );
 
@@ -149,7 +155,9 @@ exports.updateMaintenance = async (req, res) => {
     commentaire_interne,
     contact,
     type_produit,
-    numero_commande
+    numero_commande,
+    numero_ri,
+    departement
   } = req.body;
 
   try {
@@ -171,7 +179,9 @@ exports.updateMaintenance = async (req, res) => {
         commentaire_interne = ?,
         contact = ?,
         type_produit = ?,
-        numero_commande = ?
+        numero_commande = ?,
+        numero_ri = ?,
+        departement = ?
       WHERE id_maintenance = ?`,
       [
         id_site,
@@ -191,6 +201,8 @@ exports.updateMaintenance = async (req, res) => {
         contact || null,
         type_produit || null,
         numero_commande || null,
+        numero_ri || null,
+        departement || null,
         id
       ]
     );

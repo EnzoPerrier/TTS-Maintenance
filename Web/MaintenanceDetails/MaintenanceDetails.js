@@ -27,16 +27,14 @@ async function loadMaintenanceDetails() {
 
     const MaintenanceDiv = document.getElementById("MaintenanceDetails");
     MaintenanceDiv.innerHTML = `
-      <div class="site-detail"><strong>ID Maintenance :</strong> ${maintenance.id_maintenance}</div>
+      <div class="site-detail"><strong>N° RI :</strong> ${maintenance.numero_ri}</div>
       <div class="site-detail"><strong>Date :</strong> ${maintenance.date_maintenance}</div>
       <div class="site-detail"><strong>Type :</strong> ${maintenance.type}</div>
       <div class="site-detail"><strong>État :</strong> ${maintenance.etat || "N/A"}</div>
-      <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
       <div class="site-detail"><strong>Garantie :</strong> ${maintenance.garantie ? "Oui" : "Non"}</div>
       <div class="site-detail"><strong>Contact :</strong> ${maintenance.contact || "N/A"}</div>
       <div class="site-detail"><strong>Type produit :</strong> ${maintenance.type_produit || "N/A"}</div>
       <div class="site-detail"><strong>N° Commande :</strong> ${maintenance.numero_commande || "N/A"}</div>
-      <div class="site-detail"><strong>Commentaire interne :</strong> ${maintenance.commentaire_interne || "N/A"}</div>
     `;
 
     await loadProduits();
@@ -126,7 +124,7 @@ async function loadProduitsAssocies() {
         
         ${photos.length < 5 ? `
           <button onclick="showAddPhotoForm(${p.id_produit})" class="primary" style="margin-top: 1rem;">
-            📷 Ajouter une photo (${photos.length}/5)
+            📷 Ajouter des photo (${photos.length}/5)
           </button>
         ` : '<p style="color: #FFC107; margin-top: 1rem;">⚠️ Limite de 5 photos atteinte</p>'}
         
@@ -147,9 +145,6 @@ async function loadProduitsAssocies() {
 // ========== GESTION DES PHOTOS ==========
 function showAddPhotoForm(id_produit) {
   currentProduitPhotos = id_produit;
-  
-  const existingForm = document.getElementById("addPhotoFormModal");
-  if (existingForm) existingForm.remove();
 
   const formModal = document.createElement("div");
   formModal.id = "addPhotoFormModal";
@@ -157,13 +152,13 @@ function showAddPhotoForm(id_produit) {
   formModal.style.display = "flex";
   
   formModal.innerHTML = `
-    <form id="photoForm" onsubmit="addPhoto(event)" style="max-width: 600px;">
+    <form id="photoForm" onsubmit="addPhoto(event)" style="max-width: 600px;"> 
       <h3>📷 Ajouter des photos</h3>
-      <p style="color: #6C757D; margin-bottom: 1rem;">Vous pouvez sélectionner jusqu'à 5 photos</p>
+      <p class="photo-help-text">💡 Vous pouvez ajouter jusqu'à 5 photos</p>
       <input type="file" id="photoFile" accept="image/*" multiple required />
-      <div id="fileCount" style="margin-bottom: 1rem; color: #0066CC; font-weight: 500;"></div>
-      <textarea id="photoDescription" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
+      <div id="editPhotofileCount" style="margin-bottom: 1rem; color: #0066CC; font-weight: 500;"></div>
       <div id="photoPreviewModal" style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-width: 100%; margin: 1rem 0;"></div>
+      <textarea id="photoDescription" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
       <button class="primary" type="submit">Ajouter</button>
       <button type="button" onclick="hideAddPhotoForm()">Annuler</button>
     </form>
@@ -174,18 +169,15 @@ function showAddPhotoForm(id_produit) {
   // Prévisualisation des images multiples
   document.getElementById("photoFile").addEventListener("change", function(e) {
     const files = e.target.files;
-    const fileCount = document.getElementById("fileCount");
     const preview = document.getElementById("photoPreviewModal");
     
     if (files.length > 5) {
       alert("Maximum 5 photos autorisées");
       e.target.value = "";
-      fileCount.textContent = "";
       preview.innerHTML = "";
       return;
     }
     
-    fileCount.textContent = files.length > 0 ? `${files.length} photo(s) sélectionnée(s)` : "";
     preview.innerHTML = "";
     
     if (files.length === 0) {
@@ -220,7 +212,7 @@ async function addPhoto(event) {
   event.preventDefault();
 
   const fileInput = document.getElementById("photoFile");
-  const commentaire = document.getElementById("photoDescription").value;
+  const commentairePhotos = document.getElementById("photoDescription").value;
   const files = fileInput ? fileInput.files : [];
 
   if (!files || files.length === 0) {
@@ -241,8 +233,8 @@ async function addPhoto(event) {
   
   formData.append("id_maintenance", id_maintenance);
   formData.append("id_produit", currentProduitPhotos);
-  if (commentaire) {
-    formData.append("commentaire", commentaire);
+  if (commentairePhotos) {
+    formData.append("commentaire", commentairePhotos);
   }
 
   try {
@@ -305,35 +297,35 @@ function closePhotoModal() {
 function previewPhoto(event, previewId) {
   const files = event.target.files;
   const preview = document.getElementById(previewId);
-  
-  if (files.length > 0) {
-    preview.innerHTML = "";
-    preview.style.display = "block";
-    
-    if (files.length > 5) {
-      alert("Maximum 5 photos autorisées");
-      event.target.value = "";
-      preview.style.display = "none";
-      return;
-    }
-    
-    Array.from(files).forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        img.className = "photo-preview";
-        img.style.maxWidth = "150px";
-        img.style.margin = "0.5rem";
-        img.style.display = "inline-block";
-        preview.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
-  } else {
+
+  preview.innerHTML = "";
+
+  if (files.length === 0) {
     preview.style.display = "none";
+    return;
   }
+
+  if (files.length > 5) {
+    alert("Maximum 5 photos autorisées");
+    event.target.value = "";
+    preview.style.display = "none";
+    return;
+  }
+
+  preview.style.display = "flex";
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      img.className = "photo-preview";
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
 }
+
 
 // ========== ASSOCIER UN PRODUIT ==========
 function loadProduitsSelect() {
@@ -374,9 +366,6 @@ function showAddProduitForm() {
     preview.style.display = "none";
   }
   
-  const fileCount = document.getElementById("fileCount");
-  if (fileCount) fileCount.textContent = "";
-  
   document.getElementById("addProduitForm").style.display = "block";
   
   setTimeout(() => {
@@ -405,6 +394,7 @@ async function addProduitToMaintenance(event) {
   const travaux_effectues = document.getElementById("produitTravauxEffectues").value;
   const ri_interne = document.getElementById("produitRiInterne").value;
   const photoInput = document.getElementById("photoInput");
+  const commentairePhotos = document.getElementById("photoDescriptionAddProduit").value;
   const photoFiles = photoInput ? photoInput.files : [];
 
   if (!id_produit) {
@@ -449,8 +439,8 @@ async function addProduitToMaintenance(event) {
       
       formData.append("id_maintenance", id_maintenance);
       formData.append("id_produit", id_produit);
-      if (commentaire) {
-        formData.append("commentaire", commentaire);
+      if (commentairePhotos) {
+        formData.append("commentaire", commentairePhotos);
       }
 
       const resPhotos = await fetch(`${API}/photos/multiple`, {
@@ -487,16 +477,7 @@ function editProduitMaintenance(id_produit) {
   document.getElementById("editProduitTravauxEffectues").value = produit.travaux_effectues || "";
   document.getElementById("editProduitRiInterne").value = produit.ri_interne || "";
 
-  // Afficher la photo actuelle si elle existe
-  const photoContainer = document.getElementById("currentPhotoContainer");
-  if (produit.photo) {
-    photoContainer.innerHTML = `
-      <p style="margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-600);">Photo actuelle :</p>
-      <img src="${API}/uploads/maintenance_produits/${produit.photo}" alt="Photo actuelle" style="max-width: 100%; max-height: 200px; border-radius: 8px;" />
-    `;
-  } else {
-    photoContainer.innerHTML = '<p style="color: var(--gray-500);">Aucune photo actuellement</p>';
-  }
+
 
   document.getElementById("editProduitForm").style.display = "block";
 }
@@ -578,22 +559,16 @@ function initPhotoInput() {
     
     newPhotoInput.addEventListener("change", function(e) {
       const files = e.target.files;
-      const fileCount = document.getElementById("fileCount");
       const preview = document.getElementById("photoPreview");
       
       if (files.length > 5) {
         alert("Maximum 5 photos autorisées");
         e.target.value = "";
-        if (fileCount) fileCount.textContent = "";
         if (preview) {
           preview.innerHTML = "";
           preview.style.display = "none";
         }
         return;
-      }
-      
-      if (fileCount) {
-        fileCount.textContent = files.length > 0 ? `${files.length} photo(s) sélectionnée(s)` : "";
       }
       
       if (preview) {

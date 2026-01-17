@@ -376,6 +376,11 @@
             <label for="maintenanceTypeProduit">Type de produit</label>
             <input type="text" id="maintenanceTypeProduit" placeholder="Ex: TJT, PMV..." />
           </div>
+
+          <div class="form-group full-width">
+            <label for="maintenanceTypeProduit">Commentaire</label>
+            <input type="text" id="commentaireMaintenance" placeholder="Commentaire sur la maintenance" />
+          </div>
         </div>
       </div>
 
@@ -445,8 +450,8 @@
       <!-- Section 4: Détails techniques -->
       <div class="form-section">
         <div class="section-header">
-          <span class="section-icon">🔧</span>
-          <h4>Détails techniques</h4>
+          <span class="section-icon">✅|❌</span>
+          <h4>Garantie</h4>
         </div>
         
         <div class="form-group checkbox-group">
@@ -454,26 +459,6 @@
             <input type="checkbox" id="maintenanceGarantie" />
             <span class="checkbox-text">✓ Sous garantie</span>
           </label>
-        </div>
-        
-        <div class="form-group">
-          <label for="maintenanceEtatConstate">État constaté</label>
-          <textarea id="maintenanceEtatConstate" rows="3" placeholder="Décrivez l'état constaté lors de l'intervention..."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label for="maintenanceTravauxEffectues">Travaux effectués</label>
-          <textarea id="maintenanceTravauxEffectues" rows="4" placeholder="Listez les travaux réalisés..."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label for="maintenanceCommentaire">Commentaire client</label>
-          <textarea id="maintenanceCommentaire" rows="2" placeholder="Commentaire visible par le client..."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label for="maintenanceCommentaireInterne">💼 Commentaire interne</label>
-          <textarea id="maintenanceCommentaireInterne" rows="2" placeholder="Notes internes (non visibles par le client)..."></textarea>
         </div>
       </div>
 
