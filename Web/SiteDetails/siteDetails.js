@@ -17,18 +17,15 @@ document.getElementById("backBtn").addEventListener("click", () => {
 function formatDateForInput(dateString) {
   if (!dateString) return "";
   
-  // Si déjà au format YYYY-MM-DD, retourner tel quel
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString;
   }
   
-  // Si au format JJ/MM/AAAA, convertir en YYYY-MM-DD
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
     const [day, month, year] = dateString.split('/');
     return `${year}-${month}-${day}`;
   }
   
-  // Sinon, convertir depuis ISO
   const date = new Date(dateString);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -153,7 +150,6 @@ async function loadMaintenances() {
     const MaintDiv = document.getElementById("MaintenancesList");
     MaintDiv.innerHTML = "";
 
-    // Calcul des statistiques par état
     const statsPlanifiees = allMaintenances.filter(m => {
       const etat = (m.etat || "").toLowerCase();
       return etat.includes("planif");
@@ -185,7 +181,6 @@ async function loadMaintenances() {
 
       const etat = (m.etat || "").toLowerCase();
 
-      // Classes CSS pour l'état
       if (etat.includes("termin")) {
         details.classList.add("maintenance-terminee");
       } else if (etat.includes("cours")) {
@@ -198,19 +193,16 @@ async function loadMaintenances() {
 
       const summary = document.createElement("summary");
       
-      // Icône selon l'état
       let icone = "🔧";
       if (etat.includes("termin")) icone = "✅";
       else if (etat.includes("cours")) icone = "⚙️";
       else if (etat.includes("planif")) icone = "📅";
 
-      // La date est déjà au format JJ/MM/AAAA depuis le backend
-      const dateFormatted = m.date_maintenance;
+      const dateFormatted = parseDate(m.date_maintenance);
 
       summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${dateFormatted}`;
       details.appendChild(summary);
 
-      // Couleur de l'état
       let etatColor = "#6C757D";
       if (etat.includes("termin")) etatColor = "#28A745";
       else if (etat.includes("cours")) etatColor = "#FFC107";
@@ -262,9 +254,8 @@ async function addMaintenance(event) {
   event.preventDefault();
 
   const garantie = document.getElementById("maintenanceGarantie")
-  if (garantie.checked) garantiechoice = 1 // Pour le choix garantie ou non
+  if (garantie.checked) garantiechoice = 1
   else garantiechoice = 0;
-  
 
   const data = {
     id_site: id_site,
@@ -278,11 +269,11 @@ async function addMaintenance(event) {
     operateur_2: document.getElementById("maintenanceOperateur2")?.value.toUpperCase() || null,
     operateur_3: document.getElementById("maintenanceOperateur3")?.value.toUpperCase() || null,
     
+    date_intervention: document.getElementById("dateIntervention")?.value || null,
     heure_arrivee_matin: document.getElementById("maintenanceHeureArriveeMatin")?.value || null,
     heure_depart_matin: document.getElementById("maintenanceHeureDepartMatin")?.value || null,
     heure_arrivee_aprem: document.getElementById("maintenanceHeureArriveeAprem")?.value || null,
     heure_depart_aprem: document.getElementById("maintenanceHeureDepartAprem")?.value || null,
-
 
     contact: document.getElementById("maintenanceContact")?.value || null,
     type_produit: document.getElementById("maintenanceTypeProduit")?.value || null,
@@ -291,7 +282,6 @@ async function addMaintenance(event) {
     garantie: garantiechoice
   };
 
-  // Si on est en mode édition
   if (editingMaintenanceId !== null) {
     await updateMaintenance(editingMaintenanceId, data);
     return;
@@ -325,7 +315,6 @@ function editMaintenance(id_maintenance) {
 
   editingMaintenanceId = id_maintenance;
 
-  // Pré-remplir les champs de base
   document.getElementById("maintenanceDate").value = maintenance.date_maintenance_input || formatDateForInput(maintenance.date_maintenance);
   document.getElementById("maintenanceType").value = maintenance.type || "";
   document.getElementById("maintenanceEtat").value = maintenance.etat || "";
@@ -333,7 +322,6 @@ function editMaintenance(id_maintenance) {
   document.getElementById("maintenanceRI").value = maintenance.numero_ri || "";
   document.getElementById("commentaireMaintenance").value = maintenance.commentaire || "";
   
-  // Pré-remplir les nouveaux champs (avec vérification d'existence)
   const operateur1 = document.getElementById("maintenanceOperateur1");
   if (operateur1) operateur1.value = maintenance.operateur_1 || "";
   
@@ -357,7 +345,6 @@ function editMaintenance(id_maintenance) {
   
   const garantie = document.getElementById("maintenanceGarantie");
   if (garantie) garantie.checked = maintenance.garantie || false;
-
   
   const contact = document.getElementById("maintenanceContact");
   if (contact) contact.value = maintenance.contact || "";
@@ -403,7 +390,7 @@ async function updateMaintenance(id_maintenance, data) {
 }
 
 async function deleteMaintenance(id_maintenance) {
-  const confirmDelete = confirm("Voulez-vous vraiment supprimer cette maintenance ?");
+  const confirmDelete = confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)");
   if (!confirmDelete) return;
 
   try {
@@ -437,7 +424,6 @@ async function loadEquipements() {
 
     document.getElementById("statsEquipements").textContent = allEquipements.length;
 
-    // Stats par état
     const statsOK = allEquipements.filter(p => p.etat === "OK").length;
     const statsNOK = allEquipements.filter(p => p.etat === "NOK").length;
     const statsPassable = allEquipements.filter(p => p.etat === "Passable").length;
@@ -452,35 +438,38 @@ async function loadEquipements() {
 
     allEquipements.forEach(p => {
       const li = document.createElement("li");
-      li.classList.add("site-detail", "equipement");
-
+      li.setAttribute("id","produitsList");
+      
       const etat = (p.etat || "").toLowerCase();
+      if (etat === "ok") li.classList.add("equipement-ok");
+      else if (etat === "nok") li.classList.add("equipement-nok");
+      else if (etat === "passable") li.classList.add("equipement-passable");
+      else li.classList.add("equipement-autre");
 
-      if (etat === "ok") {
-        li.classList.add("equipement-ok");
-      } else if (etat === "nok") {
-        li.classList.add("equipement-nok");
-      } else if (etat === "passable") {
-        li.classList.add("equipement-passable");
-      } else {
-        li.classList.add("equipement-autre");
-      }
+      let etatColor = "#6C757D";
+      if (etat === "ok") etatColor = "#28A745";
+      else if (etat === "nok") etatColor = "#DC3545";
+      else if (etat === "passable") etatColor = "#FFC107";
 
       li.innerHTML = `
-        <div style="flex: 1;">
-          <strong>${p.nom}</strong>
-          ${p.departement ? " - " + p.departement : ""}
-          ${p.etat ? " - <span style='color: ${etat === 'ok' ? '#28A745' : etat === 'nok' ? '#DC3545' : '#FFC107'}'>" + p.etat + "</span>" : ""}
-          <br/>
-          <small style="color: #6C757D;">${p.description || ""}</small>
-        </div>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="deleteEquipement(${p.id_produit})" style="background: #DC3545;">Supprimer</button>
-          <button onclick="editEquipement(${p.id_produit})" style="background: #6C757D;">Modifier</button>
-          <button onclick="printQR(${p.id_produit})" style="background: #FF6600;">QR</button>
-          <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
-        </div>
-      `;
+  <div style="flex: 1;"> 
+    <strong>${p.nom}</strong>
+    ${p.departement ? " - " + p.departement : ""}
+    ${p.etat ? ` - <span style="color: ${etatColor}; font-weight: 600;">${p.etat}</span>` : ""}
+    <br/>
+    <small style="color: #6C757D;">${p.description || ""}</small>
+  </div>
+
+  <div>
+    <button onclick="deleteProduit(${p.id_produit})">Supprimer</button>
+    <button onclick="editProduit(${p.id_produit})">Modifier</button>
+    <button onclick="printQR(${p.id_produit})">QR</button>
+    <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">
+      Détails
+    </button>
+  </div>
+`;
+
 
       ProdDiv.appendChild(li);
     });
@@ -515,7 +504,6 @@ async function addEquipement(event) {
     description: document.getElementById("equipementDescription").value || null
   };
 
-  // Si on est en mode édition
   if (editingEquipementId !== null) {
     await updateEquipement(editingEquipementId, data);
     return;
@@ -536,7 +524,6 @@ async function addEquipement(event) {
     const createdProduit = await res.json();
     const produitId = createdProduit.id_produit;
 
-    // Création du QR code
     const dataQr = {
       count: 1,
       prefill: {
@@ -563,7 +550,7 @@ async function addEquipement(event) {
   }
 }
 
-function editEquipement(id_produit) {
+function editProduit(id_produit) {
   const produit = allEquipements.find(p => p.id_produit === id_produit);
   if (!produit) return alert("Produit non trouvé");
 
@@ -578,6 +565,10 @@ function editEquipement(id_produit) {
   document.getElementById("equipementSubmitBtn").textContent = "Valider";
 
   document.getElementById("addEquipementForm").style.display = "block";
+}
+
+function editEquipement(id_produit) {
+  return editProduit(id_produit);
 }
 
 async function updateEquipement(id_produit, data) {
@@ -607,8 +598,8 @@ async function updateEquipement(id_produit, data) {
   }
 }
 
-async function deleteEquipement(id_produit) {
-  const confirmDelete = confirm("Voulez-vous vraiment supprimer cet équipement ?");
+async function deleteProduit(id_produit) {
+  const confirmDelete = confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)");
   if (!confirmDelete) return;
 
   try {
@@ -623,10 +614,15 @@ async function deleteEquipement(id_produit) {
 
     loadEquipements();
     updateStats();
+    alert("✓ Équipement supprimé avec succès !");
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
   }
+}
+
+async function deleteEquipement(id_produit) {
+  return deleteProduit(id_produit);
 }
 
 function printQR(id) {
@@ -652,6 +648,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+function parseDate(dateStr) {
+  if (!dateStr) return new Date(0);
+
+  const date = new Date(dateStr);
+
+  if (isNaN(date)) return new Date(0);
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
 
 // ========== INIT ==========
 loadSiteDetails();

@@ -169,11 +169,11 @@ async function loadAllEquipements() {
       ul.style.listStyle = "none";
       ul.style.padding = "0";
 
-      equipementsBySite[site.id_site].forEach(eq => {
+      allEquipements.forEach(p => {
         const li = document.createElement("li");
-        li.classList.add("equipement");
-        
-        const etat = (eq.etat || "").toLowerCase();
+        li.setAttribute("id", "produitsList");
+
+        const etat = (p.etat || "").toLowerCase();
         if (etat === "ok") li.classList.add("equipement-ok");
         else if (etat === "nok") li.classList.add("equipement-nok");
         else if (etat === "passable") li.classList.add("equipement-passable");
@@ -185,17 +185,23 @@ async function loadAllEquipements() {
         else if (etat === "passable") etatColor = "#FFC107";
 
         li.innerHTML = `
-          <div style="flex: 1;">
-            <strong>${eq.nom}</strong>
-            ${eq.departement ? " - " + eq.departement : ""}
-            ${eq.etat ? ` - <span style="color: ${etatColor}; font-weight: 600;">${eq.etat}</span>` : ""}
-            <br/>
-            <small style="color: #6C757D;">${eq.description || ""}</small>
-          </div>
-          <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${eq.id_produit}'" style="background: var(--secondary-blue);">
-            Détails
-          </button>
-        `;
+  <div style="flex: 1;"> 
+    <strong>${p.nom}</strong>
+    ${p.departement ? " - " + p.departement : ""}
+    ${p.etat ? ` - <span style="color: ${etatColor}; font-weight: 600;">${p.etat}</span>` : ""}
+    <br/>
+    <small style="color: #6C757D;">${p.description || ""}</small>
+  </div>
+
+  <div>
+    <button onclick="deleteProduit(${p.id_produit})">Supprimer</button>
+    <button onclick="editProduit(${p.id_produit})">Modifier</button>
+    <button onclick="printQR(${p.id_produit})">QR</button>
+    <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">
+      Détails
+    </button>
+  </div>
+`;
 
         ul.appendChild(li);
       });
@@ -309,7 +315,9 @@ async function loadAllMaintenances() {
         else if (etat.includes("cours")) icone = "⚙️";
         else if (etat.includes("planif")) icone = "📅";
 
-        summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${m.date_maintenance}`;
+        const dateFormatted = parseDate(m.date_maintenance);
+
+        summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${dateFormatted}`;
         details.appendChild(summary);
 
         // Couleur de l'état
@@ -319,19 +327,23 @@ async function loadAllMaintenances() {
         else if (etat.includes("planif")) etatColor = "#0066CC";
 
         const content = document.createElement("div");
-        content.innerHTML = `
-          <div><strong>Date :</strong> ${m.date_maintenance}</div>
-          <div><strong>Type :</strong> ${m.type}</div>
-          <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
-          <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
-          <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
-          <div style="margin-top: 1rem;">
-            <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" 
-               style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">
-              Voir détails
-            </a>
-          </div>
-        `;
+        content.innerHTML = content.innerHTML = `
+        <div><strong>N° RI :</strong> ${m.numero_ri || "N/A"}</div>
+        ${m.operateur_1 ? `<div><strong>Opérateur 1 :</strong> ${m.operateur_1}</div>` : ''}
+        ${m.operateur_2 ? `<div><strong>Opérateur 2 :</strong> ${m.operateur_2}</div>` : ''}
+        ${m.operateur_3 ? `<div><strong>Opérateur 3 :</strong> ${m.operateur_3}</div>` : ''}
+        <div><strong>Date :</strong> ${dateFormatted}</div>
+        <div><strong>Type :</strong> ${m.type}</div>
+        <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
+        <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
+        <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
+        ${m.garantie ? `<div><strong>Garantie: </strong> ✅</div>` : '<div><strong>Garantie: </strong> ❌</div>'}
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
+          <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
+          <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
+        </div>
+      `;
         details.appendChild(content);
 
         siteSection.appendChild(details);
@@ -348,15 +360,16 @@ async function loadAllMaintenances() {
 // Fonction utilitaire pour parser les dates au format JJ/MM/AAAA
 function parseDate(dateStr) {
   if (!dateStr) return new Date(0);
-  
-  // Si format JJ/MM/AAAA
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [day, month, year] = dateStr.split('/');
-    return new Date(year, month - 1, day);
-  }
-  
-  // Sinon format ISO
-  return new Date(dateStr);
+
+  const date = new Date(dateStr);
+
+  if (isNaN(date)) return new Date(0);
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
 }
 
 // ========== INIT ==========

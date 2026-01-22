@@ -335,7 +335,7 @@ async function deleteClient(id_client) {
       return;
     }
 
-    const confirmDelete = confirm("Voulez-vous vraiment supprimer ce client ?");
+    const confirmDelete = confirm("Voulez-vous vraiment supprimer ce client ? (CETTE ACTION EST IRREVERSIBLE)");
     if (!confirmDelete) return;
 
     const res = await fetch(`${API}/clients/${id_client}`, {
@@ -553,7 +553,7 @@ async function deleteSite(id_site) {
       return;
     }
 
-    const confirmDelete = confirm("Voulez-vous vraiment supprimer ce site ?");
+    const confirmDelete = confirm("Voulez-vous vraiment supprimer ce site ? (CETTE ACTION EST IRREVERSIBLE)");
     if (!confirmDelete) return;
 
     const res = await fetch(`${API}/sites/${id_site}`, {
@@ -600,22 +600,38 @@ function renderProduits(produits) {
 
   produits.forEach(p => {
     const li = document.createElement("li");
-    li.classList.add("clickable-line");
+
+    const etat = (p.etat || "").toLowerCase();
+      if (etat === "ok") li.classList.add("equipement-ok");
+      else if (etat === "nok") li.classList.add("equipement-nok");
+      else if (etat === "passable") li.classList.add("equipement-passable");
+      else li.classList.add("equipement-autre");
+
+      let etatColor = "#6C757D";
+      if (etat === "ok") etatColor = "#28A745";
+      else if (etat === "nok") etatColor = "#DC3545";
+      else if (etat === "passable") etatColor = "#FFC107";
 
     li.innerHTML = `
-      <span>
-  ${p.nom}
-  ${p.departement ? " - " + p.departement : ""}
-  ${p.etat ? " - " + p.etat : ""}
-</span>
-<div>
-  <button id="deleteBtn" onclick="deleteProduit(${p.id_produit})">Supprimer</button>
-  <button onclick="editProduit(${p.id_produit})">Modifier</button>
-  <button id="editBtn" onclick="printQR(${p.id_produit})">QR</button>
-  <button onclick="window.location.href='./ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">Détails</button>
-</div>
+  <div style="flex: 1;"> 
+    <strong>${p.nom}</strong>
+    ${p.departement ? " - " + p.departement : ""}
+    ${p.etat ? ` - <span style="color: ${etatColor}; font-weight: 600;">${p.etat}</span>` : ""}
+    <br/>
+    <small style="color: #6C757D;">${p.description || ""}</small>
+  </div>
 
-    `;
+  <div>
+    <button onclick="deleteProduit(${p.id_produit})">Supprimer</button>
+    <button onclick="editProduit(${p.id_produit})">Modifier</button>
+    <button onclick="printQR(${p.id_produit})">QR</button>
+    <button onclick="window.location.href='./ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">
+      Détails
+    </button>
+  </div>
+`;
+
+
 
     ul.appendChild(li);
   });
@@ -732,7 +748,7 @@ function hideAddProduitForm() {
 
 // Suppression d'un produit
 async function deleteProduit(id_produit) {
-  const confirmDelete = confirm("Voulez-vous vraiment supprimer ce produit ?");
+  const confirmDelete = confirm("Voulez-vous vraiment supprimer ce produit ? (CETTE ACTION EST IRREVERSIBLE)");
   if (!confirmDelete) return;
 
   try {

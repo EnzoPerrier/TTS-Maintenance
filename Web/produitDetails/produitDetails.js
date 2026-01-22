@@ -47,13 +47,22 @@ function getEtatColor(etat) {
 
 function formatDate(dateStr) {
   if (!dateStr) return "N/A";
+  
+  // Si la date est déjà formatée (format "jj/mm/aaaa"), la retourner directement
+  if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+    return dateStr;
+  }
+  
   const date = new Date(dateStr);
+  
+  // Vérifier si la date est valide
+  if (isNaN(date.getTime())) return "N/A";
+  
+  // Toujours afficher seulement la date, sans l'heure
   return date.toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
+    year: "numeric"
   });
 }
 
@@ -360,58 +369,6 @@ function renderMaintenanceHistory() {
 
   container.innerHTML = "";
   
-  allMaintenances.forEach(m => {
-    const card = document.createElement("div");
-    card.classList.add("maintenance-card");
-    
-    const etat = (m.etat || "").toLowerCase();
-    let etatColor = "#6C757D";
-    let icone = "🔧";
-    
-    if (etat.includes("termin")) {
-      etatColor = "#28A745";
-      icone = "✅";
-    } else if (etat.includes("cours")) {
-      etatColor = "#FFC107";
-      icone = "⚙️";
-    } else if (etat.includes("planif")) {
-      etatColor = "#0066CC";
-      icone = "📅";
-    }
-    
-    card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start;">
-        <div style="flex: 1;">
-          <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
-            ${icone} ${m.type}
-          </div>
-          <div><strong>Date :</strong> ${formatDate(m.date_maintenance)}</div>
-          <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
-          ${m.commentaire ? `<div style="margin-top: 0.5rem; color: var(--gray-600);"><strong>Commentaire :</strong> ${m.commentaire}</div>` : ''}
-        </div>
-        <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" 
-           style="padding: 0.625rem 1.25rem; background: var(--primary-blue); color: white; border-radius: 8px; text-decoration: none; white-space: nowrap;">
-          Voir détails
-        </a>
-      </div>
-    `;
-    
-    container.appendChild(card);
-  });
-}
-
-// Ajouter cette fonction pour afficher l'historique des maintenances avec les nouveaux champs
-
-function renderMaintenanceHistory() {
-  const container = document.getElementById("maintenanceHistory");
-  
-  if (allMaintenances.length === 0) {
-    container.innerHTML = "<p style='text-align: center; padding: 2rem; color: var(--gray-600);'>🔧 Aucune maintenance enregistrée</p>";
-    return;
-  }
-
-  container.innerHTML = "";
-  
   // Parcourir toutes les maintenances pour récupérer les détails spécifiques au produit
   allMaintenances.forEach(async (m) => {
     const card = document.createElement("div");
@@ -452,7 +409,7 @@ function renderMaintenanceHistory() {
                 
                 ${produitMaintenance.etat_constate || produitMaintenance.travaux_effectues || produitMaintenance.ri_interne ? `
                   <div style="margin-top: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 8px; border-left: 4px solid var(--primary-blue);">
-                    <h5 style="color: var(--primary-blue); margin-bottom: 0.75rem;">📝 Informations spécifiques pour ce produit</h5>
+                    <h5 style="color: var(--primary-blue); margin-bottom: 0.75rem;">📋 Informations spécifiques pour ce produit</h5>
                     ${produitMaintenance.etat_constate ? `<div style="margin-bottom: 0.5rem;"><strong>État constaté :</strong> ${produitMaintenance.etat_constate}</div>` : ''}
                     ${produitMaintenance.travaux_effectues ? `<div style="margin-bottom: 0.5rem;"><strong>Travaux effectués :</strong> ${produitMaintenance.travaux_effectues}</div>` : ''}
                     ${produitMaintenance.ri_interne ? `<div><strong>RI interne :</strong> ${produitMaintenance.ri_interne}</div>` : ''}
