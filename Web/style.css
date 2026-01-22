@@ -461,14 +461,6 @@ section h2 {
   transform: translateX(4px);
 }
 
-#sitesList li.clickable-line {
-  cursor: pointer;
-}
-
-#sitesList li.clickable-line:hover {
-  background: linear-gradient(90deg, var(--gray-50) 0%, var(--white) 100%);
-}
-
 #produitsList li span,
 #sitesList li span,
 #maintenancesList li span {
@@ -477,7 +469,7 @@ section h2 {
   color: var(--gray-800);
 }
 
-#produitsList li div {
+#produitsList li > div:last-child {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;

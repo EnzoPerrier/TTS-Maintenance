@@ -1,49 +1,45 @@
-import { Tabs } from 'expo-router';
-
 import Ionicons from '@expo/vector-icons/Ionicons';
-
+import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
   return (
     <Tabs
-  screenOptions={{
-    tabBarActiveTintColor: '#0051ffff',
-    headerStyle: {
-      backgroundColor: '#25292e',
-    },
-    headerShadowVisible: false,
-    headerTintColor: '#fff',
-    tabBarStyle: {
-      backgroundColor: '#25292e',
-    },
-  }}
->
-
+      screenOptions={{
+        tabBarActiveTintColor: '#0066CC',
+        headerStyle: {
+          backgroundColor: '#0066CC',
+        },
+        headerShadowVisible: false,
+        headerTintColor: '#fff',
+        tabBarStyle: {
+          backgroundColor: '#25292e',
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Sites',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
           ),
         }}
       />
       <Tabs.Screen
-        name="ScanQRCode"
+        name="maintenances"
         options={{
-          title: 'Scanner un QRCode',
+          title: 'Maintenances',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'qr-code' : 'qr-code-outline'} color={color} size={24}/>
+            <Ionicons name={focused ? 'construct' : 'construct-outline'} color={color} size={24} />
           ),
         }}
       />
-
       <Tabs.Screen
         name="about"
         options={{
-          title: 'About',
+          title: 'À propos',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24}/>
+            <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24} />
           ),
         }}
       />
