@@ -1,14 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const API = 'http://192.168.1.127:3000';
@@ -20,6 +21,17 @@ export default function MaintenancesScreen() {
   const [selectedSite, setSelectedSite] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Formulaire
+  const [formData, setFormData] = useState({
+    date_maintenance: new Date().toISOString().split('T')[0],
+    type: '',
+    etat: 'Planifiée',
+    departement: '',
+    commentaire: '',
+    ri_interne: '',
+  });
 
   useEffect(() => {
     loadSites();
@@ -55,31 +67,66 @@ export default function MaintenancesScreen() {
     setRefreshing(false);
   };
 
+  const handleAddMaintenance = async () => {
+    if (!selectedSite) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un site');
+      return;
+    }
+
+    if (!formData.type) {
+      Alert.alert('Erreur', 'Veuillez renseigner le type de maintenance');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/maintenances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_site: selectedSite,
+          ...formData,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Erreur lors de la création');
+      }
+
+      Alert.alert('Succès', 'Maintenance créée avec succès');
+      setShowAddForm(false);
+      setFormData({
+        date_maintenance: new Date().toISOString().split('T')[0],
+        type: '',
+        etat: 'Planifiée',
+        departement: '',
+        commentaire: '',
+        ri_interne: '',
+      });
+      loadMaintenances(selectedSite);
+    } catch (err) {
+      Alert.alert('Erreur', err.message);
+    }
+  };
+
   const filteredSites = sites.filter((site) =>
     site.nom?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleMaintenanceSelect = (maintenance) => {
+  const handleMaintenancePress = (maintenance) => {
     router.push({
-      pathname: '/scanner',
+      pathname: '/maintenance-details',
       params: {
         id_maintenance: maintenance.id_maintenance,
-        maintenance_type: maintenance.type,
-        maintenance_date: maintenance.date_maintenance,
+        id_site: maintenance.id_site,
       },
     });
   };
 
   const getStatusConfig = (etat) => {
     const etatLower = (etat || '').toLowerCase();
-    
-    if (etatLower.includes('termin')) {
-      return { color: '#28A745', icon: '✅' };
-    } else if (etatLower.includes('cours')) {
-      return { color: '#FFC107', icon: '⚙️' };
-    } else if (etatLower.includes('planif')) {
-      return { color: '#0066CC', icon: '📅' };
-    }
+    if (etatLower.includes('termin')) return { color: '#28A745', icon: '✅' };
+    if (etatLower.includes('cours')) return { color: '#FFC107', icon: '⚙️' };
+    if (etatLower.includes('planif')) return { color: '#0066CC', icon: '📅' };
     return { color: '#6C757D', icon: '🔧' };
   };
 
@@ -88,7 +135,7 @@ export default function MaintenancesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>🔧 Maintenances</Text>
-        <Text style={styles.headerSubtitle}>Sélectionnez une maintenance puis scannez un QR</Text>
+        <Text style={styles.headerSubtitle}>Gérer les maintenances par site</Text>
       </View>
 
       <ScrollView
@@ -142,48 +189,171 @@ export default function MaintenancesScreen() {
         </View>
 
         {/* Maintenances */}
-        {selectedSite && maintenances.length > 0 && (
+        {selectedSite && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Maintenances ({maintenances.length})</Text>
-            {maintenances.map((maintenance) => {
-              const { color, icon } = getStatusConfig(maintenance.etat);
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Maintenances ({maintenances.length})</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => setShowAddForm(true)}
+              >
+                <Text style={styles.addButtonText}>+ Ajouter</Text>
+              </TouchableOpacity>
+            </View>
 
-              return (
+            {maintenances.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>📋</Text>
+                <Text style={styles.emptyStateText}>Aucune maintenance pour ce site</Text>
                 <TouchableOpacity
-                  key={maintenance.id_maintenance}
-                  style={[styles.maintenanceCard, { borderLeftColor: color }]}
-                  onPress={() => handleMaintenanceSelect(maintenance)}
+                  style={styles.emptyStateButton}
+                  onPress={() => setShowAddForm(true)}
                 >
-                  <View style={styles.maintenanceCardHeader}>
-                    <Text style={styles.maintenanceCardIcon}>{icon}</Text>
-                    <View style={styles.maintenanceCardContent}>
-                      <Text style={styles.maintenanceCardTitle}>{maintenance.type}</Text>
-                      <Text style={styles.maintenanceCardDate}>
-                        📅 {new Date(maintenance.date_maintenance).toLocaleDateString('fr-FR')}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: color }]}>
-                    <Text style={styles.statusBadgeText}>{maintenance.etat || 'N/A'}</Text>
-                  </View>
-                  {maintenance.commentaire && (
-                    <Text style={styles.maintenanceCardComment} numberOfLines={2}>
-                      💬 {maintenance.commentaire}
-                    </Text>
-                  )}
+                  <Text style={styles.emptyStateButtonText}>+ Créer une maintenance</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+              </View>
+            ) : (
+              maintenances.map((maintenance) => {
+                const { color, icon } = getStatusConfig(maintenance.etat);
 
-        {selectedSite && maintenances.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📋</Text>
-            <Text style={styles.emptyStateText}>Aucune maintenance pour ce site</Text>
+                return (
+                  <TouchableOpacity
+                    key={maintenance.id_maintenance}
+                    style={[styles.maintenanceCard, { borderLeftColor: color }]}
+                    onPress={() => handleMaintenancePress(maintenance)}
+                  >
+                    <View style={styles.maintenanceCardHeader}>
+                      <Text style={styles.maintenanceCardIcon}>{icon}</Text>
+                      <View style={styles.maintenanceCardContent}>
+                        <Text style={styles.maintenanceCardTitle}>{maintenance.type}</Text>
+                        <Text style={styles.maintenanceCardDate}>
+                          📅 {new Date(maintenance.date_maintenance).toLocaleDateString('fr-FR')}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: color }]}>
+                      <Text style={styles.statusBadgeText}>{maintenance.etat || 'N/A'}</Text>
+                    </View>
+                    {maintenance.commentaire && (
+                      <Text style={styles.maintenanceCardComment} numberOfLines={2}>
+                        💬 {maintenance.commentaire}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
         )}
       </ScrollView>
+
+      {/* Modal Ajout Maintenance */}
+      <Modal
+        visible={showAddForm}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddForm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>📝 Nouvelle Maintenance</Text>
+
+            <ScrollView style={styles.modalForm}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Date *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.date_maintenance}
+                  onChangeText={(text) => setFormData({ ...formData, date_maintenance: text })}
+                  placeholder="YYYY-MM-DD"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Type de maintenance *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.type}
+                  onChangeText={(text) => setFormData({ ...formData, type: text })}
+                  placeholder="Ex: Maintenance préventive"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>État</Text>
+                <View style={styles.stateButtonsRow}>
+                  {['Planifiée', 'En cours', 'Terminée'].map((etat) => (
+                    <TouchableOpacity
+                      key={etat}
+                      style={[
+                        styles.stateButtonSmall,
+                        formData.etat === etat && styles.stateButtonSmallActive,
+                      ]}
+                      onPress={() => setFormData({ ...formData, etat })}
+                    >
+                      <Text
+                        style={[
+                          styles.stateButtonSmallText,
+                          formData.etat === etat && styles.stateButtonSmallTextActive,
+                        ]}
+                      >
+                        {etat}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Département</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.departement}
+                  onChangeText={(text) => setFormData({ ...formData, departement: text })}
+                  placeholder="Ex: Électricité"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Commentaire</Text>
+                <TextInput
+                  style={styles.textArea}
+                  value={formData.commentaire}
+                  onChangeText={(text) => setFormData({ ...formData, commentaire: text })}
+                  placeholder="Notes..."
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>RI Interne</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.ri_interne}
+                  onChangeText={(text) => setFormData({ ...formData, ri_interne: text })}
+                  placeholder="Référence interne"
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalButtonSecondary}
+                onPress={() => setShowAddForm(false)}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButtonPrimary}
+                onPress={handleAddMaintenance}
+              >
+                <Text style={styles.modalButtonPrimaryText}>Créer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -227,11 +397,27 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#0066CC',
-    marginBottom: 12,
+  },
+  addButton: {
+    backgroundColor: '#28A745',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   siteCard: {
     backgroundColor: '#FFFFFF',
@@ -347,5 +533,122 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6C757D',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  emptyStateButton: {
+    backgroundColor: '#28A745',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  emptyStateButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: '90%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#0066CC',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalForm: {
+    maxHeight: '70%',
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#343A40',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 2,
+    borderColor: '#DEE2E6',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  textArea: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 2,
+    borderColor: '#DEE2E6',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  stateButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  stateButtonSmall: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 2,
+    borderColor: '#DEE2E6',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  stateButtonSmallActive: {
+    backgroundColor: '#0066CC',
+    borderColor: '#0066CC',
+  },
+  stateButtonSmallText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#343A40',
+  },
+  stateButtonSmallTextActive: {
+    color: '#FFF',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  modalButtonSecondary: {
+    flex: 1,
+    backgroundColor: '#6C757D',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+  },
+  modalButtonSecondaryText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonPrimary: {
+    flex: 1,
+    backgroundColor: '#0066CC',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+  },
+  modalButtonPrimaryText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -80,8 +80,7 @@ export default function Index() {
             <Text style={{ fontSize: 18, fontWeight: "600" }}>{item.nom}</Text>
             <Text>Client : {item.id_client}</Text>
             <Text>Dernière maintenance : {item.lastMaintenance}</Text>
-            <Text>Département : {item.department}</Text>
-            <Text>Localisation : {item.location}</Text>
+            <Text>Département : {item.departement}</Text>
           </TouchableOpacity>
         )}
       />

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapport d'intervention</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.3;
+      background: white;
+      padding: 20px;
+    }
+
+    .page {
+      max-width: 210mm;
+      margin: 0 auto;
+      background: white;
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #000;
+    }
+
+    .logo {
+      width: 100px;
+      height: 50px;
+      background: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .after-sales {
+      width: 100px;
+      height: 50px;
+      background: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    /* Info boxes */
+    .info-section {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+
+    .info-box {
+      border: 2px solid #000;
+      padding: 8px;
+      flex: 1;
+    }
+
+    .info-box table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .info-box td {
+      padding: 3px 5px;
+      font-size: 10px;
+    }
+
+    .info-box td:first-child {
+      font-weight: bold;
+      width: 40%;
+    }
+
+    /* Time section */
+    .time-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .time-label {
+      border: 2px solid #000;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 10px;
+      text-align: center;
+      width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .time-table {
+      flex: 1;
+      border: 2px solid #000;
+    }
+
+    .time-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .time-table th,
+    .time-table td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 9px;
+    }
+
+    .time-table th {
+      background: #f0f0f0;
+      font-weight: bold;
+    }
+
+    .time-table td {
+      min-height: 20px;
+    }
+
+    /* Nature section */
+    .nature-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .nature-label {
+      border: 2px solid #000;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 10px;
+      text-align: center;
+      width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nature-content {
+      flex: 1;
+      border: 2px solid #000;
+      padding: 10px;
+    }
+
+    .nature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px 30px;
+    }
+
+    .nature-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+    }
+
+    .checkbox {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #000;
+      display: inline-block;
+      position: relative;
+    }
+
+    .checkbox.checked::after {
+      content: '✓';
+      position: absolute;
+      top: -3px;
+      left: 1px;
+      font-size: 14px;
+    }
+
+    /* État constaté section */
+    .etat-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .etat-label {
+      border: 2px solid #000;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 10px;
+      text-align: center;
+      width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .etat-content {
+      flex: 1;
+      border: 2px solid #000;
+      padding: 10px;
+      background: #f5f5f5;
+    }
+
+    .etat-content h3 {
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .etat-content h3:first-child {
+      margin-top: 0;
+    }
+
+    .etat-content h4 {
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: 8px;
+      margin-bottom: 5px;
+    }
+
+    .etat-content p,
+    .etat-content ul {
+      font-size: 10px;
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+
+    .etat-content ul {
+      margin-left: 15px;
+    }
+
+    .etat-content li {
+      margin-bottom: 3px;
+    }
+
+    /* Travaux effectués section */
+    .travaux-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      min-height: 100px;
+    }
+
+    .travaux-label {
+      border: 2px solid #000;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 10px;
+      text-align: center;
+      width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .travaux-content {
+      flex: 1;
+      border: 2px solid #000;
+      padding: 10px;
+      background: white;
+    }
+
+    /* Signature section */
+    .signature-section {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .signature-boxes {
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .signature-box {
+      flex: 1;
+      border: 2px solid #000;
+      padding: 15px;
+      min-height: 100px;
+      text-align: center;
+    }
+
+    .signature-box-title {
+      font-size: 10px;
+      margin-bottom: 50px;
+    }
+
+    .signature-content {
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .intervention-terminee {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .checkbox-large {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #000;
+      display: inline-block;
+      position: relative;
+    }
+
+    .checkbox-large.checked::after {
+      content: '✓';
+      position: absolute;
+      top: -5px;
+      left: 2px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: 9px;
+      margin-top: 30px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .page {
+        margin: 0;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">[LOGO TTS]</div>
+      <h1>Rapport d'intervention</h1>
+      <div class="after-sales">AFTER SALES</div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="info-section">
+      <div class="info-box">
+        <table>
+          <tr>
+            <td>Chrono:</td>
+            <td>{{chrono}}</td>
+          </tr>
+          <tr>
+            <td>Date:</td>
+            <td>{{date}}</td>
+          </tr>
+          <tr>
+            <td>Technicien:</td>
+            <td>{{technicien}}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="info-box">
+        <table>
+          <tr>
+            <td>Client:</td>
+            <td>{{client}}</td>
+          </tr>
+          <tr>
+            <td>Contact:</td>
+            <td>{{contact}}</td>
+          </tr>
+          <tr>
+            <td>Type de panneau/produit:</td>
+            <td>{{typePanneau}}</td>
+          </tr>
+          <tr>
+            <td>N° D'affaire / Cde:</td>
+            <td>{{numAffaire}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Time Section -->
+    <div class="time-section">
+      <div class="time-label">Temps<br>passé sur<br>site</div>
+      <div class="time-table">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Lundi</th>
+              <th>Mardi</th>
+              <th>Mercredi</th>
+              <th>Jeudi</th>
+              <th>Vendredi</th>
+              <th>Samedi</th>
+              <th>Dimanche</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>MATIN</th>
+              <td rowspan="2">{{lundiMatin}}</td>
+              <td rowspan="2">{{mardiMatin}}</td>
+              <td rowspan="2">{{mercrediMatin}}</td>
+              <td rowspan="2">{{jeudiMatin}}</td>
+              <td rowspan="2">{{vendrediMatin}}</td>
+              <td rowspan="2">{{samediMatin}}</td>
+              <td rowspan="2">{{dimancheMatin}}</td>
+            </tr>
+            <tr>
+              <td>Arrivée</td>
+            </tr>
+            <tr>
+              <td>Départ</td>
+              <td>{{lundiMatinDepart}}</td>
+              <td>{{mardiMatinDepart}}</td>
+              <td>{{mercrediMatinDepart}}</td>
+              <td>{{jeudiMatinDepart}}</td>
+              <td>{{vendrediMatinDepart}}</td>
+              <td>{{samediMatinDepart}}</td>
+              <td>{{dimancheMatinDepart}}</td>
+            </tr>
+            <tr>
+              <th>Apr. midi</th>
+              <td rowspan="2">{{lundiApm}}</td>
+              <td rowspan="2">{{mardiApm}}</td>
+              <td rowspan="2">{{mercrediApm}}</td>
+              <td rowspan="2">{{jeudiApm}}</td>
+              <td rowspan="2">{{vendrediApm}}</td>
+              <td rowspan="2">{{samediApm}}</td>
+              <td rowspan="2">{{dimancheApm}}</td>
+            </tr>
+            <tr>
+              <td>Arrivée</td>
+            </tr>
+            <tr>
+              <td>Départ</td>
+              <td>{{lundiApmDepart}}</td>
+              <td>{{mardiApmDepart}}</td>
+              <td>{{mercrediApmDepart}}</td>
+              <td>{{jeudiApmDepart}}</td>
+              <td>{{vendrediApmDepart}}</td>
+              <td>{{samediApmDepart}}</td>
+              <td>{{dimancheApmDepart}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Nature des Travaux Section -->
+    <div class="nature-section">
+      <div class="nature-label">Nature<br>des<br>Travaux</div>
+      <div class="nature-content">
+        <div class="nature-grid">
+          <div class="nature-item">
+            <span class="checkbox {{installationChecked}}"></span>
+            <span>Installation</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{contratChecked}}"></span>
+            <span>Contrat de maintenance</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{curatifChecked}}"></span>
+            <span>Intervention Curative</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{locationChecked}}"></span>
+            <span>Location</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{revisionChecked}}"></span>
+            <span>Révision</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{accidentChecked}}"></span>
+            <span>Accident</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox"></span>
+            <span>Autres: ___________</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{vandalismeChecked}}"></span>
+            <span>Vandalisme</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{garantieChecked}}"></span>
+            <span>Garantie:</span>
+          </div>
+          <div class="nature-item">
+            <span class="checkbox {{orageChecked}}"></span>
+            <span>Orage</span>
+          </div>
+          <div></div>
+          <div class="nature-item">
+            <span class="checkbox"></span>
+            <span>Autres: ___________</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- État Constaté Section -->
+    <div class="etat-section">
+      <div class="etat-label">État<br>constaté</div>
+      <div class="etat-content">
+        {{{etatConstateContent}}}
+      </div>
+    </div>
+
+    <!-- Travaux Effectués Section -->
+    <div class="travaux-section">
+      <div class="travaux-label">Travaux<br>effectués</div>
+      <div class="travaux-content">
+        {{{travauxEffectuesContent}}}
+      </div>
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="intervention-terminee">
+        <span>Intervention terminée:</span>
+        <span class="checkbox-large {{interventionTermineeChecked}}"></span>
+      </div>
+      <div class="signature-boxes">
+        <div class="signature-box">
+          <div class="signature-box-title">Visa TTS (signature)</div>
+          <div class="signature-content">{{signatureTTS}}</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-box-title">Visa CLIENT (Nom et signature)</div>
+          <div class="signature-content">{{signatureClient}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Trafic Technologie Système - Z.I. 1er Avenue 2ème rue - 06516 CARROS BP594<br>
+      Tél: 04.92.08.29.99 - Fax: 04.92.08.29.90 - Email: info@ttsys.fr
+    </div>
+  </div>
+</body>
+</html>

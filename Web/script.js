@@ -631,8 +631,6 @@ function renderProduits(produits) {
   </div>
 `;
 
-
-
     ul.appendChild(li);
   });
 }
@@ -657,6 +655,93 @@ produitsSection.insertBefore(
   searchProduitsInput,
   document.getElementById("produitsList")
 );
+
+// Fonction pour initialiser la recherche de site dans le formulaire produit
+function initSiteSearch() {
+  const searchInput = document.getElementById("produitSiteSearch");
+  const resultsDiv = document.getElementById("siteSearchResults");
+  const hiddenIdInput = document.getElementById("produitSiteId");
+
+  if (!searchInput) return;
+
+  // Événement de saisie
+  searchInput.addEventListener("input", async (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+
+    // Réinitialiser l'ID caché si le champ est vidé
+    if (searchTerm === "") {
+      resultsDiv.style.display = "none";
+      resultsDiv.innerHTML = "";
+      hiddenIdInput.value = "";
+      return;
+    }
+
+    // Filtrer les sites
+    const filtered = allSites.filter(site =>
+      site.nom.toLowerCase().includes(searchTerm) ||
+      (site.adresse && site.adresse.toLowerCase().includes(searchTerm))
+    );
+
+    // Afficher les résultats
+    if (filtered.length > 0) {
+      resultsDiv.innerHTML = "";
+      resultsDiv.style.display = "block";
+
+      filtered.forEach(site => {
+        const div = document.createElement("div");
+        div.style.cssText = `
+          padding: 0.75rem;
+          cursor: pointer;
+          border-bottom: 1px solid var(--gray-200);
+          transition: background 0.2s ease;
+        `;
+        
+        div.innerHTML = `
+          <strong style="color: var(--gray-800);">${site.nom}</strong><br/>
+          <small style="color: var(--gray-600);">${site.adresse || "Pas d'adresse"}</small>
+        `;
+
+        // Survol
+        div.addEventListener("mouseenter", () => {
+          div.style.background = "var(--gray-50)";
+        });
+
+        div.addEventListener("mouseleave", () => {
+          div.style.background = "white";
+        });
+
+        // Clic pour sélectionner
+        div.addEventListener("click", () => {
+          searchInput.value = site.nom;
+          hiddenIdInput.value = site.id_site;
+          resultsDiv.style.display = "none";
+          resultsDiv.innerHTML = "";
+        });
+
+        resultsDiv.appendChild(div);
+      });
+    } else {
+      resultsDiv.innerHTML = `
+        <div style="padding: 1rem; text-align: center; color: var(--gray-600);">
+          Aucun site trouvé
+        </div>
+      `;
+      resultsDiv.style.display = "block";
+    }
+  });
+
+  // Fermer les résultats si on clique ailleurs
+  document.addEventListener("click", (e) => {
+    if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+      resultsDiv.style.display = "none";
+    }
+  });
+
+  // Empêcher la fermeture quand on clique dans les résultats
+  resultsDiv.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+}
 
 // Ajouter un produit
 async function addProduit(e) {
@@ -723,6 +808,12 @@ function showAddProduitForm() {
   // Réinitialiser le formulaire
   document.getElementById("produitForm").reset();
   
+  // Réinitialiser la recherche de site
+  document.getElementById("produitSiteSearch").value = "";
+  document.getElementById("produitSiteId").value = "";
+  document.getElementById("siteSearchResults").style.display = "none";
+  document.getElementById("siteSearchResults").innerHTML = "";
+  
   // Changer le titre du formulaire
   const formTitle = document.querySelector("#addProduitForm h3");
   if (formTitle) {
@@ -738,6 +829,11 @@ function showAddProduitForm() {
   submitBtn.textContent = "Ajouter";
   
   document.getElementById("addProduitForm").style.display = "block";
+  
+  // Initialiser la recherche de site
+  setTimeout(() => {
+    initSiteSearch();
+  }, 100);
 }
 
 function hideAddProduitForm() {
@@ -778,7 +874,14 @@ function editProduit(id_produit) {
 
   // Pré-remplir le formulaire
   document.getElementById("produitNom").value = produit.nom;
-  document.getElementById("produitSiteId").value = produit.id_site;
+  
+  // Trouver le site correspondant
+  const site = allSites.find(s => s.id_site === produit.id_site);
+  if (site) {
+    document.getElementById("produitSiteSearch").value = site.nom;
+    document.getElementById("produitSiteId").value = site.id_site;
+  }
+  
   document.getElementById("produitDepartement").value = produit.departement || "";
   document.getElementById("produitEtat").value = produit.etat || "";
   document.getElementById("produitDescription").value = produit.description || "";
@@ -799,6 +902,11 @@ function editProduit(id_produit) {
 
   // Afficher le formulaire
   document.getElementById("addProduitForm").style.display = "block";
+  
+  // Initialiser la recherche de site
+  setTimeout(() => {
+    initSiteSearch();
+  }, 100);
 }
 
 // Fonction pour mettre à jour un produit
@@ -844,7 +952,7 @@ async function loadMaintenances() {
 
   maintenances.forEach(m => {
     const li = document.createElement("li");
-    li.textContent = `${m.description || "Maintenance"} — ${m.date_maintenance}`;
+    li.textContent = `${m.description || "Maintenance"} – ${m.date_maintenance}`;
     ul.appendChild(li);
   });
 }
