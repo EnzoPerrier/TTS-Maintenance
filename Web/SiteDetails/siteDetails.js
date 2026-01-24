@@ -224,7 +224,8 @@ async function loadMaintenances() {
           <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
           <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
           <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
-        </div>
+          <a href="${API}/maintenances/${m.id_maintenance}/html" style="display: inline-block; padding: 0.625rem 1.25rem; background: #059e00; color: white; border-radius: 8px; text-decoration: none;">Générer RI</a>
+          </div>
       `;
       details.appendChild(content);
 
