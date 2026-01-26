@@ -342,6 +342,17 @@ async function loadAllMaintenances() {
           <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
           <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
           <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
+          <div style="display:flex; overflow:hidden; border-radius:8px;">
+            <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
+              style="background:#198754; color:white; padding:0.6rem 1rem; text-decoration:none; border-right:1px solid rgba(255,255,255,0.3);">
+              👁 Aperçu RI
+            </a>
+
+            <a href="${API}/maintenances/${m.id_maintenance}/pdf"
+              style="background:#157347; color:white; padding:0.6rem 1rem; text-decoration:none;">
+              ⬇ PDF
+            </a>
+          </div>
         </div>
       `;
         details.appendChild(content);

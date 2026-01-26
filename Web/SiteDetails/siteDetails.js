@@ -16,16 +16,16 @@ document.getElementById("backBtn").addEventListener("click", () => {
 // ========== FONCTION UTILITAIRE POUR LES DATES ==========
 function formatDateForInput(dateString) {
   if (!dateString) return "";
-  
+
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString;
   }
-  
+
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
     const [day, month, year] = dateString.split('/');
     return `${year}-${month}-${day}`;
   }
-  
+
   const date = new Date(dateString);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -67,7 +67,7 @@ async function loadSiteDetails() {
     if (site.gps_lat && site.gps_lng) {
       initMap(site.gps_lat, site.gps_lng, site.nom, site.adresse);
     } else {
-      document.getElementById("mapContainer").innerHTML = 
+      document.getElementById("mapContainer").innerHTML =
         '<div style="padding: 2rem; text-align: center; color: #6C757D;">📍 Coordonnées GPS non disponibles pour ce site</div>';
     }
   } catch (err) {
@@ -81,7 +81,7 @@ function initMap(lat, lng, nom, adresse) {
   lng = parseFloat(lng);
 
   if (isNaN(lat) || isNaN(lng)) {
-    document.getElementById("mapContainer").innerHTML = 
+    document.getElementById("mapContainer").innerHTML =
       '<div style="padding: 2rem; text-align: center; color: #6C757D;">📍 Coordonnées GPS invalides</div>';
     return;
   }
@@ -192,7 +192,7 @@ async function loadMaintenances() {
       }
 
       const summary = document.createElement("summary");
-      
+
       let icone = "🔧";
       if (etat.includes("termin")) icone = "✅";
       else if (etat.includes("cours")) icone = "⚙️";
@@ -224,7 +224,17 @@ async function loadMaintenances() {
           <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
           <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
           <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
-          <a href="${API}/maintenances/${m.id_maintenance}/html" style="display: inline-block; padding: 0.625rem 1.25rem; background: #059e00; color: white; border-radius: 8px; text-decoration: none;">Générer RI</a>
+
+          <div style="display:flex; overflow:hidden; border-radius:8px;">
+            <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
+              style="background:#198754; color:white; padding:0.6rem 1rem; text-decoration:none; border-right:1px solid rgba(255,255,255,0.3);">
+              👁 Aperçu RI
+            </a>
+
+            <a href="${API}/maintenances/${m.id_maintenance}/pdf"
+              style="background:#157347; color:white; padding:0.6rem 1rem; text-decoration:none;">
+              ⬇ PDF
+            </a>
           </div>
       `;
       details.appendChild(content);
@@ -265,11 +275,11 @@ async function addMaintenance(event) {
     etat: document.getElementById("maintenanceEtat").value || null,
     departement: document.getElementById("maintenanceDepartement").value || null,
     numero_ri: document.getElementById("maintenanceRI").value || null,
-    
+
     operateur_1: document.getElementById("maintenanceOperateur1")?.value.toUpperCase() || null,
     operateur_2: document.getElementById("maintenanceOperateur2")?.value.toUpperCase() || null,
     operateur_3: document.getElementById("maintenanceOperateur3")?.value.toUpperCase() || null,
-    
+
     date_intervention: document.getElementById("dateIntervention")?.value || null,
     heure_arrivee_matin: document.getElementById("maintenanceHeureArriveeMatin")?.value || null,
     heure_depart_matin: document.getElementById("maintenanceHeureDepartMatin")?.value || null,
@@ -322,37 +332,37 @@ function editMaintenance(id_maintenance) {
   document.getElementById("maintenanceDepartement").value = maintenance.departement || "";
   document.getElementById("maintenanceRI").value = maintenance.numero_ri || "";
   document.getElementById("commentaireMaintenance").value = maintenance.commentaire || "";
-  
+
   const operateur1 = document.getElementById("maintenanceOperateur1");
   if (operateur1) operateur1.value = maintenance.operateur_1 || "";
-  
+
   const operateur2 = document.getElementById("maintenanceOperateur2");
   if (operateur2) operateur2.value = maintenance.operateur_2 || "";
-  
+
   const operateur3 = document.getElementById("maintenanceOperateur3");
   if (operateur3) operateur3.value = maintenance.operateur_3 || "";
-  
+
   const heureArriveeMatin = document.getElementById("maintenanceHeureArriveeMatin");
   if (heureArriveeMatin) heureArriveeMatin.value = maintenance.heure_arrivee_matin || "";
-  
+
   const heureDepartMatin = document.getElementById("maintenanceHeureDepartMatin");
   if (heureDepartMatin) heureDepartMatin.value = maintenance.heure_depart_matin || "";
-  
+
   const heureArriveeAprem = document.getElementById("maintenanceHeureArriveeAprem");
   if (heureArriveeAprem) heureArriveeAprem.value = maintenance.heure_arrivee_aprem || "";
-  
+
   const heureDepartAprem = document.getElementById("maintenanceHeureDepartAprem");
   if (heureDepartAprem) heureDepartAprem.value = maintenance.heure_depart_aprem || "";
-  
+
   const garantie = document.getElementById("maintenanceGarantie");
   if (garantie) garantie.checked = maintenance.garantie || false;
-  
+
   const contact = document.getElementById("maintenanceContact");
   if (contact) contact.value = maintenance.contact || "";
-  
+
   const typeProduit = document.getElementById("maintenanceTypeProduit");
   if (typeProduit) typeProduit.value = maintenance.type_produit || "";
-  
+
   const numeroCommande = document.getElementById("maintenanceNumeroCommande");
   if (numeroCommande) numeroCommande.value = maintenance.numero_commande || "";
 
@@ -439,8 +449,8 @@ async function loadEquipements() {
 
     allEquipements.forEach(p => {
       const li = document.createElement("li");
-      li.setAttribute("id","produitsList");
-      
+      li.setAttribute("id", "produitsList");
+
       const etat = (p.etat || "").toLowerCase();
       if (etat === "ok") li.classList.add("equipement-ok");
       else if (etat === "nok") li.classList.add("equipement-nok");
@@ -637,13 +647,13 @@ function updateStats() {
 }
 
 // ========== CONVERSION AUTOMATIQUE EN MAJUSCULES ==========
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const operateurInputs = ['maintenanceOperateur1', 'maintenanceOperateur2', 'maintenanceOperateur3'];
-  
+
   operateurInputs.forEach(inputId => {
     const input = document.getElementById(inputId);
     if (input) {
-      input.addEventListener('input', function(e) {
+      input.addEventListener('input', function (e) {
         e.target.value = e.target.value.toUpperCase();
       });
     }

@@ -1,18 +1,28 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
+import { Colors } from '../../constants/Colors';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#0066CC',
+        tabBarActiveTintColor: Colors.primary,
         headerStyle: {
-          backgroundColor: '#0066CC',
+          backgroundColor: Colors.primary,
         },
         headerShadowVisible: false,
-        headerTintColor: '#fff',
+        headerTintColor: Colors.white,
         tabBarStyle: {
-          backgroundColor: '#25292e',
+          backgroundColor: Colors.white,
+          borderTopWidth: 1,
+          borderTopColor: Colors.gray200,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
         },
       }}
     >
@@ -20,27 +30,36 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Sites',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
-          ),
+          tabBarIcon: ({ color, focused }) => {
+            return <Text style={{ fontSize: 24 }}>🏢</Text>;
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="products"
+        options={{
+          title: 'Produits',
+          tabBarIcon: ({ color, focused }) => {
+            return <Text style={{ fontSize: 24 }}>📦</Text>;
+          },
         }}
       />
       <Tabs.Screen
         name="maintenances"
         options={{
           title: 'Maintenances',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'construct' : 'construct-outline'} color={color} size={24} />
-          ),
+          tabBarIcon: ({ color, focused }) => {
+            return <Text style={{ fontSize: 24 }}>🔧</Text>;
+          },
         }}
       />
       <Tabs.Screen
-        name="about"
+        name="scanner"
         options={{
-          title: 'À propos',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24} />
-          ),
+          title: 'Scanner',
+          tabBarIcon: ({ color, focused }) => {
+            return <Text style={{ fontSize: 24 }}>📷</Text>;
+          },
         }}
       />
     </Tabs>
