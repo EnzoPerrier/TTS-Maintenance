@@ -1,89 +1,57 @@
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { FlatList, RefreshControl, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Card } from '../../components/ui/Card';
+import { SearchBar } from '../../components/ui/SearchBar';
+import { CardStyles, GlobalStyles } from '../../constants/Styles';
+import { useSites } from '../../hooks/useSites';
 
-const ipServeur = "192.168.1.127";
-
-export default function Index() {
+export default function SitesScreen() {
   const router = useRouter();
-  const [search, setSearch] = useState("");
+  const { sites, refreshing, refresh } = useSites();
+  const [search, setSearch] = useState('');
 
-  // Récupération via API Node.js
-  const [sites, setSites] = useState<any[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const loadSites = async () => {
-    try {
-      const res = await fetch(`http://${ipServeur}:3000/sites`);
-      const data = await res.json();
-      setSites(data);
-    } catch (err) {
-      console.error("Erreur fetch sites", err);
-    }
-  };
-
-  useEffect(() => {
-    loadSites();
-  }, []);
-
-  // Pull to refresh
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadSites();
-    setRefreshing(false);
-  };
-
-  const filtered = sites
-    .filter((s) => s.nom) 
-    .filter((s) => s.nom.toLowerCase().includes(search.toLowerCase()));
+  const filtered = sites.filter(s =>
+    s.nom?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      {/* Barre de recherche */}
-      <TextInput
-        placeholder="Rechercher un site..."
-        placeholderTextColor="#888"
-        value={search}
-        onChangeText={setSearch}
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 16,
-        }}
-      />
+    <View style={GlobalStyles.container}>
+      <View style={GlobalStyles.header}>
+        <Text style={GlobalStyles.headerTitle}>🏢 Sites</Text>
+        <Text style={GlobalStyles.headerSubtitle}>
+          {sites.length} site(s) disponible(s)
+        </Text>
+      </View>
 
-      {/* Liste des sites AVEC pull-to-refresh */}
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id_site.toString()}
+      <ScrollView
+        style={GlobalStyles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={{
-              padding: 16,
-              borderWidth: 1,
-              borderColor: "#ddd",
-              borderRadius: 10,
-              marginBottom: 12,
-            }}
-            onPress={() =>
-              router.push({
-                pathname: "/sites/[id_site]",
-                params: { id_site: item.id_site.toString() },
-              })
-            }
+      >
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Rechercher un site..."
+        />
+
+        {filtered.map(site => (
+          <Card
+            key={site.id_site}
+            title={site.nom}
+            badge={`ID: ${site.id_site}`}
+            onPress={() => router.push(`/sites/${site.id_site}`)}
           >
-            <Text style={{ fontSize: 18, fontWeight: "600" }}>{item.nom}</Text>
-            <Text>Client : {item.id_client}</Text>
-            <Text>Dernière maintenance : {item.lastMaintenance}</Text>
-            <Text>Département : {item.departement}</Text>
-          </TouchableOpacity>
-        )}
-      />
+            <Text style={CardStyles.cardText}>
+              📍 {site.adresse || 'Adresse non spécifiée'}
+            </Text>
+            <Text style={CardStyles.cardText}>
+              👤 Client: {site.id_client}
+            </Text>
+          </Card>
+        ))}
+      </ScrollView>
     </View>
   );
 }
