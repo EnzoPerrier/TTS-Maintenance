@@ -269,7 +269,18 @@ function transformDataForTemplate(maintenance, site, produits) {
 // GET /maintenances → toutes les maintenances
 exports.getAllMaintenances = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM maintenances");
+    const [rows] = await db.query("SELECT * FROM maintenances ORDER BY date_maintenance DESC");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// GET /maintenances/NotFinished → toutes les maintenances en cours (pas terminees)
+exports.getAllMaintenancesNotFinished = async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM maintenances WHERE etat <> 'Terminée' ORDER BY date_maintenance DESC");
     res.json(rows);
   } catch (err) {
     console.error(err);

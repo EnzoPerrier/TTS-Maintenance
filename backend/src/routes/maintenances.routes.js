@@ -8,6 +8,7 @@ router.get("/:id/pdf", maintenancesController.generateMaintenancePDF);
 router.get("/AllMaintenancesBySiteID/:id", maintenancesController.getAllMaintenancesBySiteID);
 
 router.get("/", maintenancesController.getAllMaintenances);
+router.get("/NotFinished", maintenancesController.getAllMaintenancesNotFinished);
 router.get("/:id", maintenancesController.getMaintenanceById);
 router.post("/", maintenancesController.createMaintenance);
 router.put("/:id", maintenancesController.updateMaintenance);
