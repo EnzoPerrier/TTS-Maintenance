@@ -60,32 +60,83 @@ exports.generateQRCodes = async (req, res) => {
 
 // Affichage du QRCode
 exports.showQRCode = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // id_produit passé depuis printQR
 
   try {
-    // Récupérer le QR depuis la base
+    console.log('Affichage QR pour produit:', id);
+
+    // Récupérer le QR code via id_produit
     const [rows] = await db.query(
-      `SELECT id_qr FROM qr_codes WHERE id_qr = ?`,
+      `SELECT id_qr, id_produit FROM qr_codes WHERE id_produit = ?`,
       [id]
     );
 
-    if (rows.length === 0) return res.status(404).send("QR code introuvable");
+    if (rows.length === 0) {
+      return res.status(404).send("QR code introuvable pour ce produit");
+    }
 
-    // Générer le QR code en base64
-    const qrContent = JSON.stringify({ id_qr: id });
+    const { id_qr, id_produit } = rows[0];
+    console.log('QR trouvé - id_qr:', id_qr, 'id_produit:', id_produit);
+
+    // Générer le QR code avec id_qr ET id_produit
+    const qrContent = JSON.stringify({ 
+      id_qr: id_qr,
+      id_produit: id_produit 
+    });
+    
     const qrDataUrl = await QRCode.toDataURL(qrContent);
 
     // Envoyer du HTML minimal
     res.send(`
       <html>
-        <head><title>QR Code ${id}</title></head>
-        <body style="display:flex;justify-content:center;align-items:center;height:100vh;">
-          <img src="${qrDataUrl}" alt="QR Code ${id}" />
+        <head>
+          <title>QR Code - Produit ${id_produit}</title>
+          <style>
+            body {
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+              font-family: Arial, sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .container {
+              background: white;
+              padding: 2rem;
+              border-radius: 16px;
+              box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+              text-align: center;
+            }
+            h1 {
+              color: #333;
+              margin-bottom: 1rem;
+            }
+            .info {
+              color: #666;
+              margin-bottom: 1rem;
+              font-size: 14px;
+            }
+            img {
+              margin-top: 1rem;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>📦 QR Code Produit</h1>
+            <div class="info">
+              <strong>ID Produit:</strong> ${id_produit}<br/>
+              <strong>ID QR:</strong> ${id_qr}
+            </div>
+            <img src="${qrDataUrl}" alt="QR Code Produit ${id_produit}" />
+          </div>
         </body>
       </html>
     `);
   } catch (err) {
-    console.error(err);
+    console.error('Erreur showQRCode:', err);
     res.status(500).send("Erreur serveur");
   }
 };
@@ -120,7 +171,7 @@ exports.scanQRCode = async (req, res) => {
     // Le QR est associé : on retourne aussi les informations du produit
     const [product] = await db.query(
       `SELECT * FROM produits WHERE id_produit = ?`,
-      [qr.produit_id]
+      [qr.id_produit]
     );
 
     return res.json({
@@ -165,7 +216,7 @@ exports.assignQRCode = async (req, res) => {
     // Mise à jour du QR code avec le produit nouvellement créé
     await db.query(
       `UPDATE qr_codes
-       SET produit_id = ?, etat = 'associe'
+       SET id_produit = ?, etat = 'associe'
        WHERE id_qr = ?`,
       [id_produit, id_qr]
     );
@@ -185,7 +236,7 @@ exports.assignQRCode = async (req, res) => {
 // Mettre à jour un QR code (ex: changer produit, site, type ou état)
 exports.updateQRCode = async (req, res) => {
   const { id } = req.params;
-  const { produit_id, site_id, type, etat } = req.body;
+  const { id_produit, site_id, type, etat } = req.body;
 
   try {
     // Vérification que le QR existe
@@ -200,10 +251,10 @@ exports.updateQRCode = async (req, res) => {
     // Mise à jour du QR code
     await db.query(
       `UPDATE qr_codes 
-       SET produit_id = ?, site_id = ?, type = ?, etat = ?
+       SET id_produit = ?, site_id = ?, type = ?, etat = ?
        WHERE id_qr = ?`,
       [
-        produit_id ?? rows[0].produit_id,
+        id_produit ?? rows[0].id_produit,
         site_id ?? rows[0].site_id,
         type ?? rows[0].type,
         etat ?? rows[0].etat,

@@ -21,6 +21,20 @@ export const useMaintenances = () => {
     }
   };
 
+  const loadMaintenancesNotFinished = async () => {
+  try {
+    const data = await api.getMaintenancesNotFinished();
+    setMaintenances(Array.isArray(data) ? data : []);
+  } catch (err) {
+    setMaintenances([]);
+    Alert.alert('Erreur', Config.ERROR_MESSAGES.LOAD_MAINTENANCES);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+
   const refresh = async () => {
     setRefreshing(true);
     await loadMaintenances();
@@ -30,5 +44,12 @@ export const useMaintenances = () => {
     loadMaintenances();
   }, []);
 
-  return { maintenances, loading, refreshing, refresh };
+  return {
+    maintenances,
+    loading,
+    refreshing,
+    refresh,
+    loadMaintenances,
+    loadMaintenancesNotFinished,
+  };
 };

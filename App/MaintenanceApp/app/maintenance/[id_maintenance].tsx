@@ -1,22 +1,40 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { InfoCard } from '../../components/ui/InfoCard';
 import { Colors } from '../../constants/Colors';
+import { Config } from '../../constants/Config';
 import { CardStyles, GlobalStyles } from '../../constants/Styles';
-import { Maintenance, MaintenanceProduit } from '../../types';
+import { Maintenance, MaintenanceProduit, Produit } from '../../types';
 import { api } from '../../utils/api';
 import { formatDate } from '../../utils/formatters';
 import { getEtatColor, getStatusConfig } from '../../utils/helpers';
 
 export default function MaintenanceDetailsScreen() {
-  const { id_maintenance } = useLocalSearchParams();
+  const { id_maintenance, scanned_product_id } = useLocalSearchParams();
   const router = useRouter();
   const [maintenance, setMaintenance] = useState<Maintenance | null>(null);
-  const [produits, setProduits] = useState<MaintenanceProduit[]>([]);
+  const [produitsAssocies, setProduitsAssocies] = useState<MaintenanceProduit[]>([]);
+  const [produitsNonAssocies, setProduitsNonAssocies] = useState<Produit[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Modal état
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedProduitId, setSelectedProduitId] = useState<number | null>(null);
+  const [selectedProduitName, setSelectedProduitName] = useState<string>('');
+
+  // Formulaire
+  const [formData, setFormData] = useState({
+    etat: '',
+    commentaire: '',
+    etat_constate: '',
+    travaux_effectues: '',
+    ri_interne: '',
+  });
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const loadData = async () => {
     try {
@@ -26,7 +44,15 @@ export default function MaintenanceDetailsScreen() {
       ]);
 
       setMaintenance(maintData);
-      setProduits(produitsData);
+      setProduitsAssocies(produitsData);
+
+      // Charger tous les produits du site pour trouver les non-associés
+      if (maintData.id_site) {
+        const allProduits = await api.getProductsBySite(maintData.id_site);
+        const associatedIds = produitsData.map(p => p.id_produit);
+        const nonAssocies = allProduits.filter(p => !associatedIds.includes(p.id_produit));
+        setProduitsNonAssocies(nonAssocies);
+      }
     } catch (err) {
       Alert.alert('Erreur', 'Impossible de charger les données');
     } finally {
@@ -38,91 +64,548 @@ export default function MaintenanceDetailsScreen() {
     loadData();
   }, [id_maintenance]);
 
+  // Gérer le produit scanné
+useEffect(() => {
+  if (scanned_product_id && maintenance) {
+    const productId = Number(scanned_product_id);
+
+    console.log('📱 Produit scanné:', productId);
+    console.log('📦 Produits associés:', produitsAssocies.map(p => p.id_produit));
+    console.log('⏳ Produits non associés:', produitsNonAssocies.map(p => p.id_produit));
+
+    // Vérifier si le produit est déjà associé
+    const isAssociated = produitsAssocies.some(p => p.id_produit === productId);
+
+    if (isAssociated) {
+      Alert.alert(
+        'Produit déjà associé',
+        'Ce produit est déjà associé à cette maintenance',
+        [{ text: 'OK' }]
+      );
+      // Nettoyer le paramètre après traitement
+      router.setParams({ scanned_product_id: undefined });
+      return;
+    }
+
+    // Vérifier le produit via l'API au lieu de la liste locale
+    const verifyAndAddProduct = async () => {
+      try {
+        // Récupérer les infos du produit depuis l'API
+        const produit = await api.getProductById(productId);
+        
+        console.log('✅ Produit trouvé:', produit);
+        console.log('🏢 Site du produit:', produit.id_site);
+        console.log('🏢 Site de la maintenance:', maintenance.id_site);
+
+        // Vérifier que le produit appartient au même site que la maintenance
+        if (produit.id_site !== maintenance.id_site) {
+          Alert.alert(
+            'Produit incompatible',
+            `Ce produit appartient à un autre site.\n\nProduit: ${produit.nom}\nSite: ${produit.id_site}\nMaintenance site: ${maintenance.id_site}`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          // Le produit est compatible - Ouvrir le formulaire
+          openAddProductForm(productId, produit.nom);
+        }
+      } catch (err: any) {
+        console.error('Erreur récupération produit:', err);
+        Alert.alert(
+          'Produit introuvable',
+          err.message || 'Ce produit n\'existe pas dans la base de données',
+          [{ text: 'OK' }]
+        );
+      } finally {
+        // Nettoyer le paramètre après traitement
+        router.setParams({ scanned_product_id: undefined });
+      }
+    };
+
+    verifyAndAddProduct();
+  }
+}, [scanned_product_id, maintenance, produitsAssocies]); // Retirer produitsNonAssocies des dépendances
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
   };
 
-  if (!maintenance) {
-    return (
-      <View style={GlobalStyles.container}>
-        <Text>Chargement...</Text>
-      </View>
+  const handleScanPress = () => {
+    // Redirection vers l'onglet Scanner avec l'id_maintenance en paramètre
+    router.push({
+      pathname: '/(tabs)/scanner',
+      params: {
+        id_maintenance: String(id_maintenance),
+        return_to: 'maintenance'
+      }
+    });
+  };
+
+  const openAddProductForm = (id_produit: number, produitName: string = '') => {
+    setSelectedProduitId(id_produit);
+    setSelectedProduitName(produitName);
+    setFormData({
+      etat: '',
+      commentaire: '',
+      etat_constate: '',
+      travaux_effectues: '',
+      ri_interne: '',
+    });
+    setPhotos([]);
+    setModalVisible(true);
+  };
+
+  const pickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', 'Nous avons besoin de la permission pour accéder à vos photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5 - photos.length,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newPhotos = result.assets.map(asset => asset.uri);
+      setPhotos([...photos, ...newPhotos]);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', 'Nous avons besoin de la permission pour accéder à la caméra');
+      return;
+    }
+
+    if (photos.length >= 5) {
+      Alert.alert('Limite atteinte', 'Vous ne pouvez ajouter que 5 photos maximum');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setPhotos([...photos, result.assets[0].uri]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(photos.filter((_, i) => i !== index));
+  };
+
+  const handleCancel = () => {
+    Alert.alert(
+      'Annuler',
+      'Êtes-vous sûr de vouloir annuler ? Les données saisies seront perdues.',
+      [
+        { text: 'Non', style: 'cancel' },
+        {
+          text: 'Oui',
+          style: 'destructive',
+          onPress: () => {
+            setModalVisible(false);
+            setFormData({
+              etat: '',
+              commentaire: '',
+              etat_constate: '',
+              travaux_effectues: '',
+              ri_interne: '',
+            });
+            setPhotos([]);
+            setSelectedProduitId(null);
+            setSelectedProduitName('');
+          }
+        }
+      ]
     );
+  };
+
+const handleSubmit = async () => {
+  if (!selectedProduitId) return;
+
+  if (!formData.etat) {
+    Alert.alert('Erreur', 'Veuillez sélectionner un état');
+    return;
   }
 
-  const { color, icon } = getStatusConfig(maintenance.etat);
+  try {
+    
+    await api.addProductToMaintenance({
+      id_maintenance: Number(id_maintenance),
+      id_produit: selectedProduitId,
+      etat: formData.etat,
+      commentaire: formData.commentaire || "",
+      etat_constate: formData.etat_constate || "",
+      travaux_effectues: formData.travaux_effectues || "",
+      ri_interne: formData.ri_interne || "",
+    });
 
+    if (photos.length > 0) {
+      const form = new FormData();
+      photos.forEach((uri) => {
+        const filename = uri.split('/').pop()!;
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image';
+
+        form.append('photos', {
+          uri,
+          name: filename,
+          type,
+        } as any);
+      });
+
+      form.append('id_maintenance', String(id_maintenance));
+      form.append('id_produit', String(selectedProduitId));
+
+      await fetch(`${Config.API_URL}/photos/multiple`, {
+        method: 'POST',
+        body: form,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+
+    Alert.alert('Succès', 'Produit associé avec toutes les photos');
+    setModalVisible(false);
+    setFormData({
+      etat: '',
+      commentaire: '',
+      etat_constate: '',
+      travaux_effectues: '',
+      ri_interne: '',
+    });
+    setPhotos([]);
+    setSelectedProduitId(null);
+    setSelectedProduitName('');
+    loadData();
+  } catch (err: any) {
+    console.error(err);
+    Alert.alert('Erreur', err.message || "Impossible d'associer le produit");
+  }
+};
+
+
+
+const handleProductPress = (id_produit: number) => {
+  router.push(`../products/${id_produit}`);
+};
+
+// Ajouter après handleProductPress
+const handleDeleteProduct = (id_produit: number, id_maintenance: number, nom: string) => {
+  Alert.alert(
+    'Retirer le produit',
+    `Voulez-vous retirer "${nom}" de cette maintenance ?`,
+    [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Retirer',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.removeProductFromMaintenance(id_maintenance, id_produit);
+            Alert.alert('Succès', 'Produit retiré de la maintenance');
+            loadData();
+          } catch (err) {
+            Alert.alert('Erreur', 'Impossible de retirer le produit');
+          }
+        }
+      }
+    ]
+  );
+};
+
+if (!maintenance) {
   return (
     <View style={GlobalStyles.container}>
-      <View style={GlobalStyles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={GlobalStyles.backButton}>
-          <Text style={GlobalStyles.backButtonText}>← Retour</Text>
-        </TouchableOpacity>
-        <Text style={GlobalStyles.headerTitle}>{icon} {maintenance.type}</Text>
-        <Text style={GlobalStyles.headerSubtitle}>Détails de la maintenance</Text>
-      </View>
+      <Text>Chargement...</Text>
+    </View>
+  );
+}
 
-      <ScrollView
-        style={GlobalStyles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+const { color, icon } = getStatusConfig(maintenance.etat);
+
+return (
+  <View style={GlobalStyles.container}>
+    <View style={GlobalStyles.header}>
+      <TouchableOpacity onPress={() => router.back()} style={GlobalStyles.backButton}>
+        <Text style={GlobalStyles.backButtonText}>← Retour</Text>
+      </TouchableOpacity>
+      <Text style={GlobalStyles.headerTitle}>{icon} {maintenance.type}</Text>
+      <Text style={GlobalStyles.headerSubtitle}>Détails de la maintenance</Text>
+    </View>
+
+    <ScrollView
+      style={GlobalStyles.scrollView}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      {/* Informations */}
+      <InfoCard
+        title="Informations"
+        icon="📋"
+        rows={[
+          { label: 'Date:', value: formatDate(maintenance.date_maintenance) },
+          { label: 'Type:', value: maintenance.type },
+          { label: 'État:', value: maintenance.etat || 'N/A', valueColor: color },
+          ...(maintenance.numero_ri
+            ? [{ label: 'N° RI:', value: maintenance.numero_ri }]
+            : []),
+          ...(maintenance.departement
+            ? [{ label: 'Département:', value: maintenance.departement }]
+            : []),
+          ...(maintenance.commentaire
+            ? [{ label: 'Commentaire:', value: maintenance.commentaire }]
+            : []),
+        ]}
+      />
+
+      {/* Bouton scanner */}
+      <TouchableOpacity
+        style={styles.scanButton}
+        onPress={handleScanPress}
       >
-        {/* Informations */}
-        <InfoCard
-          title="Informations"
-          icon="📋"
-          rows={[
-            { label: 'Date:', value: formatDate(maintenance.date_maintenance) },
-            { label: 'Type:', value: maintenance.type },
-            { label: 'État:', value: maintenance.etat || 'N/A', valueColor: color },
-            ...(maintenance.departement
-              ? [{ label: 'Département:', value: maintenance.departement }]
-              : []),
-            ...(maintenance.commentaire
-              ? [{ label: 'Commentaire:', value: maintenance.commentaire }]
-              : []),
-          ]}
-        />
+        <Text style={styles.scanButtonText}>📷 Scanner un produit</Text>
+      </TouchableOpacity>
 
-        {/* Bouton scanner */}
-        <TouchableOpacity
-          style={styles.scanButton}
-          onPress={() => Alert.alert('Scanner', 'Utilisez l\'onglet Scanner pour ajouter un produit')}
+      <View style={{ marginBottom: 16 }}>
+  <Text style={styles.sectionTitle}>
+    ✅ Produits associés ({produitsAssocies.length})
+  </Text>
+  {produitsAssocies.length === 0 ? (
+    <EmptyState
+      icon="📦"
+      title="Aucun produit associé"
+      subtitle="Scannez un QR code pour ajouter un produit"
+    />
+  ) : (
+    produitsAssocies.map(produit => (
+      <TouchableOpacity
+        key={produit.id_produit}
+        onPress={() => handleProductPress(produit.id_produit)}
+        activeOpacity={0.7}
+      >
+        <Card
+          title={produit.nom}
+          badge={produit.etat || 'N/A'}
+          badgeColor={getEtatColor(produit.etat)}
+          borderLeftColor={getEtatColor(produit.etat)}
         >
-          <Text style={styles.scanButtonText}>📷 Scanner un produit</Text>
-        </TouchableOpacity>
+          {produit.departement && (
+            <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
+          )}
+          {produit.commentaire && (
+            <Text style={CardStyles.cardComment}>💬 {produit.commentaire}</Text>
+          )}
+          {produit.etat_constate && (
+            <Text style={CardStyles.cardText}>📋 État constaté: {produit.etat_constate}</Text>
+          )}
+          {produit.travaux_effectues && (
+            <Text style={CardStyles.cardText}>🔧 Travaux: {produit.travaux_effectues}</Text>
+          )}
+          
+          {/* Actions du produit */}
+          <View style={styles.cardActions}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={(e: any) => {
+                e.stopPropagation();
+                handleDeleteProduct(produit.id_produit, Number(id_maintenance), produit.nom);
+              }}
+            >
+              <Text style={styles.deleteButtonText}>🗑️ Retirer</Text>
+            </TouchableOpacity>
+            <Text style={styles.tapHint}>Appuyez pour voir les détails →</Text>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    ))
+  )}
+</View>
 
-        {/* Produits associés */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={styles.sectionTitle}>📦 Produits associés ({produits.length})</Text>
-          {produits.length === 0 ? (
-            <EmptyState
-              icon="📦"
-              title="Aucun produit associé"
-              subtitle="Scannez un QR code pour ajouter un produit"
-            />
-          ) : (
-            produits.map(produit => (
+      {/* Produits non associés */}
+      <View style={{ marginBottom: 16 }}>
+        <Text style={styles.sectionTitle}>
+          ⏳ Produits non associés ({produitsNonAssocies.length})
+        </Text>
+        {produitsNonAssocies.length === 0 ? (
+          <EmptyState
+            icon="✅"
+            title="Tous les produits sont associés"
+            subtitle="Tous les équipements du site ont été traités"
+          />
+        ) : (
+          produitsNonAssocies.map(produit => (
+            <TouchableOpacity
+              key={produit.id_produit}
+              onPress={() => openAddProductForm(produit.id_produit, produit.nom)}
+              activeOpacity={0.7}
+            >
               <Card
-                key={produit.id_produit}
                 title={produit.nom}
-                badge={produit.etat || 'N/A'}
-                badgeColor={getEtatColor(produit.etat)}
-                borderLeftColor={getEtatColor(produit.etat)}
+                borderLeftColor={Colors.gray}
               >
                 {produit.departement && (
                   <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
                 )}
-                {produit.commentaire && (
-                  <Text style={CardStyles.cardComment}>💬 {produit.commentaire}</Text>
+                {produit.description && (
+                  <Text style={CardStyles.cardText}>📝 {produit.description}</Text>
                 )}
+                <Text style={styles.addHint}>Appuyez pour associer à cette maintenance</Text>
               </Card>
-            ))
-          )}
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+    </ScrollView>
+
+    {/* Modal d'ajout de produit */}
+    <Modal
+      visible={modalVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={handleCancel}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Associer un produit</Text>
+              {selectedProduitName && (
+                <Text style={styles.modalSubtitle}>{selectedProduitName}</Text>
+              )}
+            </View>
+
+            {/* État */}
+            <Text style={styles.label}>État *</Text>
+            <View style={styles.etatContainer}>
+              {['OK', 'NOK', 'Passable', 'Non vérifié'].map(etat => (
+                <TouchableOpacity
+                  key={etat}
+                  style={[
+                    styles.etatButton,
+                    formData.etat === etat && styles.etatButtonActive
+                  ]}
+                  onPress={() => setFormData({ ...formData, etat })}
+                >
+                  <Text style={[
+                    styles.etatButtonText,
+                    formData.etat === etat && styles.etatButtonTextActive
+                  ]}>
+                    {etat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Commentaire général */}
+            <Text style={styles.label}>Commentaire général</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Commentaire sur l'état du produit"
+              value={formData.commentaire}
+              onChangeText={(text) => setFormData({ ...formData, commentaire: text })}
+              multiline
+              numberOfLines={3}
+            />
+
+            {/* État constaté */}
+            <Text style={styles.label}>État constaté</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Décrivez l'état constaté lors de la maintenance"
+              value={formData.etat_constate}
+              onChangeText={(text) => setFormData({ ...formData, etat_constate: text })}
+              multiline
+              numberOfLines={4}
+            />
+
+            {/* Travaux effectués */}
+            <Text style={styles.label}>Travaux effectués</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Détaillez les travaux effectués sur ce produit"
+              value={formData.travaux_effectues}
+              onChangeText={(text) => setFormData({ ...formData, travaux_effectues: text })}
+              multiline
+              numberOfLines={4}
+            />
+
+            {/* RI interne */}
+            <Text style={styles.label}>RI interne</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="RI interne non visible par le client"
+              value={formData.ri_interne}
+              onChangeText={(text) => setFormData({ ...formData, ri_interne: text })}
+            />
+
+            {/* Photos */}
+            <Text style={styles.label}>Photos ({photos.length}/5)</Text>
+            <View style={styles.photoButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.photoButton, styles.cameraButton]}
+                onPress={takePhoto}
+                disabled={photos.length >= 5}
+              >
+                <Text style={styles.photoButtonText}>📷 Prendre une photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.photoButton, styles.galleryButton]}
+                onPress={pickImages}
+                disabled={photos.length >= 5}
+              >
+                <Text style={styles.photoButtonText}>🖼️ Galerie</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Aperçu des photos */}
+            {photos.length > 0 && (
+              <View style={styles.photosPreview}>
+                {photos.map((uri, index) => (
+                  <View key={index} style={styles.photoItem}>
+                    <Image source={{ uri }} style={styles.photoImage} />
+                    <TouchableOpacity
+                      style={styles.removePhotoButton}
+                      onPress={() => removePhoto(index)}
+                    >
+                      <Text style={styles.removePhotoText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Boutons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={handleCancel}
+              >
+                <Text style={styles.cancelButtonText}>✕ Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.submitButton]}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.submitButtonText}>✓ Associer</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
-    </View>
-  );
+      </View>
+    </Modal>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
@@ -147,6 +630,203 @@ const styles = StyleSheet.create({
   scanButtonText: {
     color: Colors.white,
     fontSize: 18,
+    fontWeight: '600',
+  },
+  tapHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '500',
+    fontStyle: 'italic',
+  },
+  addHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: Colors.success,
+    fontWeight: '600',
+    fontStyle: 'italic',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    marginBottom: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.primary,
+    paddingBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.gray,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: Colors.background,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: Colors.gray,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: Colors.background,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  etatContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  etatButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: Colors.gray,
+    backgroundColor: Colors.white,
+  },
+  etatButtonActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
+  etatButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  etatButtonTextActive: {
+    color: Colors.white,
+  },
+  photoButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  photoButton: {
+    flex: 1,
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+  },
+  cameraButton: {
+    backgroundColor: Colors.primary,
+  },
+  galleryButton: {
+    backgroundColor: Colors.secondary,
+  },
+  photoButtonText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  photosPreview: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  photoItem: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: Colors.danger,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removePhotoText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 20,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: Colors.danger,
+  },
+  cancelButtonText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitButton: {
+    backgroundColor: Colors.success,
+  },
+  submitButtonText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray50 + '20', // Légère transparence
+  },
+  deleteButton: {
+    backgroundColor: Colors.danger,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
+    color: Colors.white,
+    fontSize: 12,
     fontWeight: '600',
   },
 });
