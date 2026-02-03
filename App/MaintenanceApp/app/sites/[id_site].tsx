@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { InfoCard } from '../../components/ui/InfoCard';
+import { NavigationButton } from '../../components/ui/NavigationButton';
 import { StatCard } from '../../components/ui/StatCard';
 import { Colors } from '../../constants/Colors';
 import { CardStyles, GlobalStyles } from '../../constants/Styles';
@@ -146,6 +147,9 @@ export default function SiteDetailsScreen() {
     );
   }
 
+  // Vérifier si le site a des coordonnées GPS
+  const hasGPS = site.gps_lat && site.gps_lng;
+
   return (
     <View style={GlobalStyles.container}>
       <View style={GlobalStyles.header}>
@@ -168,8 +172,25 @@ export default function SiteDetailsScreen() {
             { label: 'ID Site:', value: String(site.id_site) },
             { label: 'Client:', value: String(site.id_client) },
             { label: 'Adresse:', value: site.adresse || 'N/A' },
+            ...(hasGPS ? [
+              { label: 'GPS:', value: `${site.gps_lat}, ${site.gps_lng}` }
+            ] : []),
           ]}
         />
+
+        {/* Bouton Navigation GPS */}
+        {hasGPS && (
+          <View style={styles.navigationContainer}>
+            <NavigationButton
+              lat={Number(site.gps_lat)}
+              lng={Number(site.gps_lng)}
+              label={site.nom}
+              showMenu={true}
+              variant="primary"
+              size="large"
+            />
+          </View>
+        )}
 
         {/* Statistiques */}
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
@@ -365,6 +386,10 @@ export default function SiteDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
+  navigationContainer: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
