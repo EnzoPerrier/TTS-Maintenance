@@ -540,6 +540,30 @@
     </section>
   </main>
 
+<footer style="
+  background: var(--gray-800, #2D3748);
+  color: var(--white, #FFFFFF);
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: 3rem;
+  border-top: 3px solid var(--primary-blue, #3B82F6);
+">
+  <a href="https://github.com/EnzoPerrier" 
+     target="_blank" 
+     rel="noopener noreferrer"
+     style="
+       color: var(--white, #FFFFFF);
+       text-decoration: none;
+       font-size: 0.95rem;
+       transition: color 0.3s ease;
+       display: inline-block;
+     "
+     onmouseover="this.style.color='var(--primary-blue, #3B82F6)'"
+     onmouseout="this.style.color='var(--white, #FFFFFF)'">
+    © 2026 Enzo Perrier - Tous droits réservés
+  </a>
+</footer>
+
   <!-- Formulaire pour associer un produit -->
   <div id="addProduitForm" class="modal">
     <form id="produitAssocForm" onsubmit="addProduitToMaintenance(event)">
