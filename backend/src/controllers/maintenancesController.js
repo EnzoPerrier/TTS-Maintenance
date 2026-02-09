@@ -123,20 +123,16 @@ function combineEtatsConstates(produits) {
   
   produits.forEach((produit, index) => {
     if (produit.etat_constate) {
-      const parsed = parseEtatConstate(produit.etat_constate);
+      allEtats.push(`<h4>PRODUIT ${index + 1}: ${produit.produit_nom}</h4>`);
       
-      if (produits.length > 1) {
-        allEtats.push({
-          titre: `PRODUIT ${index + 1}: ${produit.produit_nom}`,
-          sousSection: []
-        });
-      }
-      
-      allEtats = allEtats.concat(parsed);
+      const lignes = produit.etat_constate.split('\n').filter(l => l.trim());
+      lignes.forEach(ligne => {
+        allEtats.push(`<p>${ligne.trim()}</p>`);
+      });
     }
   });
   
-  return allEtats;
+  return allEtats.length > 0 ? allEtats.join('') : '<p>Aucun état constaté</p>';
 }
 
 function combineTravauxEffectues(produits) {
@@ -144,18 +140,11 @@ function combineTravauxEffectues(produits) {
   
   produits.forEach((produit, index) => {
     if (produit.travaux_effectues) {
+      allTravaux.push(`<h4>PRODUIT ${index + 1}: ${produit.produit_nom}</h4>`);
+      
       const lignes = produit.travaux_effectues.split('\n').filter(l => l.trim());
-      
-      if (produits.length > 1) {
-        allTravaux.push(`<h4>PRODUIT ${index + 1}: ${produit.produit_nom}</h4>`);
-      }
-      
       lignes.forEach(ligne => {
-        ligne = ligne.trim();
-        if (!ligne.startsWith('-')) {
-          ligne = '- ' + ligne;
-        }
-        allTravaux.push(`<p>${ligne}</p>`);
+        allTravaux.push(`<p>${ligne.trim()}</p>`);
       });
     }
   });
@@ -171,7 +160,7 @@ function transformDataForTemplate(maintenance, site, produits) {
   ].filter(Boolean).join(' & ');
   
   const nomsProduitsStr = produits.map(p => p.produit_nom).join(', ');
-  const etatsGroupes = combineEtatsConstates(produits);
+  const etatConstateHTML = combineEtatsConstates(produits);
   const travauxHTML = combineTravauxEffectues(produits);
   
   const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -200,6 +189,12 @@ function transformDataForTemplate(maintenance, site, produits) {
     installation: maintenance.type === 'Installation' ? 'checked' : '',
     curatif: maintenance.type === 'Curatif' ? 'checked' : '',
     revision: maintenance.type === 'Révision' || maintenance.type === 'Preventif' ? 'checked' : '',
+    contrat: maintenance.type === 'Contrat de maintenance' ? 'checked' : '',
+    location: maintenance.type === 'Location' ? 'checked' : '',
+    accident: maintenance.type === 'Accident' ? 'checked' : '',
+    vandalisme: maintenance.type === 'Vandalisme' ? 'checked' : '',
+    orage: maintenance.type === 'Orage' ? 'checked' : '',
+    autre: maintenance.type === 'Autre' ? 'checked' : '',
     garantie: maintenance.garantie ? 'checked' : ''
   };
   
@@ -251,13 +246,13 @@ function transformDataForTemplate(maintenance, site, produits) {
     curatifChecked: typeChecked.curatif,
     revisionChecked: typeChecked.revision,
     garantieChecked: typeChecked.garantie,
-    contratChecked: '',
-    locationChecked: '',
-    accidentChecked: '',
-    vandalismeChecked: '',
-    orageChecked: '',
+    contratChecked: typeChecked.contrat,
+    locationChecked: typeChecked.location,
+    accidentChecked: typeChecked.accident,
+    vandalismeChecked: typeChecked.vandalisme,
+    orageChecked: typeChecked.orage,
     
-    etatConstateContent: generateEtatConstateHTML(etatsGroupes),
+    etatConstateContent: etatConstateHTML,
     travauxEffectuesContent: travauxHTML,
     
     interventionTermineeChecked: maintenance.etat === 'Terminé' ? 'checked' : '',

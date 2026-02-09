@@ -945,15 +945,77 @@ function printQR(id) {
 
 /* ---------- MAINTENANCES ---------- */
 async function loadMaintenances() {
-  const res = await fetch(`${API}/maintenances`);
+
+  const res = await fetch(`${API}/maintenances/NotFinished`);
   const maintenances = await res.json();
   const ul = document.getElementById("maintenancesList");
   ul.innerHTML = "";
 
   maintenances.forEach(m => {
-    const li = document.createElement("li");
-    li.textContent = `${m.description || "Maintenance"} – ${m.date_maintenance}`;
-    ul.appendChild(li);
+    const details = document.createElement("details");
+      details.classList.add("site-detail", "maintenance");
+
+      const etat = (m.etat || "").toLowerCase();
+
+      if (etat.includes("termin")) {
+        details.classList.add("maintenance-terminee");
+      } else if (etat.includes("cours")) {
+        details.classList.add("maintenance-en-cours");
+      } else if (etat.includes("planif")) {
+        details.classList.add("maintenance-planifiee");
+      } else {
+        details.classList.add("maintenance-autre");
+      }
+
+      const summary = document.createElement("summary");
+
+      let icone = "🔧";
+      if (etat.includes("termin")) icone = "✅";
+      else if (etat.includes("cours")) icone = "⚙️";
+      else if (etat.includes("planif")) icone = "📅";
+
+      const dateFormatted = m.date_maintenance;
+
+      summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${dateFormatted}`;
+      details.appendChild(summary);
+
+      let etatColor = "#6C757D";
+      if (etat.includes("termin")) etatColor = "#28A745";
+      else if (etat.includes("cours")) etatColor = "#FFC107";
+      else if (etat.includes("planif")) etatColor = "#0066CC";
+
+      const content = document.createElement("div");
+      content.innerHTML = `
+        <div><strong>N° RI :</strong> ${m.numero_ri || "N/A"}</div>
+        ${m.operateur_1 ? `<div><strong>Opérateur 1 :</strong> ${m.operateur_1}</div>` : ''}
+        ${m.operateur_2 ? `<div><strong>Opérateur 2 :</strong> ${m.operateur_2}</div>` : ''}
+        ${m.operateur_3 ? `<div><strong>Opérateur 3 :</strong> ${m.operateur_3}</div>` : ''}
+        <div><strong>Date :</strong> ${dateFormatted}</div>
+        <div><strong>Type :</strong> ${m.type}</div>
+        <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
+        <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
+        <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
+        ${m.garantie ? `<div><strong>Garantie: </strong> ✅</div>` : '<div><strong>Garantie: </strong> ❌</div>'}
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
+          <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
+          <a href="./MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
+
+          <div style="display:flex; overflow:hidden; border-radius:8px;">
+            <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
+              style="background:#198754; color:white; padding:0.6rem 1rem; text-decoration:none; border-right:1px solid rgba(255,255,255,0.3);">
+              👁 Aperçu RI
+            </a>
+
+            <a href="${API}/maintenances/${m.id_maintenance}/pdf"
+              style="background:#157347; color:white; padding:0.6rem 1rem; text-decoration:none;">
+              ⬇ PDF
+            </a>
+          </div>
+      `;
+      details.appendChild(content);
+
+      maintenancesList.appendChild(details);
   });
 }
 
