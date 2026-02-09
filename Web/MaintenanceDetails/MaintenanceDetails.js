@@ -12,6 +12,26 @@ document.getElementById("backBtn").addEventListener("click", () => {
   window.history.back();
 });
 
+// ========== FONCTION UTILITAIRE POUR LES DATES ==========
+function formatDateForInput(dateString) {
+  if (!dateString) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+    const [day, month, year] = dateString.split('/');
+    return `${year}-${month}-${day}`;
+  }
+
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ========== CHARGEMENT MAINTENANCE ==========
 async function loadMaintenanceDetails() {
   if (!id_maintenance) {
@@ -27,7 +47,7 @@ async function loadMaintenanceDetails() {
 
     const MaintenanceDiv = document.getElementById("MaintenanceDetails");
     MaintenanceDiv.innerHTML = `
-      <div class="site-detail"><strong>N° RI :</strong> ${maintenance.numero_ri}</div>
+      <div class="site-detail"><strong>N° RI :</strong> ${maintenance.numero_ri || "N/A"}</div>
       <div class="site-detail"><strong>Date :</strong> ${maintenance.date_maintenance}</div>
       <div class="site-detail"><strong>Type :</strong> ${maintenance.type}</div>
       <div class="site-detail"><strong>État :</strong> ${maintenance.etat || "N/A"}</div>
@@ -35,6 +55,11 @@ async function loadMaintenanceDetails() {
       <div class="site-detail"><strong>Contact :</strong> ${maintenance.contact || "N/A"}</div>
       <div class="site-detail"><strong>Type produit :</strong> ${maintenance.type_produit || "N/A"}</div>
       <div class="site-detail"><strong>N° Commande :</strong> ${maintenance.numero_commande || "N/A"}</div>
+      <div class="site-detail"><strong>Commentaire :</strong> ${maintenance.commentaire || "N/A"}</div>
+      <div class="site-detail"><strong>Département :</strong> ${maintenance.departement || "N/A"}</div>
+      ${maintenance.operateur_1 ? `<div class="site-detail"><strong>Opérateur 1 :</strong> ${maintenance.operateur_1}</div>` : ''}
+      ${maintenance.operateur_2 ? `<div class="site-detail"><strong>Opérateur 2 :</strong> ${maintenance.operateur_2}</div>` : ''}
+      ${maintenance.operateur_3 ? `<div class="site-detail"><strong>Opérateur 3 :</strong> ${maintenance.operateur_3}</div>` : ''}
     `;
 
     await loadProduits();
@@ -42,6 +67,108 @@ async function loadMaintenanceDetails() {
 
   } catch (err) {
     document.getElementById("MaintenanceDetails").textContent = err.message;
+  }
+}
+
+// ========== MODIFICATION DE LA MAINTENANCE ==========
+function showEditMaintenanceForm() {
+  if (!maintenance) {
+    alert("Erreur : maintenance non chargée");
+    return;
+  }
+
+  // Pré-remplir le formulaire avec les données actuelles
+  document.getElementById("editMaintenanceDate").value = formatDateForInput(maintenance.date_maintenance);
+  document.getElementById("editMaintenanceType").value = maintenance.type || "";
+  document.getElementById("editMaintenanceEtat").value = maintenance.etat || "";
+  document.getElementById("editMaintenanceDepartement").value = maintenance.departement || "";
+  document.getElementById("editMaintenanceRI").value = maintenance.numero_ri || "";
+  document.getElementById("editMaintenanceNumeroCommande").value = maintenance.numero_commande || "";
+  document.getElementById("editMaintenanceContact").value = maintenance.contact || "";
+  document.getElementById("editMaintenanceTypeProduit").value = maintenance.type_produit || "";
+  document.getElementById("editMaintenanceCommentaire").value = maintenance.commentaire || "";
+  
+  document.getElementById("editMaintenanceOperateur1").value = maintenance.operateur_1 || "";
+  document.getElementById("editMaintenanceOperateur2").value = maintenance.operateur_2 || "";
+  document.getElementById("editMaintenanceOperateur3").value = maintenance.operateur_3 || "";
+  
+  document.getElementById("editMaintenanceHeureArriveeMatin").value = maintenance.heure_arrivee_matin || "";
+  document.getElementById("editMaintenanceHeureDepartMatin").value = maintenance.heure_depart_matin || "";
+  document.getElementById("editMaintenanceHeureArriveeAprem").value = maintenance.heure_arrivee_aprem || "";
+  document.getElementById("editMaintenanceHeureDepartAprem").value = maintenance.heure_depart_aprem || "";
+  
+  document.getElementById("editMaintenanceGarantie").checked = maintenance.garantie || false;
+  
+  // Afficher le formulaire
+  document.getElementById("editMaintenanceForm").style.display = "block";
+  
+  // Ajouter l'event listener pour la conversion en majuscules
+  setTimeout(() => {
+    const operateurInputs = ['editMaintenanceOperateur1', 'editMaintenanceOperateur2', 'editMaintenanceOperateur3'];
+    operateurInputs.forEach(inputId => {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.addEventListener('input', function (e) {
+          e.target.value = e.target.value.toUpperCase();
+        });
+      }
+    });
+  }, 100);
+}
+
+function hideEditMaintenanceForm() {
+  document.getElementById("editMaintenanceForm").style.display = "none";
+}
+
+async function updateMaintenance(event) {
+  event.preventDefault();
+
+  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?");
+  if (!confirmUpdate) return;
+
+  const garantie = document.getElementById("editMaintenanceGarantie");
+  const garantiechoice = garantie.checked ? 1 : 0;
+
+  const data = {
+    id_site: maintenance.id_site,
+    date_maintenance: document.getElementById("editMaintenanceDate").value,
+    type: document.getElementById("editMaintenanceType").value,
+    etat: document.getElementById("editMaintenanceEtat").value || null,
+    departement: document.getElementById("editMaintenanceDepartement").value || null,
+    numero_ri: document.getElementById("editMaintenanceRI").value || null,
+    operateur_1: document.getElementById("editMaintenanceOperateur1")?.value.toUpperCase() || null,
+    operateur_2: document.getElementById("editMaintenanceOperateur2")?.value.toUpperCase() || null,
+    operateur_3: document.getElementById("editMaintenanceOperateur3")?.value.toUpperCase() || null,
+    heure_arrivee_matin: document.getElementById("editMaintenanceHeureArriveeMatin")?.value || null,
+    heure_depart_matin: document.getElementById("editMaintenanceHeureDepartMatin")?.value || null,
+    heure_arrivee_aprem: document.getElementById("editMaintenanceHeureArriveeAprem")?.value || null,
+    heure_depart_aprem: document.getElementById("editMaintenanceHeureDepartAprem")?.value || null,
+    contact: document.getElementById("editMaintenanceContact")?.value || null,
+    type_produit: document.getElementById("editMaintenanceTypeProduit")?.value || null,
+    numero_commande: document.getElementById("editMaintenanceNumeroCommande")?.value || null,
+    commentaire: document.getElementById("editMaintenanceCommentaire")?.value || null,
+    garantie: garantiechoice
+  };
+
+  try {
+    const res = await fetch(`${API}/maintenances/${id_maintenance}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la modification de la maintenance");
+      return;
+    }
+
+    hideEditMaintenanceForm();
+    await loadMaintenanceDetails();
+    alert("✓ Maintenance modifiée avec succès !");
+
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
   }
 }
 
@@ -476,8 +603,6 @@ function editProduitMaintenance(id_produit) {
   document.getElementById("editProduitEtatConstate").value = produit.etat_constate || "";
   document.getElementById("editProduitTravauxEffectues").value = produit.travaux_effectues || "";
   document.getElementById("editProduitRiInterne").value = produit.ri_interne || "";
-
-
 
   document.getElementById("editProduitForm").style.display = "block";
 }

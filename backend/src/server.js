@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Servir les fichiers statiques (images uploadées)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
+app.use("/Ressources", express.static(path.join(__dirname, "pdf", 'Ressources')));
 
 // Route test
 app.get("/", (req, res) => {

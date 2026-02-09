@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,13 @@
       padding: 0;
       box-sizing: border-box;
     }
+
+    @font-face {
+      font-family: "SquareTL";
+      src: url("/Ressources/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf") format("opentype");
+      font-style: normal;
+    }
+
 
     body {
       font-family: Arial, sans-serif;
@@ -39,30 +47,17 @@
     .logo {
       width: 100px;
       height: 50px;
-      background: #ddd;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #ccc;
     }
 
     .header h1 {
+      font-family: "SquareTL";
       font-size: 24px;
       font-weight: bold;
       text-align: center;
       flex-grow: 1;
-    }
-
-    .after-sales {
-      width: 100px;
-      height: 50px;
-      background: #ddd;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #ccc;
-      font-size: 10px;
-      text-align: center;
     }
 
     /* Info boxes */
@@ -350,6 +345,7 @@
       body {
         padding: 0;
       }
+
       .page {
         margin: 0;
         max-width: 100%;
@@ -357,13 +353,18 @@
     }
   </style>
 </head>
+
 <body>
   <div class="page">
     <!-- Header -->
     <div class="header">
-      <div class="logo">[LOGO TTS]</div>
+      <div class="logo">
+        <img src="/Ressources/Images/logoTTS.svg" alt="[LOGO TTS]" style="width: 8rem; height: 4rem;" />
+      </div>
       <h1>Rapport d'intervention</h1>
-      <div class="after-sales">AFTER SALES</div>
+      <div class="logo">
+        <img src="/Ressources/Images/LOGO.png" alt="[LOGO IES]" style="width: 13rem; height: 4rem;" />
+      </div>
     </div>
 
     <!-- Info Section -->
@@ -505,25 +506,20 @@
             <span>Accident</span>
           </div>
           <div class="nature-item">
-            <span class="checkbox"></span>
-            <span>Autres: ___________</span>
-          </div>
-          <div class="nature-item">
             <span class="checkbox {{vandalismeChecked}}"></span>
             <span>Vandalisme</span>
           </div>
           <div class="nature-item">
-            <span class="checkbox {{garantieChecked}}"></span>
-            <span>Garantie:</span>
+            <span class="checkbox"></span>
+            <span>Autre</span>
           </div>
           <div class="nature-item">
             <span class="checkbox {{orageChecked}}"></span>
             <span>Orage</span>
           </div>
-          <div></div>
           <div class="nature-item">
-            <span class="checkbox"></span>
-            <span>Autres: ___________</span>
+            <span class="checkbox {{garantieChecked}}"></span>
+            <span style="font-weight: bold;">Garantie</span>
           </div>
         </div>
       </div>
@@ -570,4 +566,5 @@
     </div>
   </div>
 </body>
+
 </html>
