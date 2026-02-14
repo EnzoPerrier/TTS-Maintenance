@@ -240,6 +240,109 @@
       border-color: var(--primary-blue);
       box-shadow: var(--shadow-sm);
     }
+
+    .edit-form-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--primary-blue);
+  }
+
+  .edit-form-container h3 {
+    color: var(--primary-blue);
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--gray-700);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+  }
+
+  .form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .btn-save {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-save:hover {
+    background: #218838;
+  }
+
+  .btn-cancel {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--gray-500);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-cancel:hover {
+    background: var(--gray-600);
+  }
+
+  .btn-edit {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 1rem;
+  }
+
+  .btn-edit:hover {
+    background: #2563EB;
+  }
+
+  .produit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
   </style>
 </head>
 <body>
@@ -249,6 +352,12 @@
     <section class="active">
       <h1>Détails du produit</h1>
       <div id="produitDetails"></div>
+
+      <!-- Détails du produit -->
+    <div id="produitDetailsView"></div>
+    
+    <!-- Formulaire d'édition (caché par défaut) -->
+    <div id="produitEditForm" style="display: none;"></div>
 
       <!-- Photos récentes -->
       <div class="photo-main-container">

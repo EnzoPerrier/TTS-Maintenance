@@ -944,6 +944,7 @@ function printQR(id) {
 }
 
 /* ---------- MAINTENANCES ---------- */
+
 async function loadMaintenances() {
 
   const res = await fetch(`${API}/maintenances/NotFinished`);

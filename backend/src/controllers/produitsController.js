@@ -107,27 +107,34 @@ exports.createProduit = async (req, res) => {
 // PUT /produits/:id --> modifier un produit
 exports.updateProduit = async (req, res) => {
   const { id } = req.params;
-  const { id_site, nom, departement, etat, description } = req.body;
+  const { nom, etat, departement, description } = req.body;
 
   try {
-    const [result] = await db.query(
-      `UPDATE produits
-       SET id_site = ?, nom = ?, departement = ?, etat = ?, description = ?
+    // Ne pas inclure id_site dans l'UPDATE
+    const result = await db.query(
+      `UPDATE produits 
+       SET nom = COALESCE(?, nom),
+           etat = ?,
+           departement = ?,
+           description = ?
        WHERE id_produit = ?`,
-      [id_site, nom, departement, etat, description, id]
+      [nom, etat, departement, description, id]
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Produit non trouvé" });
+      return res.status(404).json({ error: 'Produit non trouvé' });
     }
 
-    res.json({
-      message: "Produit mis à jour",
-      produit: { id_produit: id, id_site, nom, departement, etat, description }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
+    // Récupérer le produit mis à jour
+    const [updated] = await db.query(
+      'SELECT * FROM produits WHERE id_produit = ?',
+      [id]
+    );
+
+    res.json(updated[0]);
+  } catch (error) {
+    console.error('Erreur updateProduit:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 };
 

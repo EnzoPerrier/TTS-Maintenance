@@ -10,10 +10,14 @@ document.getElementById("backBtn").addEventListener("click", () => {
   window.history.back();
 });
 
+// ========== VARIABLES GLOBALES ==========
+let currentProduit = null;
+let isEditing = false;
+
 // ========== CHARGEMENT PRODUIT ==========
 async function loadProduitDetails() {
   if (!id_produit) {
-    document.getElementById("produitDetails").textContent = "ID du produit manquant.";
+    document.getElementById("produitDetailsView").textContent = "ID du produit manquant.";
     return;
   }
 
@@ -21,18 +25,122 @@ async function loadProduitDetails() {
     const res = await fetch(`${API}/produits/${id_produit}`);
     if (!res.ok) throw new Error("Erreur lors du chargement du produit");
 
-    const produit = await res.json();
-
-    const ProduitDiv = document.getElementById("produitDetails");
-    ProduitDiv.innerHTML = `
-      <div class="site-detail"><strong>Nom :</strong> ${produit.nom}</div>
-      <div class="site-detail"><strong>Département :</strong> ${produit.departement || "N/A"}</div>
-      <div class="site-detail"><strong>État Actuel:</strong> <span style="color: ${getEtatColor(produit.etat)}; font-weight: 600;">${produit.etat || "N/A"}</span></div>
-      <div class="site-detail"><strong>Description :</strong> ${produit.description || "N/A"}</div>
-      <div class="site-detail"><strong>Date de création :</strong> ${formatDate(produit.date_creation)}</div>
-    `;
+    currentProduit = await res.json();
+    renderProduitDetails();
   } catch (err) {
-    document.getElementById("produitDetails").textContent = err.message;
+    document.getElementById("produitDetailsView").textContent = err.message;
+  }
+}
+
+function renderProduitDetails() {
+  const viewDiv = document.getElementById("produitDetailsView");
+  
+  viewDiv.innerHTML = `
+    <div style="background: var(--white); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--gray-200);">
+      <div class="site-detail"><strong>Nom :</strong> ${currentProduit.nom}</div>
+      <div class="site-detail"><strong>Département :</strong> ${currentProduit.departement || "N/A"}</div>
+      <div class="site-detail"><strong>État Actuel:</strong> <span style="color: ${getEtatColor(currentProduit.etat)}; font-weight: 600;">${currentProduit.etat || "N/A"}</span></div>
+      <div class="site-detail"><strong>Description :</strong> ${currentProduit.description || "N/A"}</div>
+      <div class="site-detail"><strong>Date de création :</strong> ${formatDate(currentProduit.date_creation)}</div>
+      
+      <button class="btn-edit" onclick="showEditForm()">✏️ Modifier les informations</button>
+    </div>
+  `;
+}
+
+function showEditForm() {
+  isEditing = true;
+  
+  const viewDiv = document.getElementById("produitDetailsView");
+  const editDiv = document.getElementById("produitEditForm");
+  
+  viewDiv.style.display = "none";
+  editDiv.style.display = "block";
+  
+  editDiv.innerHTML = `
+    <div class="edit-form-container">
+      <h3>✏️ Modifier le produit</h3>
+      <form id="editProduitForm" onsubmit="saveProduit(event)">
+        <div class="form-group">
+          <label for="editNom">Nom du produit *</label>
+          <input type="text" id="editNom" value="${currentProduit.nom}" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="editDepartement">Département</label>
+          <input type="text" id="editDepartement" value="${currentProduit.departement || ''}" />
+        </div>
+        
+        <div class="form-group">
+          <label for="editEtat">État</label>
+          <select id="editEtat">
+            <option value="">-- Non défini --</option>
+            <option value="OK" ${currentProduit.etat === 'OK' ? 'selected' : ''}>OK</option>
+            <option value="NOK" ${currentProduit.etat === 'NOK' ? 'selected' : ''}>NOK</option>
+            <option value="Passable" ${currentProduit.etat === 'Passable' ? 'selected' : ''}>Passable</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="editDescription">Description</label>
+          <textarea id="editDescription">${currentProduit.description || ''}</textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn-save">✓ Enregistrer</button>
+          <button type="button" class="btn-cancel" onclick="cancelEdit()">✕ Annuler</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+function cancelEdit() {
+  isEditing = false;
+  
+  const viewDiv = document.getElementById("produitDetailsView");
+  const editDiv = document.getElementById("produitEditForm");
+  
+  viewDiv.style.display = "block";
+  editDiv.style.display = "none";
+}
+
+async function saveProduit(event) {
+  event.preventDefault();
+  
+  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier ce produit ?");
+  if (!confirmUpdate) return;
+  
+  const data = {
+    nom: document.getElementById("editNom").value,
+    departement: document.getElementById("editDepartement").value || null,
+    etat: document.getElementById("editEtat").value || null,
+    description: document.getElementById("editDescription").value || null
+  };
+  
+  try {
+    const res = await fetch(`${API}/produits/${id_produit}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la modification du produit");
+      return;
+    }
+
+    const updatedProduit = await res.json();
+    currentProduit = updatedProduit;
+    
+    alert("✅ Produit modifié avec succès !");
+    
+    cancelEdit();
+    renderProduitDetails();
+    
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur lors de la modification");
   }
 }
 
