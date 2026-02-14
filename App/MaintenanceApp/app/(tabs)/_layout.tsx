@@ -30,6 +30,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Sites',
+          headerShown:false,
           tabBarIcon: ({ color, focused }) => {
             return <Text style={{ fontSize: 24 }}>🏢</Text>;
           },
@@ -39,6 +40,7 @@ export default function TabLayout() {
         name="products"
         options={{
           title: 'Produits',
+          headerShown:false,
           tabBarIcon: ({ color, focused }) => {
             return <Text style={{ fontSize: 24 }}>📦</Text>;
           },
@@ -48,6 +50,7 @@ export default function TabLayout() {
         name="maintenances"
         options={{
           title: 'Maintenances',
+          headerShown:false,
           tabBarIcon: ({ color, focused }) => {
             return <Text style={{ fontSize: 24 }}>🔧</Text>;
           },
@@ -57,6 +60,7 @@ export default function TabLayout() {
         name="scanner"
         options={{
           title: 'Scanner',
+          headerShown:false,
           tabBarIcon: ({ color, focused }) => {
             return <Text style={{ fontSize: 24 }}>📷</Text>;
           },

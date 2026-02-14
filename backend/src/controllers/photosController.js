@@ -35,18 +35,45 @@ function formatPhotoDate(photo) {
   return photo;
 }
 
-// Configuration du stockage des fichiers
+// Fonction helper pour récupérer les infos du produit (client, site, nom produit)
+async function getProduitInfos(id_produit) {
+  const [rows] = await db.query(
+    `SELECT p.nom as produit_nom, s.nom as site_nom, c.nom as client_nom
+     FROM produits p
+     JOIN sites s ON p.id_site = s.id_site
+     JOIN clients c ON s.id_client = c.id_client
+     WHERE p.id_produit = ?`,
+    [id_produit]
+  );
+  
+  if (rows.length === 0) {
+    throw new Error("Produit non trouvé");
+  }
+  
+  return rows[0];
+}
+
+// Fonction pour nettoyer les noms de fichiers/dossiers (enlever caractères spéciaux)
+function sanitizeFolderName(name) {
+  return name
+    .replace(/[^a-zA-Z0-9_\-]/g, '_') // Remplace tout caractère spécial par _
+    .replace(/_+/g, '_')               // Remplace plusieurs _ consécutifs par un seul
+    .replace(/^_|_$/g, '');            // Enlève les _ au début et à la fin
+}
+
+// Configuration du stockage temporaire
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = "./uploads/produits";
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    const tempDir = "./uploads/temp";
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
     }
-    cb(null, uploadDir);
+    cb(null, tempDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
+    // Nom temporaire unique
+    const tempName = `temp_${Date.now()}_${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    cb(null, tempName);
   }
 });
 
@@ -68,6 +95,38 @@ const upload = multer({
 // Middleware d'upload
 exports.uploadMiddleware = upload.single("photo");
 exports.uploadMultipleMiddleware = upload.array("photos", 5); 
+
+// Fonction pour déplacer un fichier temporaire vers sa destination finale
+async function moveToFinalDestination(tempPath, id_produit, originalExt) {
+  // Récupérer les infos du produit
+  const infos = await getProduitInfos(id_produit);
+  
+  // Créer le chemin : uploads/[nom_client]/[nom_site]
+  const clientFolder = sanitizeFolderName(infos.client_nom);
+  const siteFolder = sanitizeFolderName(infos.site_nom);
+  const finalDir = `./uploads/${clientFolder}/${siteFolder}`;
+  
+  // Créer les dossiers s'ils n'existent pas
+  if (!fs.existsSync(finalDir)) {
+    fs.mkdirSync(finalDir, { recursive: true });
+  }
+  
+  // Créer le nom : [nom_produit]_[date]_[timestamp]_[random].[extension]
+  const produitName = sanitizeFolderName(infos.produit_nom);
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+  const randomStr = Math.round(Math.random() * 1E6).toString().padStart(6, '0');
+  
+  const finalFilename = `${produitName}_${dateStr}_${timeStr}_${randomStr}${originalExt}`;
+  const finalPath = path.join(finalDir, finalFilename);
+  
+  // Déplacer le fichier
+  fs.renameSync(tempPath, finalPath);
+  
+  // Retourner le chemin relatif pour la BDD
+  return `/uploads/${clientFolder}/${siteFolder}/${finalFilename}`;
+}
 
 // GET /photos/produit/:id_produit - Récupérer toutes les photos d'un produit
 exports.getPhotosByProduit = async (req, res) => {
@@ -165,7 +224,7 @@ exports.addPhoto = async (req, res) => {
   const { id_produit, id_maintenance, commentaire } = req.body;
 
   if (!id_produit) {
-    // Supprimer le fichier uploadé si pas de produit
+    // Supprimer le fichier temporaire
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: "ID produit requis" });
   }
@@ -180,7 +239,6 @@ exports.addPhoto = async (req, res) => {
       );
 
       if (existingPhotos[0].count >= 5) {
-        // Supprimer le fichier uploadé si limite atteinte
         fs.unlinkSync(req.file.path);
         return res.status(400).json({ 
           error: "Limite de 5 photos atteinte pour ce produit dans cette maintenance" 
@@ -188,7 +246,12 @@ exports.addPhoto = async (req, res) => {
       }
     }
 
-    const chemin_photo = `/uploads/produits/${req.file.filename}`;
+    // Déplacer le fichier vers sa destination finale
+    const chemin_photo = await moveToFinalDestination(
+      req.file.path,
+      id_produit,
+      path.extname(req.file.originalname)
+    );
 
     const [result] = await db.query(
       `INSERT INTO produit_photos (id_produit, id_maintenance, chemin_photo, commentaire)
@@ -205,9 +268,11 @@ exports.addPhoto = async (req, res) => {
     });
   } catch (err) {
     // Supprimer le fichier en cas d'erreur
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
     console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: err.message || "Erreur serveur" });
   }
 };
 
@@ -220,7 +285,7 @@ exports.addMultiplePhotos = async (req, res) => {
   const { id_produit, id_maintenance, commentaire } = req.body;
 
   if (!id_produit) {
-    // Supprimer tous les fichiers uploadés
+    // Supprimer tous les fichiers temporaires
     req.files.forEach(file => fs.unlinkSync(file.path));
     return res.status(400).json({ error: "ID produit requis" });
   }
@@ -238,7 +303,6 @@ exports.addMultiplePhotos = async (req, res) => {
       const newCount = currentCount + req.files.length;
 
       if (newCount > 5) {
-        // Supprimer tous les fichiers uploadés
         req.files.forEach(file => fs.unlinkSync(file.path));
         return res.status(400).json({ 
           error: `Limite de 5 photos dépassée. Vous avez ${currentCount} photo(s), vous tentez d'en ajouter ${req.files.length}. Maximum autorisé: ${5 - currentCount} photo(s) supplémentaire(s).`
@@ -248,9 +312,14 @@ exports.addMultiplePhotos = async (req, res) => {
 
     const photosAdded = [];
 
-    // Insérer toutes les photos
+    // Traiter chaque fichier
     for (const file of req.files) {
-      const chemin_photo = `/uploads/produits/${file.filename}`;
+      // Déplacer vers la destination finale
+      const chemin_photo = await moveToFinalDestination(
+        file.path,
+        id_produit,
+        path.extname(file.originalname)
+      );
 
       const [result] = await db.query(
         `INSERT INTO produit_photos (id_produit, id_maintenance, chemin_photo, commentaire)
@@ -272,14 +341,14 @@ exports.addMultiplePhotos = async (req, res) => {
     });
 
   } catch (err) {
-    // Supprimer tous les fichiers en cas d'erreur
+    // Supprimer tous les fichiers temporaires en cas d'erreur
     req.files.forEach(file => {
       if (fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }
     });
     console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: err.message || "Erreur serveur" });
   }
 };
 

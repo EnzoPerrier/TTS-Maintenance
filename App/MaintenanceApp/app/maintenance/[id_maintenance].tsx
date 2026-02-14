@@ -23,6 +23,7 @@ export default function MaintenanceDetailsScreen() {
 
   // Modal état
   const [modalVisible, setModalVisible] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); // Nouveau: mode édition
   const [selectedProduitId, setSelectedProduitId] = useState<number | null>(null);
   const [selectedProduitName, setSelectedProduitName] = useState<string>('');
 
@@ -46,7 +47,6 @@ export default function MaintenanceDetailsScreen() {
       setMaintenance(maintData);
       setProduitsAssocies(produitsData);
 
-      // Charger tous les produits du site pour trouver les non-associés
       if (maintData.id_site) {
         const allProduits = await api.getProductsBySite(maintData.id_site);
         const associatedIds = produitsData.map(p => p.id_produit);
@@ -64,66 +64,49 @@ export default function MaintenanceDetailsScreen() {
     loadData();
   }, [id_maintenance]);
 
-  // Gérer le produit scanné
-useEffect(() => {
-  if (scanned_product_id && maintenance) {
-    const productId = Number(scanned_product_id);
+  useEffect(() => {
+    if (scanned_product_id && maintenance) {
+      const productId = Number(scanned_product_id);
 
-    console.log('📱 Produit scanné:', productId);
-    console.log('📦 Produits associés:', produitsAssocies.map(p => p.id_produit));
-    console.log('⏳ Produits non associés:', produitsNonAssocies.map(p => p.id_produit));
+      const isAssociated = produitsAssocies.some(p => p.id_produit === productId);
 
-    // Vérifier si le produit est déjà associé
-    const isAssociated = produitsAssocies.some(p => p.id_produit === productId);
-
-    if (isAssociated) {
-      Alert.alert(
-        'Produit déjà associé',
-        'Ce produit est déjà associé à cette maintenance',
-        [{ text: 'OK' }]
-      );
-      // Nettoyer le paramètre après traitement
-      router.setParams({ scanned_product_id: undefined });
-      return;
-    }
-
-    // Vérifier le produit via l'API au lieu de la liste locale
-    const verifyAndAddProduct = async () => {
-      try {
-        // Récupérer les infos du produit depuis l'API
-        const produit = await api.getProductById(productId);
-        
-        console.log('✅ Produit trouvé:', produit);
-        console.log('🏢 Site du produit:', produit.id_site);
-        console.log('🏢 Site de la maintenance:', maintenance.id_site);
-
-        // Vérifier que le produit appartient au même site que la maintenance
-        if (produit.id_site !== maintenance.id_site) {
-          Alert.alert(
-            'Produit incompatible',
-            `Ce produit appartient à un autre site.\n\nProduit: ${produit.nom}\nSite: ${produit.id_site}\nMaintenance site: ${maintenance.id_site}`,
-            [{ text: 'OK' }]
-          );
-        } else {
-          // Le produit est compatible - Ouvrir le formulaire
-          openAddProductForm(productId, produit.nom);
-        }
-      } catch (err: any) {
-        console.error('Erreur récupération produit:', err);
+      if (isAssociated) {
         Alert.alert(
-          'Produit introuvable',
-          err.message || 'Ce produit n\'existe pas dans la base de données',
+          'Produit déjà associé',
+          'Ce produit est déjà associé à cette maintenance',
           [{ text: 'OK' }]
         );
-      } finally {
-        // Nettoyer le paramètre après traitement
         router.setParams({ scanned_product_id: undefined });
+        return;
       }
-    };
 
-    verifyAndAddProduct();
-  }
-}, [scanned_product_id, maintenance, produitsAssocies]); // Retirer produitsNonAssocies des dépendances
+      const verifyAndAddProduct = async () => {
+        try {
+          const produit = await api.getProductById(productId);
+
+          if (produit.id_site !== maintenance.id_site) {
+            Alert.alert(
+              'Produit incompatible',
+              `Ce produit appartient à un autre site.\n\nProduit: ${produit.nom}\nSite: ${produit.id_site}\nMaintenance site: ${maintenance.id_site}`,
+              [{ text: 'OK' }]
+            );
+          } else {
+            openAddProductForm(productId, produit.nom);
+          }
+        } catch (err: any) {
+          Alert.alert(
+            'Produit introuvable',
+            err.message || 'Ce produit n\'existe pas dans la base de données',
+            [{ text: 'OK' }]
+          );
+        } finally {
+          router.setParams({ scanned_product_id: undefined });
+        }
+      };
+
+      verifyAndAddProduct();
+    }
+  }, [scanned_product_id, maintenance, produitsAssocies]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -131,7 +114,6 @@ useEffect(() => {
   };
 
   const handleScanPress = () => {
-    // Redirection vers l'onglet Scanner avec l'id_maintenance en paramètre
     router.push({
       pathname: '/(tabs)/scanner',
       params: {
@@ -142,6 +124,7 @@ useEffect(() => {
   };
 
   const openAddProductForm = (id_produit: number, produitName: string = '') => {
+    setIsEditMode(false);
     setSelectedProduitId(id_produit);
     setSelectedProduitName(produitName);
     setFormData({
@@ -150,6 +133,22 @@ useEffect(() => {
       etat_constate: '',
       travaux_effectues: '',
       ri_interne: '',
+    });
+    setPhotos([]);
+    setModalVisible(true);
+  };
+
+  // Nouvelle fonction pour ouvrir le formulaire en mode édition
+  const openEditProductForm = (produit: MaintenanceProduit) => {
+    setIsEditMode(true);
+    setSelectedProduitId(produit.id_produit);
+    setSelectedProduitName(produit.nom);
+    setFormData({
+      etat: produit.etat || '',
+      commentaire: produit.commentaire || '',
+      etat_constate: produit.etat_constate || '',
+      travaux_effectues: produit.travaux_effectues || '',
+      ri_interne: produit.ri_interne || '',
     });
     setPhotos([]);
     setModalVisible(true);
@@ -214,6 +213,7 @@ useEffect(() => {
           style: 'destructive',
           onPress: () => {
             setModalVisible(false);
+            setIsEditMode(false);
             setFormData({
               etat: '',
               commentaire: '',
@@ -230,385 +230,436 @@ useEffect(() => {
     );
   };
 
-const handleSubmit = async () => {
-  if (!selectedProduitId) return;
+  const handleSubmit = async () => {
+    if (!selectedProduitId) return;
 
-  if (!formData.etat) {
-    Alert.alert('Erreur', 'Veuillez sélectionner un état');
-    return;
-  }
-
-  try {
-    
-    await api.addProductToMaintenance({
-      id_maintenance: Number(id_maintenance),
-      id_produit: selectedProduitId,
-      etat: formData.etat,
-      commentaire: formData.commentaire || "",
-      etat_constate: formData.etat_constate || "",
-      travaux_effectues: formData.travaux_effectues || "",
-      ri_interne: formData.ri_interne || "",
-    });
-
-    if (photos.length > 0) {
-      const form = new FormData();
-      photos.forEach((uri) => {
-        const filename = uri.split('/').pop()!;
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image';
-
-        form.append('photos', {
-          uri,
-          name: filename,
-          type,
-        } as any);
-      });
-
-      form.append('id_maintenance', String(id_maintenance));
-      form.append('id_produit', String(selectedProduitId));
-
-      await fetch(`${Config.API_URL}/photos/multiple`, {
-        method: 'POST',
-        body: form,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+    if (!formData.etat) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un état');
+      return;
     }
 
-    Alert.alert('Succès', 'Produit associé avec toutes les photos');
-    setModalVisible(false);
-    setFormData({
-      etat: '',
-      commentaire: '',
-      etat_constate: '',
-      travaux_effectues: '',
-      ri_interne: '',
-    });
-    setPhotos([]);
-    setSelectedProduitId(null);
-    setSelectedProduitName('');
-    loadData();
-  } catch (err: any) {
-    console.error(err);
-    Alert.alert('Erreur', err.message || "Impossible d'associer le produit");
-  }
-};
+    try {
+      if (isEditMode) {
+        // Mode édition - utiliser updateProductMaintenance
+        await api.updateProductMaintenance({
+          id_maintenance: Number(id_maintenance),
+          id_produit: selectedProduitId,
+          etat: formData.etat,
+          commentaire: formData.commentaire || "",
+          etat_constate: formData.etat_constate || "",
+          travaux_effectues: formData.travaux_effectues || "",
+          ri_interne: formData.ri_interne || "",
+        });
+      } else {
+        // Mode ajout - utiliser addProductToMaintenance
+        await api.addProductToMaintenance({
+          id_maintenance: Number(id_maintenance),
+          id_produit: selectedProduitId,
+          etat: formData.etat,
+          commentaire: formData.commentaire || "",
+          etat_constate: formData.etat_constate || "",
+          travaux_effectues: formData.travaux_effectues || "",
+          ri_interne: formData.ri_interne || "",
+        });
+      }
 
+      if (photos.length > 0) {
+        const form = new FormData();
+        photos.forEach((uri) => {
+          const filename = uri.split('/').pop()!;
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : 'image';
 
+          form.append('photos', {
+            uri,
+            name: filename,
+            type,
+          } as any);
+        });
 
-const handleProductPress = (id_produit: number) => {
-  router.push(`../products/${id_produit}`);
-};
+        form.append('id_maintenance', String(id_maintenance));
+        form.append('id_produit', String(selectedProduitId));
 
-// Ajouter après handleProductPress
-const handleDeleteProduct = (id_produit: number, id_maintenance: number, nom: string) => {
-  Alert.alert(
-    'Retirer le produit',
-    `Voulez-vous retirer "${nom}" de cette maintenance ?`,
-    [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Retirer',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.removeProductFromMaintenance(id_maintenance, id_produit);
-            Alert.alert('Succès', 'Produit retiré de la maintenance');
-            loadData();
-          } catch (err) {
-            Alert.alert('Erreur', 'Impossible de retirer le produit');
+        await fetch(`${Config.API_URL}/photos/multiple`, {
+          method: 'POST',
+          body: form,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+
+      Alert.alert('Succès', isEditMode ? 'Informations mises à jour' : 'Produit associé avec toutes les photos');
+      setModalVisible(false);
+      setIsEditMode(false);
+      setFormData({
+        etat: '',
+        commentaire: '',
+        etat_constate: '',
+        travaux_effectues: '',
+        ri_interne: '',
+      });
+      setPhotos([]);
+      setSelectedProduitId(null);
+      setSelectedProduitName('');
+      loadData();
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Erreur', err.message || "Impossible de sauvegarder");
+    }
+  };
+
+  const handleProductPress = (id_produit: number) => {
+    router.push(`../products/${id_produit}`);
+  };
+
+  const handleDeleteProduct = (id_produit: number, id_maintenance: number, nom: string) => {
+    Alert.alert(
+      'Retirer le produit',
+      `Voulez-vous retirer "${nom}" de cette maintenance ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.removeProductFromMaintenance(id_maintenance, id_produit);
+              Alert.alert('Succès', 'Produit retiré de la maintenance');
+              loadData();
+            } catch (err) {
+              Alert.alert('Erreur', 'Impossible de retirer le produit');
+            }
           }
         }
-      }
-    ]
-  );
-};
+      ]
+    );
+  };
 
-if (!maintenance) {
+  if (!maintenance) {
+    return (
+      <View style={GlobalStyles.container}>
+        <Text>Chargement...</Text>
+      </View>
+    );
+  }
+
+  const { color, icon } = getStatusConfig(maintenance.etat);
+
   return (
     <View style={GlobalStyles.container}>
-      <Text>Chargement...</Text>
-    </View>
-  );
-}
-
-const { color, icon } = getStatusConfig(maintenance.etat);
-
-return (
-  <View style={GlobalStyles.container}>
-    <View style={GlobalStyles.header}>
-      <TouchableOpacity onPress={() => router.back()} style={GlobalStyles.backButton}>
-        <Text style={GlobalStyles.backButtonText}>← Retour</Text>
-      </TouchableOpacity>
-      <Text style={GlobalStyles.headerTitle}>{icon} {maintenance.type}</Text>
-      <Text style={GlobalStyles.headerSubtitle}>Détails de la maintenance</Text>
-    </View>
-
-    <ScrollView
-      style={GlobalStyles.scrollView}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* Informations */}
-      <InfoCard
-        title="Informations"
-        icon="📋"
-        rows={[
-          { label: 'Date:', value: formatDate(maintenance.date_maintenance) },
-          { label: 'Type:', value: maintenance.type },
-          { label: 'État:', value: maintenance.etat || 'N/A', valueColor: color },
-          ...(maintenance.numero_ri
-            ? [{ label: 'N° RI:', value: maintenance.numero_ri }]
-            : []),
-          ...(maintenance.departement
-            ? [{ label: 'Département:', value: maintenance.departement }]
-            : []),
-          ...(maintenance.commentaire
-            ? [{ label: 'Commentaire:', value: maintenance.commentaire }]
-            : []),
-        ]}
-      />
-
-      {/* Bouton scanner */}
-      <TouchableOpacity
-        style={styles.scanButton}
-        onPress={handleScanPress}
-      >
-        <Text style={styles.scanButtonText}>📷 Scanner un produit</Text>
-      </TouchableOpacity>
-
-      <View style={{ marginBottom: 16 }}>
-  <Text style={styles.sectionTitle}>
-    ✅ Produits associés ({produitsAssocies.length})
-  </Text>
-  {produitsAssocies.length === 0 ? (
-    <EmptyState
-      icon="📦"
-      title="Aucun produit associé"
-      subtitle="Scannez un QR code pour ajouter un produit"
-    />
-  ) : (
-    produitsAssocies.map(produit => (
-      <TouchableOpacity
-        key={produit.id_produit}
-        onPress={() => handleProductPress(produit.id_produit)}
-        activeOpacity={0.7}
-      >
-        <Card
-          title={produit.nom}
-          badge={produit.etat || 'N/A'}
-          badgeColor={getEtatColor(produit.etat)}
-          borderLeftColor={getEtatColor(produit.etat)}
-        >
-          {produit.departement && (
-            <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
-          )}
-          {produit.commentaire && (
-            <Text style={CardStyles.cardComment}>💬 {produit.commentaire}</Text>
-          )}
-          {produit.etat_constate && (
-            <Text style={CardStyles.cardText}>📋 État constaté: {produit.etat_constate}</Text>
-          )}
-          {produit.travaux_effectues && (
-            <Text style={CardStyles.cardText}>🔧 Travaux: {produit.travaux_effectues}</Text>
-          )}
-          
-          {/* Actions du produit */}
-          <View style={styles.cardActions}>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={(e: any) => {
-                e.stopPropagation();
-                handleDeleteProduct(produit.id_produit, Number(id_maintenance), produit.nom);
-              }}
-            >
-              <Text style={styles.deleteButtonText}>🗑️ Retirer</Text>
-            </TouchableOpacity>
-            <Text style={styles.tapHint}>Appuyez pour voir les détails →</Text>
-          </View>
-        </Card>
-      </TouchableOpacity>
-    ))
-  )}
-</View>
-
-      {/* Produits non associés */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={styles.sectionTitle}>
-          ⏳ Produits non associés ({produitsNonAssocies.length})
-        </Text>
-        {produitsNonAssocies.length === 0 ? (
-          <EmptyState
-            icon="✅"
-            title="Tous les produits sont associés"
-            subtitle="Tous les équipements du site ont été traités"
-          />
-        ) : (
-          produitsNonAssocies.map(produit => (
-            <TouchableOpacity
-              key={produit.id_produit}
-              onPress={() => openAddProductForm(produit.id_produit, produit.nom)}
-              activeOpacity={0.7}
-            >
-              <Card
-                title={produit.nom}
-                borderLeftColor={Colors.gray}
-              >
-                {produit.departement && (
-                  <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
-                )}
-                {produit.description && (
-                  <Text style={CardStyles.cardText}>📝 {produit.description}</Text>
-                )}
-                <Text style={styles.addHint}>Appuyez pour associer à cette maintenance</Text>
-              </Card>
-            </TouchableOpacity>
-          ))
-        )}
+      <View style={GlobalStyles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={GlobalStyles.backButton}>
+          <Text style={GlobalStyles.backButtonText}>← Retour</Text>
+        </TouchableOpacity>
+        <Text style={GlobalStyles.headerTitle}>{icon} {maintenance.type}</Text>
+        <Text style={GlobalStyles.headerSubtitle}>Détails de la maintenance</Text>
       </View>
-    </ScrollView>
 
-    {/* Modal d'ajout de produit */}
-    <Modal
-      visible={modalVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleCancel}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Associer un produit</Text>
-              {selectedProduitName && (
-                <Text style={styles.modalSubtitle}>{selectedProduitName}</Text>
-              )}
-            </View>
+      <ScrollView
+        style={GlobalStyles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <InfoCard
+          title="Informations"
+          icon="📋"
+          rows={[
+            { label: 'Date:', value: formatDate(maintenance.date_maintenance) },
+            { label: 'Type:', value: maintenance.type },
+            { label: 'État:', value: maintenance.etat || 'N/A', valueColor: color },
+            ...(maintenance.numero_ri
+              ? [{ label: 'N° RI:', value: maintenance.numero_ri }]
+              : []),
+            ...(maintenance.departement
+              ? [{ label: 'Département:', value: maintenance.departement }]
+              : []),
+            ...(maintenance.commentaire
+              ? [{ label: 'Commentaire:', value: maintenance.commentaire }]
+              : []),
+          ]}
+        />
 
-            {/* État */}
-            <Text style={styles.label}>État *</Text>
-            <View style={styles.etatContainer}>
-              {['OK', 'NOK', 'Passable', 'Non vérifié'].map(etat => (
-                <TouchableOpacity
-                  key={etat}
-                  style={[
-                    styles.etatButton,
-                    formData.etat === etat && styles.etatButtonActive
-                  ]}
-                  onPress={() => setFormData({ ...formData, etat })}
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={handleScanPress}
+        >
+          <Text style={styles.scanButtonText}>📷 Scanner un produit</Text>
+        </TouchableOpacity>
+
+        <View style={{ marginBottom: 16 }}>
+          <Text style={styles.sectionTitle}>
+            ✅ Produits associés ({produitsAssocies.length})
+          </Text>
+          {produitsAssocies.length === 0 ? (
+            <EmptyState
+              icon="📦"
+              title="Aucun produit associé"
+              subtitle="Scannez un QR code pour ajouter un produit"
+            />
+          ) : (
+            produitsAssocies.map(produit => (
+              <TouchableOpacity
+                key={produit.id_produit}
+                onPress={() => handleProductPress(produit.id_produit)}
+                activeOpacity={0.7}
+              >
+                <Card
+                  title={produit.nom}
+                  badge={produit.etat || 'N/A'}
+                  badgeColor={getEtatColor(produit.etat)}
+                  borderLeftColor={getEtatColor(produit.etat)}
                 >
-                  <Text style={[
-                    styles.etatButtonText,
-                    formData.etat === etat && styles.etatButtonTextActive
-                  ]}>
-                    {etat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Commentaire général */}
-            <Text style={styles.label}>Commentaire général</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Commentaire sur l'état du produit"
-              value={formData.commentaire}
-              onChangeText={(text) => setFormData({ ...formData, commentaire: text })}
-              multiline
-              numberOfLines={3}
-            />
-
-            {/* État constaté */}
-            <Text style={styles.label}>État constaté</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Décrivez l'état constaté lors de la maintenance"
-              value={formData.etat_constate}
-              onChangeText={(text) => setFormData({ ...formData, etat_constate: text })}
-              multiline
-              numberOfLines={4}
-            />
-
-            {/* Travaux effectués */}
-            <Text style={styles.label}>Travaux effectués</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Détaillez les travaux effectués sur ce produit"
-              value={formData.travaux_effectues}
-              onChangeText={(text) => setFormData({ ...formData, travaux_effectues: text })}
-              multiline
-              numberOfLines={4}
-            />
-
-            {/* RI interne */}
-            <Text style={styles.label}>RI interne</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="RI interne non visible par le client"
-              value={formData.ri_interne}
-              onChangeText={(text) => setFormData({ ...formData, ri_interne: text })}
-            />
-
-            {/* Photos */}
-            <Text style={styles.label}>Photos ({photos.length}/5)</Text>
-            <View style={styles.photoButtonsContainer}>
-              <TouchableOpacity
-                style={[styles.photoButton, styles.cameraButton]}
-                onPress={takePhoto}
-                disabled={photos.length >= 5}
-              >
-                <Text style={styles.photoButtonText}>📷 Prendre une photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.photoButton, styles.galleryButton]}
-                onPress={pickImages}
-                disabled={photos.length >= 5}
-              >
-                <Text style={styles.photoButtonText}>🖼️ Galerie</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Aperçu des photos */}
-            {photos.length > 0 && (
-              <View style={styles.photosPreview}>
-                {photos.map((uri, index) => (
-                  <View key={index} style={styles.photoItem}>
-                    <Image source={{ uri }} style={styles.photoImage} />
+                  {produit.departement && (
+                    <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
+                  )}
+                  {produit.commentaire && (
+                    <Text style={CardStyles.cardComment}>💬 {produit.commentaire}</Text>
+                  )}
+                  {produit.etat_constate && (
+                    <Text style={CardStyles.cardText}>📋 État constaté: {produit.etat_constate}</Text>
+                  )}
+                  {produit.travaux_effectues && (
+                    <Text style={CardStyles.cardText}>🔧 Travaux: {produit.travaux_effectues}</Text>
+                  )}
+                  
+                  <View style={styles.cardActions}>
                     <TouchableOpacity
-                      style={styles.removePhotoButton}
-                      onPress={() => removePhoto(index)}
+                      style={styles.editButton}
+                      onPress={(e: any) => {
+                        e.stopPropagation();
+                        openEditProductForm(produit);
+                      }}
                     >
-                      <Text style={styles.removePhotoText}>✕</Text>
+                      <Text style={styles.editButtonText}>✏️ Modifier</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={(e: any) => {
+                        e.stopPropagation();
+                        handleDeleteProduct(produit.id_produit, Number(id_maintenance), produit.nom);
+                      }}
+                    >
+                      <Text style={styles.deleteButtonText}>🗑️ Retirer</Text>
                     </TouchableOpacity>
                   </View>
+                  <Text style={styles.tapHint}>Appuyez pour voir les détails →</Text>
+                </Card>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          <Text style={styles.sectionTitle}>
+            ⏳ Produits non associés ({produitsNonAssocies.length})
+          </Text>
+          {produitsNonAssocies.length === 0 ? (
+            <EmptyState
+              icon="✅"
+              title="Tous les produits sont associés"
+              subtitle="Tous les équipements du site ont été traités"
+            />
+          ) : (
+            produitsNonAssocies.map(produit => (
+              <TouchableOpacity
+                key={produit.id_produit}
+                onPress={() => openAddProductForm(produit.id_produit, produit.nom)}
+                activeOpacity={0.7}
+              >
+                <Card
+                  title={produit.nom}
+                  borderLeftColor={Colors.gray}
+                >
+                  {produit.departement && (
+                    <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
+                  )}
+                  {produit.description && (
+                    <Text style={CardStyles.cardText}>📝 {produit.description}</Text>
+                  )}
+                  <Text style={styles.addHint}>Appuyez pour associer à cette maintenance</Text>
+                </Card>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </ScrollView>
+
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {isEditMode ? 'Modifier le produit' : 'Associer un produit'}
+                </Text>
+                {selectedProduitName && (
+                  <Text style={styles.modalSubtitle}>{selectedProduitName}</Text>
+                )}
+              </View>
+
+              <Text style={styles.label}>État *</Text>
+              <View style={styles.etatContainer}>
+                {['OK', 'NOK', 'Passable', 'Non vérifié'].map(etat => (
+                  <TouchableOpacity
+                    key={etat}
+                    style={[
+                      styles.etatButton,
+                      formData.etat === etat && styles.etatButtonActive
+                    ]}
+                    onPress={() => setFormData({ ...formData, etat })}
+                  >
+                    <Text style={[
+                      styles.etatButtonText,
+                      formData.etat === etat && styles.etatButtonTextActive
+                    ]}>
+                      {etat}
+                    </Text>
+                  </TouchableOpacity>
                 ))}
               </View>
-            )}
 
-            {/* Boutons */}
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={handleCancel}
-              >
-                <Text style={styles.cancelButtonText}>✕ Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.submitButton]}
-                onPress={handleSubmit}
-              >
-                <Text style={styles.submitButtonText}>✓ Associer</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+              <Text style={styles.label}>Commentaire général</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Commentaire sur l'état du produit"
+                value={formData.commentaire}
+                onChangeText={(text) => setFormData({ ...formData, commentaire: text })}
+                multiline
+                numberOfLines={3}
+              />
+
+              <Text style={styles.label}>État constaté</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Décrivez l'état constaté lors de la maintenance"
+                value={formData.etat_constate}
+                onChangeText={(text) => setFormData({ ...formData, etat_constate: text })}
+                multiline
+                numberOfLines={4}
+              />
+
+              <Text style={styles.label}>Travaux effectués</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Détaillez les travaux effectués sur ce produit"
+                value={formData.travaux_effectues}
+                onChangeText={(text) => setFormData({ ...formData, travaux_effectues: text })}
+                multiline
+                numberOfLines={4}
+              />
+
+              <Text style={styles.label}>RI interne</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="RI interne non visible par le client"
+                value={formData.ri_interne}
+                onChangeText={(text) => setFormData({ ...formData, ri_interne: text })}
+              />
+
+              {!isEditMode && (
+                <>
+                  <Text style={styles.label}>Photos ({photos.length}/5)</Text>
+                  <View style={styles.photoButtonsContainer}>
+                    <TouchableOpacity
+                      style={[styles.photoButton, styles.cameraButton]}
+                      onPress={takePhoto}
+                      disabled={photos.length >= 5}
+                    >
+                      <Text style={styles.photoButtonText}>📷 Prendre une photo</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.photoButton, styles.galleryButton]}
+                      onPress={pickImages}
+                      disabled={photos.length >= 5}
+                    >
+                      <Text style={styles.photoButtonText}>🖼️ Galerie</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {photos.length > 0 && (
+                    <View style={styles.photosPreview}>
+                      {photos.map((uri, index) => (
+                        <View key={index} style={styles.photoItem}>
+                          <Image source={{ uri }} style={styles.photoImage} />
+                          <TouchableOpacity
+                            style={styles.removePhotoButton}
+                            onPress={() => removePhoto(index)}
+                          >
+                            <Text style={styles.removePhotoText}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={handleCancel}
+                >
+                  <Text style={styles.cancelButtonText}>✕ Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.submitButton]}
+                  onPress={handleSubmit}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {isEditMode ? '✓ Enregistrer' : '✓ Associer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
-  </View>
-);
+      </Modal>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
+ 
+  cardActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray50 + '20',
+  },
+  editButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: Colors.danger,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -646,7 +697,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontStyle: 'italic',
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -687,7 +737,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.gray,
+    borderColor: Colors.gray300,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -695,7 +745,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     borderWidth: 1,
-    borderColor: Colors.gray,
+    borderColor: Colors.gray300,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -713,7 +763,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: Colors.gray,
+    borderColor: Colors.gray600,
     backgroundColor: Colors.white,
   },
   etatButtonActive: {
@@ -807,26 +857,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '600',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.gray50 + '20', // Légère transparence
-  },
-  deleteButton: {
-    backgroundColor: Colors.danger,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    color: Colors.white,
-    fontSize: 12,
     fontWeight: '600',
   },
 });

@@ -112,6 +112,12 @@ async function loadSites() {
 }
 
 // ========== ÉQUIPEMENTS ==========
+
+// Fonction affichage du qr code
+function printQR(id) {
+  window.open(`${API}/qrcodes/showqr/${id}`, "_blank");
+}
+
 async function loadAllEquipements() {
   try {
     allEquipements = [];
