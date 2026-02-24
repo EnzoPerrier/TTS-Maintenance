@@ -5,6 +5,205 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Détails du client</title>
   <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* Formulaire moderne pour les maintenances */
+    .maintenance-form-modern {
+      max-width: 900px !important;
+      width: 95% !important;
+    }
+
+    .maintenance-form-modern h3 {
+      font-size: 1.75rem;
+      margin-bottom: 2rem;
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-section {
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--gray-200);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-blue);
+    }
+
+    .section-icon {
+      font-size: 1.5rem;
+    }
+
+    .section-header h4 {
+      margin: 0;
+      color: var(--primary-blue);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .operators-row {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--gray-700);
+      font-size: 0.95rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.75rem;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      transition: var(--transition);
+      background: var(--white);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .operator-input input {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+    }
+
+    .horaires-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .horaire-period {
+      background: var(--white);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--gray-200);
+    }
+
+    .period-label {
+      font-weight: 600;
+      color: var(--primary-blue);
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+      text-align: center;
+      padding: 0.5rem;
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+    }
+
+    .checkbox-group {
+      margin-bottom: 1rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      padding: 1rem;
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--gray-200);
+      transition: var(--transition);
+    }
+
+    .checkbox-label:hover {
+      border-color: var(--primary-blue);
+      background: rgba(0, 102, 204, 0.05);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .checkbox-text {
+      font-weight: 500;
+      color: var(--gray-800);
+      font-size: 1rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid var(--gray-200);
+    }
+
+    .form-actions button {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary {
+      background: var(--gray-600) !important;
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-800) !important;
+    }
+
+    .btn-icon {
+      font-size: 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .operators-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .horaires-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <button id="backBtn">← Retour</button>
@@ -132,6 +331,180 @@
       © 2026 Enzo Perrier - Tous droits réservés
     </a>
   </footer>
+
+  <!-- Formulaire modification maintenance -->
+  <div id="addMaintenanceForm" class="modal" style="display:none">
+    <form id="maintenanceForm" onsubmit="updateMaintenanceSubmit(event)" class="maintenance-form-modern">
+      <h3 id="maintenanceFormTitle">📋 Modifier une maintenance</h3>
+      
+      <!-- Section 1: Informations générales -->
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-icon">ℹ️</span>
+          <h4>Informations générales</h4>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="maintenanceDateMaintenance">Date *</label>
+            <input type="date" id="maintenanceDateMaintenance" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="maintenanceType">Type de maintenance *</label>
+            <select id="maintenanceType" required>
+              <option value="">-- Sélectionner --</option>
+              <option value="Installation">Installation</option>
+              <option value="Intervention curative">Intervention curative</option>
+              <option value="Révision">Révision</option>
+              <option value="Contrat de maintenance">Contrat de maintenance</option>
+              <option value="Location">Location</option>
+              <option value="Accident">Accident</option>
+              <option value="Vandalisme">Vandalisme</option>
+              <option value="Orage">Orage</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="maintenanceEtat">État</label>
+            <select id="maintenanceEtat">
+              <option value="">-- État --</option>
+              <option value="Planifiée">📅 Planifiée</option>
+              <option value="En cours">⚙️ En cours</option>
+              <option value="Terminée">✅ Terminée</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="maintenanceDepartement">Département</label>
+            <input type="text" id="maintenanceDepartement" placeholder="Ex: STEP, SDRT..." />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="maintenanceNumeroRi">Numéro de RI</label>
+            <input type="text" id="maintenanceNumeroRi" placeholder="Ex: RI251210" />
+          </div>
+          
+          <div class="form-group">
+            <label for="maintenanceNumeroCommande">N° de commande/affaire</label>
+            <input type="text" id="maintenanceNumeroCommande" placeholder="N° Commande" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="maintenanceContact">Contact</label>
+            <input type="text" id="maintenanceContact" placeholder="Contact" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="maintenanceTypeProduit">Type de produit</label>
+            <input type="text" id="maintenanceTypeProduit" placeholder="Ex: TJT, PMV..." />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="maintenanceCommentaire">Commentaire</label>
+            <input type="text" id="maintenanceCommentaire" placeholder="Commentaire sur la maintenance" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Opérateurs -->
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-icon">👷</span>
+          <h4>Opérateurs (initiales)</h4>
+        </div>
+        
+        <div class="form-row operators-row">
+          <div class="form-group operator-input">
+            <label for="maintenanceOperateur1">Opérateur 1</label>
+            <input type="text" id="maintenanceOperateur1" placeholder="Ex: JD" maxlength="3" style="text-transform: uppercase;" />
+          </div>
+          
+          <div class="form-group operator-input">
+            <label for="maintenanceOperateur2">Opérateur 2</label>
+            <input type="text" id="maintenanceOperateur2" placeholder="Ex: ML" maxlength="3" style="text-transform: uppercase;" />
+          </div>
+          
+          <div class="form-group operator-input">
+            <label for="maintenanceOperateur3">Opérateur 3</label>
+            <input type="text" id="maintenanceOperateur3" placeholder="Ex: AB" maxlength="3" style="text-transform: uppercase;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Horaires -->
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-icon">🕐</span>
+          <h4>Horaires d'intervention</h4>
+        </div>
+        
+        <div class="horaires-grid">
+          <div class="horaire-period">
+            <div class="period-label">☀️ Matin</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="maintenanceHeureArriveeMatin">Arrivée</label>
+                <input type="time" id="maintenanceHeureArriveeMatin" />
+              </div>
+              <div class="form-group">
+                <label for="maintenanceHeureDepartMatin">Départ</label>
+                <input type="time" id="maintenanceHeureDepartMatin" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="horaire-period">
+            <div class="period-label">🌙 Après-midi</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="maintenanceHeureArriveeAprem">Arrivée</label>
+                <input type="time" id="maintenanceHeureArriveeAprem" />
+              </div>
+              <div class="form-group">
+                <label for="maintenanceHeureDepartAprem">Départ</label>
+                <input type="time" id="maintenanceHeureDepartAprem" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Détails techniques -->
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-icon">✅|❌</span>
+          <h4>Garantie</h4>
+        </div>
+        
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="maintenanceGarantie" />
+            <span class="checkbox-text">✓ Sous garantie</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Boutons d'action -->
+      <div class="form-actions">
+        <button class="primary" type="submit" id="maintenanceSubmitBtn">
+          <span class="btn-icon">✓</span> Valider
+        </button>
+        <button type="button" onclick="hideAddMaintenanceForm()" class="btn-secondary">
+          <span class="btn-icon">✕</span> Annuler
+        </button>
+      </div>
+    </form>
+  </div>
 
   <script src="clientDetails.js" defer></script>
 </body>
