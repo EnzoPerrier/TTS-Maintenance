@@ -18,6 +18,117 @@
       border: 2px solid var(--gray-200);
     }
 
+    /* Grille d'affichage des détails */
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .detail-block {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      border-left: 4px solid var(--primary-blue);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .detail-block strong {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gray-500);
+      margin-bottom: 0.2rem;
+    }
+
+    .detail-block span {
+      color: var(--gray-800);
+      font-size: 0.97rem;
+      font-weight: 500;
+    }
+
+    .details-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary-blue);
+      margin: 1.25rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--gray-200);
+      padding-bottom: 0.4rem;
+    }
+
+    /* Horaires tableau */
+    .horaires-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .horaires-table th {
+      background: var(--primary-blue);
+      color: var(--white);
+      padding: 0.5rem 0.75rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .horaires-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: center;
+      border: 1px solid var(--gray-200);
+      color: var(--gray-700);
+    }
+
+    .horaires-table tr:nth-child(even) td {
+      background: var(--gray-50);
+    }
+
+    .horaires-table .row-label {
+      font-weight: 600;
+      color: var(--gray-600);
+      text-align: left;
+      background: var(--gray-50);
+    }
+
+    /* Nature des travaux badges */
+    .travaux-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .travaux-badge {
+      background: var(--primary-blue);
+      color: var(--white);
+      border-radius: 999px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    /* Tags opérateurs */
+    .operators-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.3rem;
+    }
+
+    .operator-tag {
+      background: var(--gray-700);
+      color: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem 0.65rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
     /* ========================================
        GESTION DES PHOTOS
     ======================================== */
@@ -62,19 +173,6 @@
       background: var(--white);
     }
 
-    #photoInput:hover,
-    #editPhotoInput:hover {
-      border-color: var(--primary-blue);
-    }
-
-    #photoInput:focus,
-    #editPhotoInput:focus {
-      outline: none;
-      border-color: var(--primary-blue);
-      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-    }
-
-    /* Prévisualisation des photos */
     #photoPreview {
       display: flex;
       flex-wrap: wrap;
@@ -92,12 +190,6 @@
       transition: var(--transition);
     }
 
-    .photo-preview:hover {
-      transform: scale(1.05);
-      box-shadow: var(--shadow-lg);
-    }
-
-    /* Photos dans la liste des produits - AFFICHAGE HORIZONTAL */
     .photos-grid {
       display: flex !important;
       flex-direction: row !important;
@@ -106,24 +198,6 @@
       margin-top: 1rem;
       overflow-x: auto;
       padding-bottom: 0.5rem;
-    }
-
-    .photos-grid::-webkit-scrollbar {
-      height: 8px;
-    }
-
-    .photos-grid::-webkit-scrollbar-track {
-      background: var(--gray-100);
-      border-radius: 4px;
-    }
-
-    .photos-grid::-webkit-scrollbar-thumb {
-      background: var(--primary-blue);
-      border-radius: 4px;
-    }
-
-    .photos-grid::-webkit-scrollbar-thumb:hover {
-      background: var(--primary-dark);
     }
 
     .photo-item {
@@ -175,11 +249,6 @@
       border: 2px solid white;
     }
 
-    .photo-actions button:hover {
-      background: rgba(220, 53, 69, 1);
-      transform: scale(1.1);
-    }
-
     .photo-description {
       position: absolute;
       bottom: 0;
@@ -189,150 +258,11 @@
       font-size: 0.75rem;
       color: var(--white);
       background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-      backdrop-filter: blur(4px);
       margin: 0 !important;
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .photo-item {
-        width: 120px;
-        height: 120px;
-      }
-
-      .photo-actions button {
-        width: 30px;
-        height: 30px;
-        font-size: 1rem;
-      }
-
-      .photo-description {
-        font-size: 0.7rem;
-        padding: 0.4rem;
-      }
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .photos-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 0.75rem;
-      }
-    }
-
-    .produit-photo-container {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: var(--gray-50);
-      border-radius: var(--radius-md);
-      text-align: center;
-    }
-
-    .produit-photo {
-      max-width: 100%;
-      max-height: 300px;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-md);
-      cursor: pointer;
-      transition: var(--transition);
-      object-fit: contain;
-      border: 3px solid var(--white);
-    }
-
-    .produit-photo:hover {
-      transform: scale(1.05);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .photo-info {
-      margin-top: 0.5rem;
-      font-size: 0.85rem;
-      color: var(--gray-600);
-      font-style: italic;
-    }
-
-    /* Photo actuelle dans le formulaire d'édition */
-    #currentPhotoContainer {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: var(--white);
-      border-radius: var(--radius-md);
-      border: 2px solid var(--gray-200);
-    }
-
-    #currentPhotoContainer img {
-      max-width: 100%;
-      max-height: 200px;
-      border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-sm);
-    }
-
     /* ========================================
-       MODAL PHOTO EN GRAND
-    ======================================== */
-    .photo-modal {
-      display: none;
-      position: fixed;
-      z-index: 10000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.95);
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.3s ease;
-      backdrop-filter: blur(5px);
-    }
-
-    .photo-modal-content {
-      max-width: 95%;
-      max-height: 95%;
-      object-fit: contain;
-      border-radius: var(--radius-lg);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      animation: zoomIn 0.3s ease;
-    }
-
-    @keyframes zoomIn {
-      from {
-        transform: scale(0.8);
-        opacity: 0;
-      }
-
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-
-    .photo-modal-close {
-      position: absolute;
-      top: 30px;
-      right: 50px;
-      color: var(--white);
-      font-size: 50px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: var(--transition);
-      background: rgba(0, 0, 0, 0.5);
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      backdrop-filter: blur(10px);
-    }
-
-    .photo-modal-close:hover {
-      background: rgba(220, 53, 69, 0.8);
-      transform: rotate(90deg);
-    }
-
-    /* ========================================
-       LISTE DES PRODUITS AMÉLIORÉE
+       LISTE DES PRODUITS
     ======================================== */
     #ListeProduits details {
       background: var(--white);
@@ -353,7 +283,6 @@
     #ListeProduits details[open] {
       background: var(--gray-50);
       border-color: var(--primary-blue);
-      box-shadow: var(--shadow-md);
     }
 
     #ListeProduits summary {
@@ -365,18 +294,10 @@
       transition: var(--transition);
       user-select: none;
       font-size: 1.15rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    #ListeProduits summary:hover {
-      background: var(--gray-100);
-      padding-left: 1rem;
     }
 
     #ListeProduits details>div {
-      padding: 1.5rem 1rem 1rem 1rem;
+      padding: 1.5rem 1rem 1rem;
       margin-top: 1rem;
       border-top: 2px solid var(--gray-200);
     }
@@ -405,17 +326,6 @@
       padding-left: 0.5rem;
     }
 
-    #ListeProduits>p {
-      text-align: center;
-      padding: 3rem 2rem;
-      color: var(--gray-600);
-      background: var(--gray-50);
-      border-radius: var(--radius-lg);
-      border: 2px dashed var(--gray-300);
-      font-size: 1.1rem;
-    }
-
-    /* Sections pour les nouveaux champs */
     .produit-maintenance-section {
       margin-top: 1.5rem;
       padding: 1rem;
@@ -431,486 +341,7 @@
     }
 
     /* ========================================
-       BOUTONS SPÉCIFIQUES
-    ======================================== */
-    .btn-edit-produit {
-      background: var(--gray-600) !important;
-    }
-
-    .btn-edit-produit:hover {
-      background: var(--gray-800) !important;
-    }
-
-    .btn-remove-produit {
-      background: var(--danger) !important;
-    }
-
-    .btn-remove-produit:hover {
-      background: #C82333 !important;
-    }
-
-    /* ========================================
-       RESPONSIVE
-    ======================================== */
-    @media (max-width: 768px) {
-      #MaintenanceDetails {
-        padding: 1.5rem;
-      }
-
-      .photo-modal-close {
-        top: 15px;
-        right: 15px;
-        width: 50px;
-        height: 50px;
-        font-size: 40px;
-      }
-
-      #ListeProduits details {
-        padding: 1rem;
-      }
-
-      #ListeProduits strong {
-        min-width: 120px;
-      }
-
-      #ListeProduits details>div>div {
-        flex-direction: column;
-        gap: 0.25rem;
-      }
-
-      .photo-preview {
-        max-width: 100px;
-        max-height: 100px;
-      }
-    }
-
-    /* ========================================
-       AMÉLIORATION DES FORMULAIRES
-    ======================================== */
-    .modal form h3 {
-      color: var(--primary-blue);
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--primary-blue);
-      font-size: 1.5rem;
-    }
-
-    .modal form p {
-      background: var(--gray-50);
-      padding: 1rem;
-      border-radius: var(--radius-md);
-      margin-bottom: 1rem;
-      border-left: 4px solid var(--primary-blue);
-    }
-
-    .modal form p strong {
-      color: var(--gray-600);
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-
-    .modal form p span {
-      color: var(--primary-blue);
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-
-    .photo-help-text {
-      font-size: 0.9rem;
-      color: var(--gray-600);
-      margin-top: 0.5rem;
-      font-style: italic;
-    }
-    
-    /* ========================================
-       FORMULAIRE MODERNE MAINTENANCE
-    ======================================== */
-    .maintenance-form-modern {
-      max-width: 900px !important;
-      width: 95% !important;
-    }
-
-    .maintenance-form-modern h3 {
-      font-size: 1.75rem;
-      margin-bottom: 2rem;
-      color: var(--primary-blue);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .form-section {
-      background: var(--gray-50);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      border: 1px solid var(--gray-200);
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--primary-blue);
-    }
-
-    .section-icon {
-      font-size: 1.5rem;
-    }
-
-    .section-header h4 {
-      margin: 0;
-      color: var(--primary-blue);
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .operators-row {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .form-group label {
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--gray-700);
-      font-size: 0.95rem;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      padding: 0.75rem;
-      border: 2px solid var(--gray-200);
-      border-radius: var(--radius-sm);
-      font-size: 0.95rem;
-      transition: var(--transition);
-      background: var(--white);
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--primary-blue);
-      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-    }
-
-    .operator-input input {
-      text-align: center;
-      font-weight: 600;
-      font-size: 1.1rem;
-      letter-spacing: 1px;
-    }
-
-    .horaires-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .horaire-period {
-      background: var(--white);
-      padding: 1rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--gray-200);
-    }
-
-    .period-label {
-      font-weight: 600;
-      color: var(--primary-blue);
-      margin-bottom: 0.75rem;
-      font-size: 1rem;
-      text-align: center;
-      padding: 0.5rem;
-      background: var(--gray-50);
-      border-radius: var(--radius-sm);
-    }
-
-    .checkbox-group {
-      margin-bottom: 1rem;
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      cursor: pointer;
-      padding: 1rem;
-      background: var(--white);
-      border-radius: var(--radius-sm);
-      border: 2px solid var(--gray-200);
-      transition: var(--transition);
-    }
-
-    .checkbox-label:hover {
-      border-color: var(--primary-blue);
-      background: rgba(0, 102, 204, 0.05);
-    }
-
-    .checkbox-label input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-
-    .checkbox-text {
-      font-weight: 500;
-      color: var(--gray-800);
-      font-size: 1rem;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 2px solid var(--gray-200);
-    }
-
-    .form-actions button {
-      flex: 1;
-      padding: 0.875rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-secondary {
-      background: var(--gray-600) !important;
-    }
-
-    .btn-secondary:hover {
-      background: var(--gray-800) !important;
-    }
-
-    .btn-icon {
-      font-size: 1.2rem;
-    }
-
-    /* ========================================
-       FORMULAIRE MODIFICATION MAINTENANCE
-    ======================================== */
-    .maintenance-form-modern {
-      max-width: 900px !important;
-      width: 95% !important;
-    }
-
-    .maintenance-form-modern h3 {
-      font-size: 1.75rem;
-      margin-bottom: 2rem;
-      color: var(--primary-blue);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .form-section {
-      background: var(--gray-50);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      border: 1px solid var(--gray-200);
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--primary-blue);
-    }
-
-    .section-icon {
-      font-size: 1.5rem;
-    }
-
-    .section-header h4 {
-      margin: 0;
-      color: var(--primary-blue);
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .operators-row {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .form-group label {
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--gray-700);
-      font-size: 0.95rem;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      padding: 0.75rem;
-      border: 2px solid var(--gray-200);
-      border-radius: var(--radius-sm);
-      font-size: 0.95rem;
-      transition: var(--transition);
-      background: var(--white);
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--primary-blue);
-      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-    }
-
-    .operator-input input {
-      text-align: center;
-      font-weight: 600;
-      font-size: 1.1rem;
-      letter-spacing: 1px;
-    }
-
-    .horaires-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .horaire-period {
-      background: var(--white);
-      padding: 1rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--gray-200);
-    }
-
-    .period-label {
-      font-weight: 600;
-      color: var(--primary-blue);
-      margin-bottom: 0.75rem;
-      font-size: 1rem;
-      text-align: center;
-      padding: 0.5rem;
-      background: var(--gray-50);
-      border-radius: var(--radius-sm);
-    }
-
-    .checkbox-group {
-      margin-bottom: 1rem;
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      cursor: pointer;
-      padding: 1rem;
-      background: var(--white);
-      border-radius: var(--radius-sm);
-      border: 2px solid var(--gray-200);
-      transition: var(--transition);
-    }
-
-    .checkbox-label:hover {
-      border-color: var(--primary-blue);
-      background: rgba(0, 102, 204, 0.05);
-    }
-
-    .checkbox-label input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-
-    .checkbox-text {
-      font-weight: 500;
-      color: var(--gray-800);
-      font-size: 1rem;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 2px solid var(--gray-200);
-    }
-
-    .form-actions button {
-      flex: 1;
-      padding: 0.875rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-secondary {
-      background: var(--gray-600) !important;
-    }
-
-    .btn-secondary:hover {
-      background: var(--gray-800) !important;
-    }
-
-    @media (max-width: 768px) {
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-      
-      .operators-row {
-        grid-template-columns: 1fr;
-      }
-      
-      .horaires-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .maintenance-form-modern {
-        padding: 1.5rem;
-        width: 95%;
-      }
-    }
-
-    /* ========================================
-       MODAL POUR LE FORMULAIRE D'ÉDITION
+       FORMULAIRE MAINTENANCE — MODAL
     ======================================== */
     #editMaintenanceForm.modal {
       display: none;
@@ -924,7 +355,6 @@
       z-index: 9999;
       align-items: center;
       justify-content: center;
-      animation: fadeIn 0.3s ease;
     }
 
     #editMaintenanceForm.modal[style*="display: block"] {
@@ -936,13 +366,11 @@
       padding: 2.5rem;
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-lg);
-      max-width: 900px;
-      width: 90%;
-      max-height: 90vh;
+      max-width: 1000px;
+      width: 95%;
+      max-height: 92vh;
       overflow-y: auto;
       animation: slideUp 0.3s ease;
-      position: relative;
-      z-index: 10000;
     }
 
     @keyframes slideUp {
@@ -950,6 +378,7 @@
         opacity: 0;
         transform: translateY(30px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -960,8 +389,381 @@
       from {
         opacity: 0;
       }
+
       to {
         opacity: 1;
+      }
+    }
+
+    .maintenance-form-modern h3 {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-section {
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--gray-200);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-blue);
+    }
+
+    .section-icon {
+      font-size: 1.4rem;
+    }
+
+    .section-header h4 {
+      margin: 0;
+      color: var(--primary-blue);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-row-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .form-row-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+      color: var(--gray-700);
+      font-size: 0.9rem;
+    }
+
+    .required-star {
+      color: #e53e3e;
+      margin-left: 2px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.7rem 0.85rem;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      transition: var(--transition);
+      background: var(--white);
+      color: var(--gray-800);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    /* Opérateurs : zone textarea avec tag pills */
+    .operators-tags-input {
+      min-height: 80px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .operators-hint {
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
+
+    /* Horaires : tableau 7 jours */
+    .horaires-7jours {
+      overflow-x: auto;
+    }
+
+    .horaires-7jours table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+      font-size: 0.88rem;
+    }
+
+    .horaires-7jours th {
+      background: var(--primary-blue);
+      color: white;
+      padding: 0.5rem 0.6rem;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .horaires-7jours th:first-child {
+      background: var(--gray-600);
+      text-align: left;
+    }
+
+    .horaires-7jours td {
+      padding: 0.35rem 0.4rem;
+      border: 1px solid var(--gray-200);
+      text-align: center;
+    }
+
+    .horaires-7jours tr:nth-child(even) td {
+      background: var(--gray-50);
+    }
+
+    .horaires-7jours .period-sub {
+      background: var(--gray-100);
+      font-weight: 600;
+      color: var(--gray-600);
+      text-align: left;
+      padding-left: 0.75rem;
+    }
+
+    .horaires-7jours input[type="time"] {
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      padding: 0.3rem 0.4rem;
+      font-size: 0.85rem;
+      width: 100%;
+      min-width: 80px;
+      background: var(--white);
+    }
+
+    /* Nature des travaux : grille checkboxes */
+    .travaux-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    .travaux-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .checkbox-item {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      padding: 0.6rem 0.85rem;
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--gray-200);
+      transition: var(--transition);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--gray-800);
+      user-select: none;
+      box-sizing: border-box;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .checkbox-item:hover {
+      border-color: var(--primary-blue);
+      background: rgba(0, 102, 204, 0.04);
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      cursor: pointer;
+      accent-color: var(--primary-blue);
+      flex-shrink: 0;
+      margin: 0;
+    }
+
+    .checkbox-item span {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .checkbox-item.checked {
+      border-color: var(--primary-blue);
+      background: rgba(0, 102, 204, 0.08);
+    }
+
+    /* Garantie radio */
+    .garantie-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .garantie-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 0.6rem 1.2rem;
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--gray-200);
+      transition: var(--transition);
+      font-weight: 500;
+    }
+
+    .garantie-option:hover {
+      border-color: var(--primary-blue);
+      background: rgba(0, 102, 204, 0.04);
+    }
+
+    .garantie-option input {
+      accent-color: var(--primary-blue);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* Boutons actions */
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid var(--gray-200);
+    }
+
+    .form-actions button {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary {
+      background: var(--gray-600) !important;
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-800) !important;
+    }
+
+    .btn-edit-produit {
+      background: var(--gray-600) !important;
+    }
+
+    .btn-remove-produit {
+      background: var(--danger) !important;
+    }
+
+    /* ========================================
+       MODAL PHOTO EN GRAND
+    ======================================== */
+    .photo-modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.95);
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .photo-modal-content {
+      max-width: 95%;
+      max-height: 95%;
+      object-fit: contain;
+      border-radius: var(--radius-lg);
+    }
+
+    .photo-modal-close {
+      position: absolute;
+      top: 30px;
+      right: 50px;
+      color: var(--white);
+      font-size: 50px;
+      font-weight: bold;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.5);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .photo-modal-close:hover {
+      background: rgba(220, 53, 69, 0.8);
+    }
+
+    .photo-help-text {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    /* ========================================
+       RESPONSIVE
+    ======================================== */
+    @media (max-width: 768px) {
+
+      .form-row-3,
+      .form-row-4 {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .travaux-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+
+      .form-row,
+      .form-row-3,
+      .form-row-4 {
+        grid-template-columns: 1fr;
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -975,10 +777,21 @@
       <h1>📋 Détails de la maintenance</h1>
       <div id="MaintenanceDetails"></div>
 
-      <!-- Bouton pour modifier la maintenance -->
-      <button class="primary" onclick="showEditMaintenanceForm()" style="margin-top: 1rem; background: var(--gray-600);">
+      <button class="primary" onclick="showEditMaintenanceForm()"
+        style="margin-top: 1rem; background: var(--gray-600);">
         ✏️ Modifier la maintenance
       </button>
+
+      <div id="riActions" style="display:flex;overflow:hidden;border-radius:8px;margin-top:1rem;">
+        <button id="btnApercuRI"
+          style="background:#198754;color:white;padding:0.6rem 1rem;border:none;border-right:1px solid rgba(255,255,255,0.3);cursor:pointer;">
+          👁 Aperçu RI
+        </button>
+
+        <button id="btnPdfRI" style="background:#157347;color:white;padding:0.6rem 1rem;border:none;cursor:pointer;">
+          ⬇ PDF
+        </button>
+      </div>
 
       <h2 style="margin-top: 2rem;">🔧 Produits associés</h2>
       <button class="primary" onclick="showAddProduitForm()" style="margin: 1rem 0;">
@@ -988,176 +801,257 @@
     </section>
   </main>
 
-  <!-- Formulaire pour modifier la maintenance -->
+  <!-- =============================================
+       MODAL MODIFICATION MAINTENANCE
+  ============================================== -->
   <div id="editMaintenanceForm" class="modal" style="display: none;">
     <form id="maintenanceEditForm" onsubmit="updateMaintenance(event)" class="maintenance-form-modern">
-      <h3 id="maintenanceFormTitle">📝 Modifier la maintenance</h3>
-      
-      <!-- Section 1: Informations générales -->
+      <h3>📝 Modifier la maintenance</h3>
+
+      <!-- ── IDENTIFICATION ── -->
       <div class="form-section">
         <div class="section-header">
-          <span class="section-icon">ℹ️</span>
-          <h4>Informations générales</h4>
+          <span class="section-icon">🪪</span>
+          <h4>Identification</h4>
         </div>
-        
-        <div class="form-row">
+
+        <div class="form-row form-row-3">
           <div class="form-group">
-            <label for="editMaintenanceDate">Date *</label>
-            <input type="date" id="editMaintenanceDate" required />
+            <label for="editChrono">Chrono d'interv. <span class="required-star">*</span></label>
+            <input type="text" id="editChrono" placeholder="Ex: RI251210" required />
           </div>
-          
           <div class="form-group">
-            <label for="editMaintenanceType">Type de maintenance *</label>
-            <select id="editMaintenanceType" required>
+            <label for="editDateDemande">Date demande</label>
+            <input type="date" id="editDateDemande" />
+          </div>
+          <div class="form-group">
+            <label for="editClient">Client <span class="required-star">*</span></label>
+            <input type="text" id="editClient" placeholder="Nom du client" required />
+          </div>
+        </div>
+
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label for="editDesignation">Désign. produit / site</label>
+            <input type="text" id="editDesignation" placeholder="Désignation produit ou site" />
+          </div>
+          <div class="form-group">
+            <label for="editDateAccordClient">Date accord client</label>
+            <input type="date" id="editDateAccordClient" />
+          </div>
+          <div class="form-group">
+            <label for="editContact">Contact</label>
+            <input type="text" id="editContact" placeholder="Nom du contact" />
+          </div>
+        </div>
+
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label for="editCategorie">Catégorie <span class="required-star">*</span></label>
+            <select id="editCategorie" required>
               <option value="">-- Sélectionner --</option>
-              <option value="Installation">Installation</option>
-              <option value="Intervention curative">Intervention curative</option>
-              <option value="Révision">Révision</option>
-              <option value="Contrat de maintenance">Contrat de maintenance</option>
-              <option value="Location">Location</option>
-              <option value="Accident">Accident</option>
-              <option value="Vandalisme">Vandalisme</option>
-              <option value="Orage">Orage</option>
+              <option value="Signalisation">Signalisation</option>
+              <option value="Éclairage">Éclairage</option>
+              <option value="Sécurité">Sécurité</option>
+              <option value="Infrastructure">Infrastructure</option>
               <option value="Autre">Autre</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="editDateIntervention">Date intervention</label>
+            <input type="date" id="editDateIntervention" />
+          </div>
+          <div class="form-group">
+            <label for="editTypeProduit">Type panneau / produit</label>
+            <input type="text" id="editTypeProduit" placeholder="Ex: TJT, PMV..." />
+          </div>
         </div>
-        
+
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label for="editTypeIntervention">Type d'intervention</label>
+            <select id="editTypeIntervention">
+              <option value="">-- Sélectionner --</option>
+              <option value="Installation">Installation</option>
+              <option value="Intervention Curative">Intervention Curative</option>
+              <option value="Révision">Révision</option>
+              <option value="Contrat de maintenance">Contrat de maintenance</option>
+              <option value="Autres">Autres</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editDepartement">Départements</label>
+            <input type="text" id="editDepartement" placeholder="Ex: 06, 13..." />
+          </div>
+          <div class="form-group">
+            <label for="editNumeroCommande">N° D'affaire / CDE</label>
+            <input type="text" id="editNumeroCommande" placeholder="N° Commande / Affaire" />
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
-            <label for="editMaintenanceEtat">État</label>
-            <select id="editMaintenanceEtat">
+            <label for="editEtat">État</label>
+            <select id="editEtat">
               <option value="">-- État --</option>
               <option value="Planifiée">📅 Planifiée</option>
               <option value="En cours">⚙️ En cours</option>
               <option value="Terminée">✅ Terminée</option>
             </select>
           </div>
-          
           <div class="form-group">
-            <label for="editMaintenanceDepartement">Département</label>
-            <input type="text" id="editMaintenanceDepartement" placeholder="Ex: STEP, SDRT..." />
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label for="editMaintenanceRI">Numéro de RI</label>
-            <input type="text" id="editMaintenanceRI" placeholder="Ex: RI251210" />
-          </div>
-          
-          <div class="form-group">
-            <label for="editMaintenanceNumeroCommande">N° de commande/affaire</label>
-            <input type="text" id="editMaintenanceNumeroCommande" placeholder="N° Commande" />
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group full-width">
-            <label for="editMaintenanceContact">Contact</label>
-            <input type="text" id="editMaintenanceContact" placeholder="Contact" />
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group full-width">
-            <label for="editMaintenanceTypeProduit">Type de produit</label>
-            <input type="text" id="editMaintenanceTypeProduit" placeholder="Ex: TJT, PMV..." />
-          </div>
-
-          <div class="form-group full-width">
-            <label for="editMaintenanceCommentaire">Commentaire</label>
-            <textarea id="editMaintenanceCommentaire" placeholder="Commentaire sur la maintenance"></textarea>
+            <label for="editCommentaire">Commentaire</label>
+            <textarea id="editCommentaire" placeholder="Commentaire interne..." rows="2"></textarea>
           </div>
         </div>
       </div>
 
-      <!-- Section 2: Opérateurs -->
+      <!-- ── OPÉRATEURS ── -->
       <div class="form-section">
         <div class="section-header">
           <span class="section-icon">👷</span>
-          <h4>Opérateurs (initiales)</h4>
+          <h4>Personnes affectées</h4>
         </div>
-        
-        <div class="form-row operators-row">
-          <div class="form-group operator-input">
-            <label for="editMaintenanceOperateur1">Opérateur 1</label>
-            <input type="text" id="editMaintenanceOperateur1" placeholder="Ex: JD" maxlength="3" style="text-transform: uppercase;" />
-          </div>
-          
-          <div class="form-group operator-input">
-            <label for="editMaintenanceOperateur2">Opérateur 2</label>
-            <input type="text" id="editMaintenanceOperateur2" placeholder="Ex: ML" maxlength="3" style="text-transform: uppercase;" />
-          </div>
-          
-          <div class="form-group operator-input">
-            <label for="editMaintenanceOperateur3">Opérateur 3</label>
-            <input type="text" id="editMaintenanceOperateur3" placeholder="Ex: AB" maxlength="3" style="text-transform: uppercase;" />
-          </div>
+        <div class="form-group">
+          <label for="editOperateurs">Initiales des opérateurs</label>
+          <textarea id="editOperateurs" class="operators-tags-input"
+            placeholder="Saisir les initiales, appuyer sur Entrée entre chaque personne&#10;Ex: VM&#10;JD&#10;ML_H (suffixe _H = hotline)"></textarea>
+          <span class="operators-hint">💡 Séparer chaque personne par la touche "Entrée". Ajouter _H à la fin pour
+            indiquer une hotline (ex: VM_H)</span>
         </div>
       </div>
 
-      <!-- Section 3: Horaires -->
+      <!-- ── HORAIRES 7 JOURS ── -->
       <div class="form-section">
         <div class="section-header">
           <span class="section-icon">🕐</span>
-          <h4>Horaires d'intervention</h4>
+          <h4>Horaires d'intervention — Matin ☀️ &amp; Après-midi 🌤️</h4>
         </div>
-        
-        <div class="horaires-grid">
-          <div class="horaire-period">
-            <div class="period-label">☀️ Matin</div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="editMaintenanceHeureArriveeMatin">Arrivée</label>
-                <input type="time" id="editMaintenanceHeureArriveeMatin" />
-              </div>
-              <div class="form-group">
-                <label for="editMaintenanceHeureDepartMatin">Départ</label>
-                <input type="time" id="editMaintenanceHeureDepartMatin" />
-              </div>
-            </div>
-          </div>
-          
-          <div class="horaire-period">
-            <div class="period-label">🌙 Après-midi</div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="editMaintenanceHeureArriveeAprem">Arrivée</label>
-                <input type="time" id="editMaintenanceHeureArriveeAprem" />
-              </div>
-              <div class="form-group">
-                <label for="editMaintenanceHeureDepartAprem">Départ</label>
-                <input type="time" id="editMaintenanceHeureDepartAprem" />
-              </div>
-            </div>
-          </div>
+        <div class="horaires-7jours">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:90px;"></th>
+                <th>LUNDI</th>
+                <th>MARDI</th>
+                <th>MERCREDI</th>
+                <th>JEUDI</th>
+                <th>VENDREDI</th>
+                <th>SAMEDI</th>
+                <th>DIMANCHE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="period-sub" colspan="8">☀️ Matin</td>
+              </tr>
+              <tr>
+                <td class="period-sub">Arrivée</td>
+                <td><input type="time" id="h_lundi_matin_arr" /></td>
+                <td><input type="time" id="h_mardi_matin_arr" /></td>
+                <td><input type="time" id="h_mercredi_matin_arr" /></td>
+                <td><input type="time" id="h_jeudi_matin_arr" /></td>
+                <td><input type="time" id="h_vendredi_matin_arr" /></td>
+                <td><input type="time" id="h_samedi_matin_arr" /></td>
+                <td><input type="time" id="h_dimanche_matin_arr" /></td>
+              </tr>
+              <tr>
+                <td class="period-sub">Départ</td>
+                <td><input type="time" id="h_lundi_matin_dep" /></td>
+                <td><input type="time" id="h_mardi_matin_dep" /></td>
+                <td><input type="time" id="h_mercredi_matin_dep" /></td>
+                <td><input type="time" id="h_jeudi_matin_dep" /></td>
+                <td><input type="time" id="h_vendredi_matin_dep" /></td>
+                <td><input type="time" id="h_samedi_matin_dep" /></td>
+                <td><input type="time" id="h_dimanche_matin_dep" /></td>
+              </tr>
+              <tr>
+                <td class="period-sub" colspan="8">🌤️ Après-midi</td>
+              </tr>
+              <tr>
+                <td class="period-sub">Arrivée</td>
+                <td><input type="time" id="h_lundi_apm_arr" /></td>
+                <td><input type="time" id="h_mardi_apm_arr" /></td>
+                <td><input type="time" id="h_mercredi_apm_arr" /></td>
+                <td><input type="time" id="h_jeudi_apm_arr" /></td>
+                <td><input type="time" id="h_vendredi_apm_arr" /></td>
+                <td><input type="time" id="h_samedi_apm_arr" /></td>
+                <td><input type="time" id="h_dimanche_apm_arr" /></td>
+              </tr>
+              <tr>
+                <td class="period-sub">Départ</td>
+                <td><input type="time" id="h_lundi_apm_dep" /></td>
+                <td><input type="time" id="h_mardi_apm_dep" /></td>
+                <td><input type="time" id="h_mercredi_apm_dep" /></td>
+                <td><input type="time" id="h_jeudi_apm_dep" /></td>
+                <td><input type="time" id="h_vendredi_apm_dep" /></td>
+                <td><input type="time" id="h_samedi_apm_dep" /></td>
+                <td><input type="time" id="h_dimanche_apm_dep" /></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Section 4: Détails techniques -->
+      <!-- ── NATURE DES TRAVAUX ── -->
       <div class="form-section">
         <div class="section-header">
-          <span class="section-icon">✅|❌</span>
-          <h4>Garantie</h4>
+          <span class="section-icon">⚠️</span>
+          <h4>Nature des travaux</h4>
         </div>
-        
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="editMaintenanceGarantie" />
-            <span class="checkbox-text">✓ Sous garantie</span>
-          </label>
+
+        <div class="travaux-grid">
+          <div class="travaux-col">
+            <label class="checkbox-item" id="lbl-installation">
+              <input type="checkbox" id="chk_installation" value="Installation" onchange="toggleCheckedClass(this)" />
+              <span>Installation</span>
+            </label>
+            <label class="checkbox-item" id="lbl-curative">
+              <input type="checkbox" id="chk_curative" value="Intervention Curative"
+                onchange="toggleCheckedClass(this)" />
+              <span>Intervention Curative</span>
+            </label>
+            <label class="checkbox-item" id="lbl-revision">
+              <input type="checkbox" id="chk_revision" value="Révision" onchange="toggleCheckedClass(this)" />
+              <span>Révision</span>
+            </label>
+            <label class="checkbox-item" id="lbl-autres_g">
+              <input type="checkbox" id="chk_autres_g" value="Autres" onchange="toggleCheckedClass(this)" />
+              <span>Autres</span>
+            </label>
+          </div>
+          <div class="travaux-col">
+            <label class="checkbox-item" id="lbl-contrat">
+              <input type="checkbox" id="chk_contrat" value="Contrat de maintenance"
+                onchange="toggleCheckedClass(this)" />
+              <span>Contrat de maintenance</span>
+            </label>
+            <label class="checkbox-item" id="lbl-autres_d">
+              <input type="checkbox" id="chk_autres_d" value="Autres" onchange="toggleCheckedClass(this)" />
+              <span>Autres</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem;">
+          <label style="display:block; font-weight:600; color:var(--gray-700); margin-bottom:0.5rem;">Garantie</label>
+          <div class="garantie-row">
+            <label class="garantie-option">
+              <input type="radio" name="editGarantie" id="garantieOui" value="Oui" />
+              ✅ Oui
+            </label>
+            <label class="garantie-option">
+              <input type="radio" name="editGarantie" id="garantieNon" value="Non" checked />
+              ❌ Non
+            </label>
+          </div>
         </div>
       </div>
 
-      <!-- Boutons d'action -->
+      <!-- Boutons -->
       <div class="form-actions">
-        <button class="primary" type="submit" id="maintenanceSubmitBtn">
-          <span class="btn-icon">✓</span> Valider
-        </button>
-        <button type="button" onclick="hideEditMaintenanceForm()" class="btn-secondary">
-          <span class="btn-icon">✕</span> Annuler
-        </button>
+        <button class="primary" type="submit">✓ Valider</button>
+        <button type="button" onclick="hideEditMaintenanceForm()" class="btn-secondary">✕ Annuler</button>
       </div>
     </form>
   </div>
@@ -1194,13 +1088,12 @@
       <input type="text" id="produitRiInterne" placeholder="RI interne non visible par le client" />
 
       <div class="photo-container">
-        <label class="photo-label" for="photoInput">
-          Ajouter des photos (optionnel)
-        </label>
+        <label class="photo-label" for="photoInput">Ajouter des photos (optionnel)</label>
         <p class="photo-help-text">💡 Vous pouvez sélectionner jusqu'à 5 photos simultanément</p>
         <input type="file" id="photoInput" accept="image/*" multiple />
         <div id="photoPreview"></div>
-        <textarea id="photoDescriptionAddProduit" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
+        <textarea id="photoDescriptionAddProduit"
+          placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
       </div>
 
       <button class="primary" type="submit">✓ Associer</button>
@@ -1212,13 +1105,8 @@
   <div id="editProduitForm" class="modal">
     <form id="produitEditForm" onsubmit="updateProduitMaintenance(event)">
       <h3>Modifier les informations du produit</h3>
-
       <input type="hidden" id="editProduitId" />
-
-      <p>
-        <strong>Produit :</strong>
-        <span id="editProduitNom"></span>
-      </p>
+      <p><strong>Produit :</strong><span id="editProduitNom"></span></p>
 
       <label for="editProduitEtat" class="form-label">🔍 État du produit</label>
       <select id="editProduitEtat" required>
@@ -1247,7 +1135,7 @@
     </form>
   </div>
 
-  <!-- Modal pour afficher la photo en grand -->
+  <!-- Modal photo en grand -->
   <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
     <span class="photo-modal-close">&times;</span>
     <img class="photo-modal-content" id="modalPhoto" alt="Photo agrandie">

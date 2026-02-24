@@ -389,6 +389,164 @@ function parseDate(dateStr) {
   return `${day}/${month}/${year}`;
 }
 
+// ========== MODIFICATION MAINTENANCE ==========
+
+let editingMaintenanceId = null;
+
+// ========== GESTION DES ÉQUIPEMENTS ==========
+
+// Fonction de suppression d'un équipement
+async function deleteProduit(id_produit) {
+  const confirmDelete = confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)");
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`${API}/produits/${id_produit}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la suppression de l'équipement");
+      return;
+    }
+
+    // Recharger les équipements
+    loadAllEquipements();
+    alert("Équipement supprimé avec succès !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur lors de la suppression");
+  }
+}
+
+// Fonction pour modifier un équipement (redirection vers la page de détails)
+function editProduit(id_produit) {
+  window.location.href = `../ProduitDetails/produitDetails.html?id_produit=${id_produit}`;
+}
+
+// Fonction pour afficher le formulaire de modification
+async function editMaintenance(id_maintenance) {
+  try {
+    const res = await fetch(`${API}/maintenances/${id_maintenance}`);
+    if (!res.ok) {
+      alert("Erreur lors du chargement de la maintenance");
+      return;
+    }
+    
+    const maintenance = await res.json();
+    editingMaintenanceId = id_maintenance;
+    
+    // Pré-remplir le formulaire
+    document.getElementById("maintenanceNumeroRi").value = maintenance.numero_ri || "";
+    document.getElementById("maintenanceOperateur1").value = maintenance.operateur_1 || "";
+    document.getElementById("maintenanceOperateur2").value = maintenance.operateur_2 || "";
+    document.getElementById("maintenanceOperateur3").value = maintenance.operateur_3 || "";
+    document.getElementById("maintenanceDateMaintenance").value = maintenance.date_maintenance || "";
+    document.getElementById("maintenanceType").value = maintenance.type || "";
+    document.getElementById("maintenanceEtat").value = maintenance.etat || "";
+    document.getElementById("maintenanceDepartement").value = maintenance.departement || "";
+    document.getElementById("maintenanceCommentaire").value = maintenance.commentaire || "";
+    document.getElementById("maintenanceGarantie").checked = maintenance.garantie || false;
+    document.getElementById("maintenanceNumeroCommande").value = maintenance.numero_commande || "";
+    document.getElementById("maintenanceContact").value = maintenance.contact || "";
+    document.getElementById("maintenanceTypeProduit").value = maintenance.type_produit || "";
+    document.getElementById("maintenanceHeureArriveeMatin").value = maintenance.heure_arrivee_matin || "";
+    document.getElementById("maintenanceHeureDepartMatin").value = maintenance.heure_depart_matin || "";
+    document.getElementById("maintenanceHeureArriveeAprem").value = maintenance.heure_arrivee_aprem || "";
+    document.getElementById("maintenanceHeureDepartAprem").value = maintenance.heure_depart_aprem || "";
+    
+    // Afficher le formulaire
+    document.getElementById("addMaintenanceForm").style.display = "block";
+    
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
+}
+
+// Fonction pour mettre à jour une maintenance
+async function updateMaintenanceSubmit(event) {
+  event.preventDefault();
+  
+  if (!editingMaintenanceId) {
+    alert("Erreur : ID de maintenance manquant");
+    return;
+  }
+
+  const data = {
+    numero_ri: document.getElementById("maintenanceNumeroRi").value || null,
+    operateur_1: document.getElementById("maintenanceOperateur1").value || null,
+    operateur_2: document.getElementById("maintenanceOperateur2").value || null,
+    operateur_3: document.getElementById("maintenanceOperateur3").value || null,
+    date_maintenance: document.getElementById("maintenanceDateMaintenance").value,
+    type: document.getElementById("maintenanceType").value,
+    etat: document.getElementById("maintenanceEtat").value || null,
+    departement: document.getElementById("maintenanceDepartement").value || null,
+    commentaire: document.getElementById("maintenanceCommentaire").value || null,
+    garantie: document.getElementById("maintenanceGarantie").checked ? 1 : 0,
+    numero_commande: document.getElementById("maintenanceNumeroCommande").value || null,
+    contact: document.getElementById("maintenanceContact").value || null,
+    type_produit: document.getElementById("maintenanceTypeProduit").value || null,
+    heure_arrivee_matin: document.getElementById("maintenanceHeureArriveeMatin").value || null,
+    heure_depart_matin: document.getElementById("maintenanceHeureDepartMatin").value || null,
+    heure_arrivee_aprem: document.getElementById("maintenanceHeureArriveeAprem").value || null,
+    heure_depart_aprem: document.getElementById("maintenanceHeureDepartAprem").value || null
+  };
+
+  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?");
+  if (!confirmUpdate) return;
+
+  try {
+    const res = await fetch(`${API}/maintenances/${editingMaintenanceId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la modification de la maintenance");
+      return;
+    }
+
+    hideAddMaintenanceForm();
+    loadAllMaintenances();
+    alert("Maintenance modifiée avec succès !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
+}
+
+// Fonction pour cacher le formulaire
+function hideAddMaintenanceForm() {
+  document.getElementById("addMaintenanceForm").style.display = "none";
+  editingMaintenanceId = null;
+  document.getElementById("maintenanceForm").reset();
+}
+
+// Fonction de suppression
+async function deleteMaintenance(id_maintenance) {
+  const confirmDelete = confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)");
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`${API}/maintenances/${id_maintenance}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      alert("Erreur lors de la suppression de la maintenance");
+      return;
+    }
+
+    loadAllMaintenances();
+    alert("Maintenance supprimée avec succès !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur serveur");
+  }
+}
+
 // ========== INIT ==========
 loadClientDetails();
 loadSites();
