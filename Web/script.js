@@ -589,6 +589,7 @@ function printQR(id) { window.open(`${API}/qrcodes/showqr/${id}`, "_blank"); }
 
 /* ---------- MAINTENANCES ---------- */
 let editingMaintenanceId = null;
+let editingMaintenanceIdSite = null;
 let allMaintenances = [];
 
 async function loadMaintenances() {
@@ -611,7 +612,10 @@ async function loadMaintenances() {
     if (etat.includes("termin")) icone = "✅";
     else if (etat.includes("cours")) icone = "⚙️";
     else if (etat.includes("planif")) icone = "📅";
-    summary.innerHTML = `${icone} ${m.types_intervention || m.type || "Maintenance"} - ${m.date_maintenance}`;
+    const dateDisplay = m.date_maintenance ? new Date(m.date_maintenance).toLocaleDateString('fr-FR') : 'N/A';
+    const clientDisplay = m.client_nom || '';
+    const siteDisplay = m.site_nom || '';
+    summary.innerHTML = `${icone} ${[clientDisplay, siteDisplay, dateDisplay].filter(Boolean).join(' — ')}`;
     details.appendChild(summary);
 
     let etatColor = "#6C757D";
@@ -628,7 +632,7 @@ async function loadMaintenances() {
       <div><strong>N° RI :</strong> ${m.numero_ri || "N/A"}</div>
       <div><strong>Désignation :</strong> ${m.designation_produit_site || "N/A"}</div>
       <div><strong>Catégorie :</strong> ${m.categorie || "N/A"}</div>
-      <div><strong>Date :</strong> ${m.date_maintenance}</div>
+      <div><strong>Date :</strong> ${dateDisplay}</div>
       <div><strong>Type d'intervention :</strong> ${m.types_intervention || m.type || "N/A"}</div>
       <div><strong>État :</strong> <span style="color:${etatColor};font-weight:600;">${m.etat || "N/A"}</span></div>
       <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
@@ -657,11 +661,11 @@ async function editMaintenance(id_maintenance) {
     const m = await res.json();
 
     editingMaintenanceId = id_maintenance;
+    editingMaintenanceIdSite = m.id_site || null;
 
     // Identification
     document.getElementById("maintenanceChrono").value = m.numero_ri || '';
     document.getElementById("maintenanceDateDemande").value = formatDateForInput(m.date_demande);
-    document.getElementById("maintenanceClient").value = m.client_nom || m.site_nom || '';
     document.getElementById("maintenanceDesignation").value = m.designation_produit_site || '';
     document.getElementById("maintenanceDateAccordClient").value = formatDateForInput(m.date_accord_client);
     document.getElementById("maintenanceContact").value = m.contact || '';
@@ -763,6 +767,7 @@ async function deleteMaintenance(id_maintenance) {
 function hideAddMaintenanceForm() {
   document.getElementById("addMaintenanceForm").style.display = "none";
   editingMaintenanceId = null;
+  editingMaintenanceIdSite = null;
   document.getElementById("maintenanceForm").reset();
   resetHorairesForm();
   resetTravauxCheckboxes();
@@ -770,6 +775,7 @@ function hideAddMaintenanceForm() {
 
 function showAddMaintenanceForm() {
   editingMaintenanceId = null;
+  editingMaintenanceIdSite = null;
   document.getElementById("maintenanceForm").reset();
   resetHorairesForm();
   resetTravauxCheckboxes();
@@ -792,6 +798,7 @@ async function addMaintenance(event) {
   const garantie = document.querySelector('input[name="maintenanceGarantie"]:checked')?.value === 'Oui' ? 1 : 0;
 
   const data = {
+    id_site: editingMaintenanceIdSite || undefined,
     numero_ri: document.getElementById("maintenanceChrono").value || null,
     designation_produit_site: document.getElementById("maintenanceDesignation").value || null,
     categorie: document.getElementById("maintenanceCategorie").value || null,

@@ -6,26 +6,102 @@ const id_client = params.get("id_client");
 let allSites = [];
 let allEquipements = [];
 let allMaintenances = [];
+let editingMaintenanceId = null;
 
-document.getElementById("backBtn").addEventListener("click", () => {
-  window.history.back();
-});
+const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+const JOURS_JS = [1,2,3,4,5,6,0];
 
-// ========== CHARGEMENT CLIENT ==========
-async function loadClientDetails() {
-  if (!id_client) {
-    document.getElementById("clientDetails").textContent = "ID du client manquant.";
-    return;
+document.getElementById("backBtn").addEventListener("click", () => window.history.back());
+
+// ─── UTILITAIRES ──────────────────────────────────────────────────────────────
+
+function formatDateForInput(dateString) {
+  if (!dateString) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+    const [d, m, y] = dateString.split('/');
+    return `${y}-${m}-${d}`;
   }
+  const date = new Date(dateString);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
 
+function parseDate(dateStr) {
+  if (!dateStr) return new Date(0);
+  const date = new Date(dateStr);
+  if (isNaN(date)) return new Date(0);
+  return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()}`;
+}
+
+function toggleCheckedClass(checkbox) {
+  checkbox.closest('.checkbox-item').classList.toggle('checked', checkbox.checked);
+}
+
+function resetHorairesForm() {
+  JOURS.forEach(j => {
+    ['matin_arr','matin_dep','apm_arr','apm_dep'].forEach(slot => {
+      const el = document.getElementById(`cli_${j}_${slot}`);
+      if (el) el.value = '';
+    });
+  });
+}
+
+function resetTravauxCheckboxes() {
+  ['installation','curative','revision','autres_g','contrat','autres_d'].forEach(id => {
+    const el = document.getElementById(`cli_chk_${id}`);
+    if (el) { el.checked = false; el.closest('.checkbox-item').classList.remove('checked'); }
+  });
+}
+
+function collectTypes() {
+  const chkMap = {
+    cli_chk_installation: 'Installation',
+    cli_chk_curative: 'Intervention Curative',
+    cli_chk_revision: 'Révision',
+    cli_chk_autres_g: 'Autres',
+    cli_chk_contrat: 'Contrat de maintenance',
+    cli_chk_autres_d: 'Autres',
+  };
+  const types = Object.entries(chkMap)
+    .filter(([id]) => document.getElementById(id)?.checked)
+    .map(([, val]) => val);
+  return [...new Set(types)];
+}
+
+function collectJours(dateIntervention) {
+  const jours = [];
+  JOURS.forEach((j, idx) => {
+    const arr_m = document.getElementById(`cli_${j}_matin_arr`)?.value;
+    const dep_m = document.getElementById(`cli_${j}_matin_dep`)?.value;
+    const arr_a = document.getElementById(`cli_${j}_apm_arr`)?.value;
+    const dep_a = document.getElementById(`cli_${j}_apm_dep`)?.value;
+    if (arr_m || dep_m || arr_a || dep_a) {
+      const baseDate = new Date(dateIntervention || Date.now());
+      const targetDow = JOURS_JS[idx];
+      const diff = targetDow - baseDate.getDay();
+      const jourDate = new Date(baseDate);
+      jourDate.setDate(jourDate.getDate() + diff);
+      jours.push({
+        date_jour: jourDate.toISOString().split('T')[0],
+        heure_arrivee_matin: arr_m || null,
+        heure_depart_matin: dep_m || null,
+        heure_arrivee_aprem: arr_a || null,
+        heure_depart_aprem: dep_a || null
+      });
+    }
+  });
+  return jours;
+}
+
+// ─── CHARGEMENT CLIENT ────────────────────────────────────────────────────────
+
+async function loadClientDetails() {
+  if (!id_client) { document.getElementById("clientDetails").textContent = "ID du client manquant."; return; }
   try {
     const res = await fetch(`${API}/clients/${id_client}`);
     if (!res.ok) throw new Error("Erreur lors du chargement du client");
-
     const client = await res.json();
-
-    const ClientDiv = document.getElementById("clientDetails");
-    ClientDiv.innerHTML = `
+    document.getElementById("clientDetails").innerHTML = `
       <div class="site-detail"><strong>Nom :</strong> ${client.nom}</div>
       <div class="site-detail"><strong>Contact :</strong> ${client.contact || "N/A"}</div>
       <div class="site-detail"><strong>Adresse :</strong> ${client.adresse || "N/A"}</div>
@@ -38,147 +114,93 @@ async function loadClientDetails() {
   }
 }
 
-// ========== SITES ==========
+// ─── SITES ────────────────────────────────────────────────────────────────────
+
 async function loadSites() {
   try {
-    // Récupérer tous les sites et filtrer ceux du client
     const res = await fetch(`${API}/sites`);
     if (!res.ok) throw new Error("Erreur lors du chargement des sites");
-
     const allSitesData = await res.json();
     allSites = allSitesData.filter(site => site.id_client == id_client);
 
     const SitesDiv = document.getElementById("SitesList");
     SitesDiv.innerHTML = "";
-
-    // Mettre à jour les stats
     document.getElementById("statsSites").textContent = allSites.length;
 
-    if (allSites.length === 0) {
-      SitesDiv.innerHTML = "<p>Aucun site associé à ce client.</p>";
-      return;
-    }
+    if (allSites.length === 0) { SitesDiv.innerHTML = "<p>Aucun site associé à ce client.</p>"; return; }
 
-    // Créer une liste de sites
     const ul = document.createElement("ul");
-    ul.style.listStyle = "none";
-    ul.style.padding = "0";
+    ul.style.cssText = "list-style:none; padding:0;";
 
     allSites.forEach(site => {
       const li = document.createElement("li");
       li.classList.add("site-detail");
-      li.style.cursor = "pointer";
-      li.style.padding = "1rem";
-      li.style.marginBottom = "0.5rem";
-      li.style.background = "var(--gray-50)";
-      li.style.borderRadius = "var(--radius-md)";
-      li.style.border = "1px solid var(--gray-200)";
-      li.style.transition = "var(--transition)";
-
+      li.style.cssText = "cursor:pointer; padding:1rem; margin-bottom:0.5rem; background:var(--gray-50); border-radius:var(--radius-md); border:1px solid var(--gray-200); transition:var(--transition);";
       li.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <strong style="color: var(--primary-blue); font-size: 1.1rem;">🏢 ${site.nom}</strong><br/>
-            <span style="color: var(--gray-600);">${site.adresse || "Adresse non spécifiée"}</span>
+            <strong style="color:var(--primary-blue); font-size:1.1rem;">🏢 ${site.nom}</strong><br/>
+            <span style="color:var(--gray-600);">${site.adresse || "Adresse non spécifiée"}</span>
           </div>
-          <button onclick="window.location.href='../SiteDetails/siteDetails.html?id_site=${site.id_site}'" style="background: var(--primary-blue);">
-            Voir détails
-          </button>
+          <button onclick="window.location.href='../SiteDetails/siteDetails.html?id_site=${site.id_site}'" style="background:var(--primary-blue);">Voir détails</button>
         </div>
       `;
-
-      li.addEventListener("mouseenter", () => {
-        li.style.borderColor = "var(--primary-blue)";
-        li.style.transform = "translateX(4px)";
-      });
-
-      li.addEventListener("mouseleave", () => {
-        li.style.borderColor = "var(--gray-200)";
-        li.style.transform = "translateX(0)";
-      });
-
+      li.addEventListener("mouseenter", () => { li.style.borderColor = "var(--primary-blue)"; li.style.transform = "translateX(4px)"; });
+      li.addEventListener("mouseleave", () => { li.style.borderColor = "var(--gray-200)"; li.style.transform = "translateX(0)"; });
       ul.appendChild(li);
     });
 
     SitesDiv.appendChild(ul);
-
-    // Charger les équipements et maintenances pour chaque site
     await loadAllEquipements();
     await loadAllMaintenances();
-
   } catch (err) {
     document.getElementById("SitesList").textContent = err.message;
   }
 }
 
-// ========== ÉQUIPEMENTS ==========
+// ─── ÉQUIPEMENTS ──────────────────────────────────────────────────────────────
 
-// Fonction affichage du qr code
-function printQR(id) {
-  window.open(`${API}/qrcodes/showqr/${id}`, "_blank");
-}
+function printQR(id) { window.open(`${API}/qrcodes/showqr/${id}`, "_blank"); }
 
 async function loadAllEquipements() {
   try {
     allEquipements = [];
-
-    // Pour chaque site, récupérer les équipements
     for (const site of allSites) {
       const res = await fetch(`${API}/produits/ProduitsBySiteID/${site.id_site}`);
-      if (res.ok) {
-        const produits = await res.json();
-        allEquipements = allEquipements.concat(produits);
-      }
+      if (res.ok) allEquipements = allEquipements.concat(await res.json());
     }
 
     const EquipDiv = document.getElementById("EquipementsList");
     EquipDiv.innerHTML = "";
 
-    // Calcul des stats
-    const statsOK = allEquipements.filter(p => p.etat === "OK").length;
-    const statsNOK = allEquipements.filter(p => p.etat === "NOK").length;
-    const statsPassable = allEquipements.filter(p => p.etat === "Passable").length;
-
     document.getElementById("statsEquipements").textContent = allEquipements.length;
-    document.getElementById("statsOK").textContent = statsOK;
-    document.getElementById("statsNOK").textContent = statsNOK;
-    document.getElementById("statsPassable").textContent = statsPassable;
+    document.getElementById("statsOK").textContent = allEquipements.filter(p => p.etat === "OK").length;
+    document.getElementById("statsNOK").textContent = allEquipements.filter(p => p.etat === "NOK").length;
+    document.getElementById("statsPassable").textContent = allEquipements.filter(p => p.etat === "Passable").length;
 
-    if (allEquipements.length === 0) {
-      EquipDiv.innerHTML = "<p>Aucun équipement associé à ce client.</p>";
-      return;
-    }
+    if (allEquipements.length === 0) { EquipDiv.innerHTML = "<p>Aucun équipement associé à ce client.</p>"; return; }
 
-    // Grouper par site
     const equipementsBySite = {};
     allEquipements.forEach(eq => {
-      if (!equipementsBySite[eq.id_site]) {
-        equipementsBySite[eq.id_site] = [];
-      }
+      if (!equipementsBySite[eq.id_site]) equipementsBySite[eq.id_site] = [];
       equipementsBySite[eq.id_site].push(eq);
     });
 
-    // Afficher par site
     for (const site of allSites) {
-      if (!equipementsBySite[site.id_site] || equipementsBySite[site.id_site].length === 0) continue;
-
+      if (!equipementsBySite[site.id_site]?.length) continue;
       const siteSection = document.createElement("div");
       siteSection.style.marginBottom = "1.5rem";
-
       const siteTitle = document.createElement("h4");
       siteTitle.textContent = `🏢 ${site.nom}`;
-      siteTitle.style.color = "var(--primary-blue)";
-      siteTitle.style.marginBottom = "0.75rem";
+      siteTitle.style.cssText = "color:var(--primary-blue); margin-bottom:0.75rem;";
       siteSection.appendChild(siteTitle);
 
       const ul = document.createElement("ul");
-      ul.style.listStyle = "none";
-      ul.style.padding = "0";
+      ul.style.cssText = "list-style:none; padding:0;";
 
-      allEquipements.forEach(p => {
+      equipementsBySite[site.id_site].forEach(p => {
         const li = document.createElement("li");
         li.setAttribute("id", "produitsList");
-
         const etat = (p.etat || "").toLowerCase();
         if (etat === "ok") li.classList.add("equipement-ok");
         else if (etat === "nok") li.classList.add("equipement-nok");
@@ -191,47 +213,39 @@ async function loadAllEquipements() {
         else if (etat === "passable") etatColor = "#FFC107";
 
         li.innerHTML = `
-  <div style="flex: 1;"> 
-    <strong>${p.nom}</strong>
-    ${p.departement ? " - " + p.departement : ""}
-    ${p.etat ? ` - <span style="color: ${etatColor}; font-weight: 600;">${p.etat}</span>` : ""}
-    <br/>
-    <small style="color: #6C757D;">${p.description || ""}</small>
-  </div>
-
-  <div>
-    <button onclick="deleteProduit(${p.id_produit})">Supprimer</button>
-    <button onclick="editProduit(${p.id_produit})">Modifier</button>
-    <button onclick="printQR(${p.id_produit})">QR</button>
-    <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background: var(--secondary-blue);">
-      Détails
-    </button>
-  </div>
-`;
-
+          <div style="flex:1;">
+            <strong>${p.nom}</strong>
+            ${p.departement ? " - " + p.departement : ""}
+            ${p.etat ? ` - <span style="color:${etatColor};font-weight:600;">${p.etat}</span>` : ""}
+            <br/><small style="color:#6C757D;">${p.description || ""}</small>
+          </div>
+          <div>
+            <button onclick="deleteProduit(${p.id_produit})">Supprimer</button>
+            <button onclick="editProduit(${p.id_produit})">Modifier</button>
+            <button onclick="printQR(${p.id_produit})">QR</button>
+            <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background:var(--secondary-blue);">Détails</button>
+          </div>
+        `;
         ul.appendChild(li);
       });
 
       siteSection.appendChild(ul);
       EquipDiv.appendChild(siteSection);
     }
-
   } catch (err) {
     document.getElementById("EquipementsList").textContent = err.message;
   }
 }
 
-// ========== MAINTENANCES ==========
+// ─── MAINTENANCES ─────────────────────────────────────────────────────────────
+
 async function loadAllMaintenances() {
   try {
     allMaintenances = [];
-
-    // Pour chaque site, récupérer les maintenances
     for (const site of allSites) {
       const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${site.id_site}`);
       if (res.ok) {
         const maintenances = await res.json();
-        // Ajouter le nom du site à chaque maintenance
         maintenances.forEach(m => m.site_nom = site.nom);
         allMaintenances = allMaintenances.concat(maintenances);
       }
@@ -240,261 +254,218 @@ async function loadAllMaintenances() {
     const MaintDiv = document.getElementById("MaintenancesList");
     MaintDiv.innerHTML = "";
 
-    // Calcul des stats
-    const statsPlanifiees = allMaintenances.filter(m => {
-      const etat = (m.etat || "").toLowerCase();
-      return etat.includes("planif");
-    }).length;
-
-    const statsEnCours = allMaintenances.filter(m => {
-      const etat = (m.etat || "").toLowerCase();
-      return etat.includes("cours");
-    }).length;
-
-    const statsTerminees = allMaintenances.filter(m => {
-      const etat = (m.etat || "").toLowerCase();
-      return etat.includes("termin");
-    }).length;
-
     document.getElementById("statsMaintenances").textContent = allMaintenances.length;
-    document.getElementById("statsPlanifiees").textContent = statsPlanifiees;
-    document.getElementById("statsEnCours").textContent = statsEnCours;
-    document.getElementById("statsTerminees").textContent = statsTerminees;
+    document.getElementById("statsPlanifiees").textContent = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("planif")).length;
+    document.getElementById("statsEnCours").textContent = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("cours")).length;
+    document.getElementById("statsTerminees").textContent = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("termin")).length;
 
-    if (allMaintenances.length === 0) {
-      MaintDiv.innerHTML = "<p>Aucune maintenance associée à ce client.</p>";
-      return;
-    }
+    if (allMaintenances.length === 0) { MaintDiv.innerHTML = "<p>Aucune maintenance associée à ce client.</p>"; return; }
 
-    // Trier par date décroissante
-    allMaintenances.sort((a, b) => {
-      // Convertir les dates JJ/MM/AAAA en objets Date pour comparaison
-      const dateA = parseDate(a.date_maintenance);
-      const dateB = parseDate(b.date_maintenance);
-      return dateB - dateA;
-    });
+    allMaintenances.sort((a, b) => new Date(b.date_maintenance) - new Date(a.date_maintenance));
 
-    // Grouper par site
     const maintenancesBySite = {};
     allMaintenances.forEach(m => {
-      if (!maintenancesBySite[m.id_site]) {
-        maintenancesBySite[m.id_site] = [];
-      }
+      if (!maintenancesBySite[m.id_site]) maintenancesBySite[m.id_site] = [];
       maintenancesBySite[m.id_site].push(m);
     });
 
-    // Afficher par site
     for (const site of allSites) {
-      if (!maintenancesBySite[site.id_site] || maintenancesBySite[site.id_site].length === 0) continue;
-
+      if (!maintenancesBySite[site.id_site]?.length) continue;
       const siteSection = document.createElement("div");
       siteSection.style.marginBottom = "1.5rem";
-
       const siteTitle = document.createElement("h4");
       siteTitle.textContent = `🏢 ${site.nom}`;
-      siteTitle.style.color = "var(--primary-blue)";
-      siteTitle.style.marginBottom = "0.75rem";
+      siteTitle.style.cssText = "color:var(--primary-blue); margin-bottom:0.75rem;";
       siteSection.appendChild(siteTitle);
 
       maintenancesBySite[site.id_site].forEach(m => {
         const details = document.createElement("details");
         details.classList.add("maintenance");
-
         const etat = (m.etat || "").toLowerCase();
-
-        // Classes CSS pour l'état
-        if (etat.includes("termin")) {
-          details.classList.add("maintenance-terminee");
-        } else if (etat.includes("cours")) {
-          details.classList.add("maintenance-en-cours");
-        } else if (etat.includes("planif")) {
-          details.classList.add("maintenance-planifiee");
-        } else {
-          details.classList.add("maintenance-autre");
-        }
+        if (etat.includes("termin")) details.classList.add("maintenance-terminee");
+        else if (etat.includes("cours")) details.classList.add("maintenance-en-cours");
+        else if (etat.includes("planif")) details.classList.add("maintenance-planifiee");
+        else details.classList.add("maintenance-autre");
 
         const summary = document.createElement("summary");
-
-        // Icône selon l'état
         let icone = "🔧";
         if (etat.includes("termin")) icone = "✅";
         else if (etat.includes("cours")) icone = "⚙️";
         else if (etat.includes("planif")) icone = "📅";
-
-        const dateFormatted = parseDate(m.date_maintenance);
-
-        summary.innerHTML = `${icone} ${m.type || "Maintenance"} - ${dateFormatted}`;
+        summary.innerHTML = `${icone} ${m.types_intervention || m.type || "Maintenance"} - ${parseDate(m.date_maintenance)}`;
         details.appendChild(summary);
 
-        // Couleur de l'état
         let etatColor = "#6C757D";
         if (etat.includes("termin")) etatColor = "#28A745";
         else if (etat.includes("cours")) etatColor = "#FFC107";
         else if (etat.includes("planif")) etatColor = "#0066CC";
 
+        let operateursList = [];
+        if (m.operateurs) operateursList = m.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+        else operateursList = [m.operateur_1, m.operateur_2, m.operateur_3].filter(Boolean);
+
         const content = document.createElement("div");
-        content.innerHTML = content.innerHTML = `
-        <div><strong>N° RI :</strong> ${m.numero_ri || "N/A"}</div>
-        ${m.operateur_1 ? `<div><strong>Opérateur 1 :</strong> ${m.operateur_1}</div>` : ''}
-        ${m.operateur_2 ? `<div><strong>Opérateur 2 :</strong> ${m.operateur_2}</div>` : ''}
-        ${m.operateur_3 ? `<div><strong>Opérateur 3 :</strong> ${m.operateur_3}</div>` : ''}
-        <div><strong>Date :</strong> ${dateFormatted}</div>
-        <div><strong>Type :</strong> ${m.type}</div>
-        <div><strong>État :</strong> <span style="color: ${etatColor}; font-weight: 600;">${m.etat || "N/A"}</span></div>
-        <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
-        <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
-        ${m.garantie ? `<div><strong>Garantie: </strong> ✅</div>` : '<div><strong>Garantie: </strong> ❌</div>'}
-        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="deleteMaintenance(${m.id_maintenance})" style="background: #DC3545;">Supprimer</button>
-          <button onclick="editMaintenance(${m.id_maintenance})" style="background: #6C757D;">Modifier</button>
-          <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}" style="display: inline-block; padding: 0.625rem 1.25rem; background: #0066CC; color: white; border-radius: 8px; text-decoration: none;">Voir détails</a>
-          <div style="display:flex; overflow:hidden; border-radius:8px;">
-            <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
-              style="background:#198754; color:white; padding:0.6rem 1rem; text-decoration:none; border-right:1px solid rgba(255,255,255,0.3);">
-              👁 Aperçu RI
-            </a>
-
-            <a href="${API}/maintenances/${m.id_maintenance}/pdf"
-              style="background:#157347; color:white; padding:0.6rem 1rem; text-decoration:none;">
-              ⬇ PDF
-            </a>
+        content.innerHTML = `
+          <div><strong>N° RI :</strong> ${m.numero_ri || "N/A"}</div>
+          <div><strong>Date :</strong> ${parseDate(m.date_maintenance)}</div>
+          <div><strong>Type :</strong> ${m.types_intervention || m.type || "N/A"}</div>
+          <div><strong>État :</strong> <span style="color:${etatColor};font-weight:600;">${m.etat || "N/A"}</span></div>
+          <div><strong>Département :</strong> ${m.departement || "N/A"}</div>
+          ${operateursList.length ? `<div><strong>Personnes affectées :</strong> ${operateursList.join(' / ')}</div>` : ''}
+          <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
+          <div><strong>Garantie :</strong> ${m.garantie ? '✅ Oui' : '❌ Non'}</div>
+          <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button onclick="deleteMaintenance(${m.id_maintenance})" style="background:#DC3545;">Supprimer</button>
+            <button onclick="editMaintenance(${m.id_maintenance})" style="background:#6C757D;">Modifier</button>
+            <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}"
+              style="display:inline-block;padding:0.625rem 1.25rem;background:#0066CC;color:white;border-radius:8px;text-decoration:none;">Voir détails</a>
+            <div style="display:flex;overflow:hidden;border-radius:8px;">
+              <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
+                style="background:#198754;color:white;padding:0.6rem 1rem;text-decoration:none;border-right:1px solid rgba(255,255,255,0.3);">👁 Aperçu RI</a>
+              <a href="${API}/maintenances/${m.id_maintenance}/pdf"
+                style="background:#157347;color:white;padding:0.6rem 1rem;text-decoration:none;">⬇ PDF</a>
+            </div>
           </div>
-        </div>
-      `;
+        `;
         details.appendChild(content);
-
         siteSection.appendChild(details);
       });
 
       MaintDiv.appendChild(siteSection);
     }
-
   } catch (err) {
     document.getElementById("MaintenancesList").textContent = err.message;
   }
 }
 
-// Fonction utilitaire pour parser les dates au format JJ/MM/AAAA
-function parseDate(dateStr) {
-  if (!dateStr) return new Date(0);
+// ─── MODIFIER MAINTENANCE ─────────────────────────────────────────────────────
 
-  const date = new Date(dateStr);
-
-  if (isNaN(date)) return new Date(0);
-
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-
-  return `${day}/${month}/${year}`;
-}
-
-// ========== MODIFICATION MAINTENANCE ==========
-
-let editingMaintenanceId = null;
-
-// ========== GESTION DES ÉQUIPEMENTS ==========
-
-// Fonction de suppression d'un équipement
-async function deleteProduit(id_produit) {
-  const confirmDelete = confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)");
-  if (!confirmDelete) return;
-
-  try {
-    const res = await fetch(`${API}/produits/${id_produit}`, {
-      method: "DELETE"
-    });
-
-    if (!res.ok) {
-      alert("Erreur lors de la suppression de l'équipement");
-      return;
-    }
-
-    // Recharger les équipements
-    loadAllEquipements();
-    alert("Équipement supprimé avec succès !");
-  } catch (err) {
-    console.error(err);
-    alert("Erreur serveur lors de la suppression");
-  }
-}
-
-// Fonction pour modifier un équipement (redirection vers la page de détails)
-function editProduit(id_produit) {
-  window.location.href = `../ProduitDetails/produitDetails.html?id_produit=${id_produit}`;
-}
-
-// Fonction pour afficher le formulaire de modification
 async function editMaintenance(id_maintenance) {
   try {
     const res = await fetch(`${API}/maintenances/${id_maintenance}`);
-    if (!res.ok) {
-      alert("Erreur lors du chargement de la maintenance");
-      return;
-    }
-    
-    const maintenance = await res.json();
+    if (!res.ok) { alert("Erreur lors du chargement de la maintenance"); return; }
+    const m = await res.json();
     editingMaintenanceId = id_maintenance;
-    
-    // Pré-remplir le formulaire
-    document.getElementById("maintenanceNumeroRi").value = maintenance.numero_ri || "";
-    document.getElementById("maintenanceOperateur1").value = maintenance.operateur_1 || "";
-    document.getElementById("maintenanceOperateur2").value = maintenance.operateur_2 || "";
-    document.getElementById("maintenanceOperateur3").value = maintenance.operateur_3 || "";
-    document.getElementById("maintenanceDateMaintenance").value = maintenance.date_maintenance || "";
-    document.getElementById("maintenanceType").value = maintenance.type || "";
-    document.getElementById("maintenanceEtat").value = maintenance.etat || "";
-    document.getElementById("maintenanceDepartement").value = maintenance.departement || "";
-    document.getElementById("maintenanceCommentaire").value = maintenance.commentaire || "";
-    document.getElementById("maintenanceGarantie").checked = maintenance.garantie || false;
-    document.getElementById("maintenanceNumeroCommande").value = maintenance.numero_commande || "";
-    document.getElementById("maintenanceContact").value = maintenance.contact || "";
-    document.getElementById("maintenanceTypeProduit").value = maintenance.type_produit || "";
-    document.getElementById("maintenanceHeureArriveeMatin").value = maintenance.heure_arrivee_matin || "";
-    document.getElementById("maintenanceHeureDepartMatin").value = maintenance.heure_depart_matin || "";
-    document.getElementById("maintenanceHeureArriveeAprem").value = maintenance.heure_arrivee_aprem || "";
-    document.getElementById("maintenanceHeureDepartAprem").value = maintenance.heure_depart_aprem || "";
-    
-    // Afficher le formulaire
+
+    // Identification
+    document.getElementById("maintenanceChrono").value = m.numero_ri || '';
+    document.getElementById("maintenanceDateDemande").value = formatDateForInput(m.date_demande);
+    document.getElementById("maintenanceDesignation").value = m.designation_produit_site || '';
+    document.getElementById("maintenanceDateAccordClient").value = formatDateForInput(m.date_accord_client);
+    document.getElementById("maintenanceContact").value = m.contact || '';
+    document.getElementById("maintenanceCategorie").value = m.categorie || '';
+    document.getElementById("maintenanceDateMaintenance").value = formatDateForInput(m.date_maintenance);
+    document.getElementById("maintenanceTypeProduit").value = m.type_produit || '';
+    document.getElementById("maintenanceTypeIntervention").value = '';
+    document.getElementById("maintenanceDepartement").value = m.departement || '';
+    document.getElementById("maintenanceNumeroCommande").value = m.numero_commande || '';
+    document.getElementById("maintenanceEtat").value = m.etat || '';
+    document.getElementById("maintenanceCommentaire").value = m.commentaire || '';
+
+    // Opérateurs
+    let operateursList = [];
+    if (m.operateurs) operateursList = m.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    else operateursList = [m.operateur_1, m.operateur_2, m.operateur_3].filter(Boolean);
+    document.getElementById("maintenanceOperateurs").value = operateursList.join('\n');
+
+    // Horaires
+    resetHorairesForm();
+    let jours = [];
+    if (m.jours_intervention) {
+      try { jours = typeof m.jours_intervention === 'object' ? m.jours_intervention : JSON.parse(m.jours_intervention); }
+      catch { jours = []; }
+    }
+    if (jours.length > 0) {
+      jours.forEach(jour => {
+        const d = new Date(jour.date_jour);
+        const idx = JOURS_JS.indexOf(d.getDay());
+        if (idx === -1) return;
+        const j = JOURS[idx];
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
+        set(`cli_${j}_matin_arr`, jour.heure_arrivee_matin);
+        set(`cli_${j}_matin_dep`, jour.heure_depart_matin);
+        set(`cli_${j}_apm_arr`, jour.heure_arrivee_aprem);
+        set(`cli_${j}_apm_dep`, jour.heure_depart_aprem);
+      });
+    } else if (m.date_maintenance) {
+      const d = new Date(m.date_maintenance);
+      const idx = JOURS_JS.indexOf(d.getDay());
+      if (idx !== -1) {
+        const j = JOURS[idx];
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
+        set(`cli_${j}_matin_arr`, m.heure_arrivee_matin);
+        set(`cli_${j}_matin_dep`, m.heure_depart_matin);
+        set(`cli_${j}_apm_arr`, m.heure_arrivee_aprem);
+        set(`cli_${j}_apm_dep`, m.heure_depart_aprem);
+      }
+    }
+
+    // Nature des travaux
+    resetTravauxCheckboxes();
+    const typesStr = m.types_intervention || m.type || '';
+    const typeMap = {
+      'Installation': 'cli_chk_installation',
+      'Intervention Curative': 'cli_chk_curative',
+      'Intervention curative': 'cli_chk_curative',
+      'Révision': 'cli_chk_revision',
+      'Contrat de maintenance': 'cli_chk_contrat',
+      'Autres': 'cli_chk_autres_g',
+    };
+    typesStr.split(',').map(t => t.trim()).filter(Boolean).forEach(t => {
+      const id = typeMap[t];
+      if (id) {
+        const el = document.getElementById(id);
+        if (el) { el.checked = true; el.closest('.checkbox-item').classList.add('checked'); }
+      }
+    });
+
+    // Garantie
+    const garantieOui = m.garantie === 1 || m.garantie === true || m.garantie === 'Oui';
+    document.getElementById("cliGarantieOui").checked = garantieOui;
+    document.getElementById("cliGarantieNon").checked = !garantieOui;
+
     document.getElementById("addMaintenanceForm").style.display = "block";
-    
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
   }
 }
 
-// Fonction pour mettre à jour une maintenance
 async function updateMaintenanceSubmit(event) {
   event.preventDefault();
-  
-  if (!editingMaintenanceId) {
-    alert("Erreur : ID de maintenance manquant");
-    return;
-  }
+  if (!editingMaintenanceId) { alert("Erreur : ID de maintenance manquant"); return; }
+  if (!confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?")) return;
+
+  const dateIntervention = document.getElementById("maintenanceDateMaintenance").value;
+  const types = collectTypes();
+  const jours = collectJours(dateIntervention);
+  const operateursRaw = document.getElementById("maintenanceOperateurs").value;
+  const operateursList = operateursRaw.split('\n').map(s => s.trim()).filter(Boolean);
+  const garantie = document.querySelector('input[name="maintenanceGarantie"]:checked')?.value === 'Oui' ? 1 : 0;
 
   const data = {
-    numero_ri: document.getElementById("maintenanceNumeroRi").value || null,
-    operateur_1: document.getElementById("maintenanceOperateur1").value || null,
-    operateur_2: document.getElementById("maintenanceOperateur2").value || null,
-    operateur_3: document.getElementById("maintenanceOperateur3").value || null,
-    date_maintenance: document.getElementById("maintenanceDateMaintenance").value,
-    type: document.getElementById("maintenanceType").value,
-    etat: document.getElementById("maintenanceEtat").value || null,
+    numero_ri: document.getElementById("maintenanceChrono").value || null,
+    designation_produit_site: document.getElementById("maintenanceDesignation").value || null,
+    categorie: document.getElementById("maintenanceCategorie").value || null,
+    types,
+    type: types.join(',') || document.getElementById("maintenanceTypeIntervention").value || null,
+    types_intervention: types.join(',') || document.getElementById("maintenanceTypeIntervention").value || null,
     departement: document.getElementById("maintenanceDepartement").value || null,
-    commentaire: document.getElementById("maintenanceCommentaire").value || null,
-    garantie: document.getElementById("maintenanceGarantie").checked ? 1 : 0,
-    numero_commande: document.getElementById("maintenanceNumeroCommande").value || null,
+    date_demande: document.getElementById("maintenanceDateDemande").value || null,
+    date_accord_client: document.getElementById("maintenanceDateAccordClient").value || null,
+    date_maintenance: dateIntervention || null,
     contact: document.getElementById("maintenanceContact").value || null,
     type_produit: document.getElementById("maintenanceTypeProduit").value || null,
-    heure_arrivee_matin: document.getElementById("maintenanceHeureArriveeMatin").value || null,
-    heure_depart_matin: document.getElementById("maintenanceHeureDepartMatin").value || null,
-    heure_arrivee_aprem: document.getElementById("maintenanceHeureArriveeAprem").value || null,
-    heure_depart_aprem: document.getElementById("maintenanceHeureDepartAprem").value || null
+    numero_commande: document.getElementById("maintenanceNumeroCommande").value || null,
+    operateurs: operateursList,
+    operateur_1: operateursList[0] || null,
+    operateur_2: operateursList[1] || null,
+    operateur_3: operateursList[2] || null,
+    jours: jours.length > 0 ? jours : undefined,
+    etat: document.getElementById("maintenanceEtat").value || null,
+    commentaire: document.getElementById("maintenanceCommentaire").value || null,
+    garantie
   };
-
-  const confirmUpdate = confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?");
-  if (!confirmUpdate) return;
 
   try {
     const res = await fetch(`${API}/maintenances/${editingMaintenanceId}`, {
@@ -502,51 +473,51 @@ async function updateMaintenanceSubmit(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
-
-    if (!res.ok) {
-      alert("Erreur lors de la modification de la maintenance");
-      return;
-    }
-
+    if (!res.ok) { alert("Erreur lors de la modification de la maintenance"); return; }
     hideAddMaintenanceForm();
     loadAllMaintenances();
-    alert("Maintenance modifiée avec succès !");
+    alert("✓ Maintenance modifiée avec succès !");
   } catch (err) {
     console.error(err);
     alert("Erreur serveur");
   }
 }
 
-// Fonction pour cacher le formulaire
 function hideAddMaintenanceForm() {
   document.getElementById("addMaintenanceForm").style.display = "none";
   editingMaintenanceId = null;
   document.getElementById("maintenanceForm").reset();
+  resetHorairesForm();
+  resetTravauxCheckboxes();
 }
 
-// Fonction de suppression
-async function deleteMaintenance(id_maintenance) {
-  const confirmDelete = confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)");
-  if (!confirmDelete) return;
+// ─── SUPPRESSION ──────────────────────────────────────────────────────────────
 
+async function deleteProduit(id_produit) {
+  if (!confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`, {
-      method: "DELETE"
-    });
-
-    if (!res.ok) {
-      alert("Erreur lors de la suppression de la maintenance");
-      return;
-    }
-
-    loadAllMaintenances();
-    alert("Maintenance supprimée avec succès !");
-  } catch (err) {
-    console.error(err);
-    alert("Erreur serveur");
-  }
+    const res = await fetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
+    if (!res.ok) { alert("Erreur lors de la suppression de l'équipement"); return; }
+    loadAllEquipements();
+    alert("Équipement supprimé avec succès !");
+  } catch (err) { console.error(err); alert("Erreur serveur lors de la suppression"); }
 }
 
-// ========== INIT ==========
+function editProduit(id_produit) {
+  window.location.href = `../ProduitDetails/produitDetails.html?id_produit=${id_produit}`;
+}
+
+async function deleteMaintenance(id_maintenance) {
+  if (!confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)")) return;
+  try {
+    const res = await fetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
+    if (!res.ok) { alert("Erreur lors de la suppression de la maintenance"); return; }
+    loadAllMaintenances();
+    alert("✓ Maintenance supprimée avec succès !");
+  } catch (err) { console.error(err); alert("Erreur serveur"); }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
 loadClientDetails();
 loadSites();

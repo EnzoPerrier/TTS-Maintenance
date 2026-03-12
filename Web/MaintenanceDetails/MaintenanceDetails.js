@@ -8,24 +8,27 @@ let produitsAssocies = [];
 let maintenance = {};
 let currentProduitPhotos = null;
 
-// Jours ordonnés pour la grille horaires
-const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
-const JOURS_JS = [1,2,3,4,5,6,0]; // getDay() correspondant
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 
+// Câbler les boutons
+document.getElementById("btnApercuRI").addEventListener("click", () => {
+  window.open(`${API}/maintenances/${id_maintenance}/html`, "_blank");
+});
+document.getElementById("btnPdfRI").addEventListener("click", () => {
+  window.location.href = `${API}/maintenances/${id_maintenance}/pdf`;
+});
 document.getElementById("backBtn").addEventListener("click", () => window.history.back());
 
-// ─── UTILITAIRES ──────────────────────────────────────────────────────────────
+// Callback déclenché par maintenanceForm.js après un PUT réussi
+window.onMaintenanceUpdated = async () => {
+  await loadMaintenanceDetails();
+};
 
-function formatDateForInput(dateString) {
-  if (!dateString) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
-    const [d, m, y] = dateString.split('/');
-    return `${y}-${m}-${d}`;
-  }
-  const date = new Date(dateString);
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-}
+// Démarrage : injecter le formulaire (synchrone) puis charger les données
+loadMaintenanceForm("maintenance-form-container");
+loadMaintenanceDetails();
+
+// ─── UTILITAIRES ──────────────────────────────────────────────────────────────
 
 function formatDateDisplay(dateString) {
   if (!dateString) return "N/A";
@@ -36,7 +39,7 @@ function formatDateDisplay(dateString) {
 
 function formatTimeDisplay(t) {
   if (!t) return "";
-  return t.substring(0,5).replace(':', 'h');
+  return t.substring(0, 5).replace(':', 'h');
 }
 
 function parseOperateurs(str) {
@@ -57,11 +60,6 @@ function parseJours(json) {
   } catch { return []; }
 }
 
-// Visual feedback on checked checkboxes
-function toggleCheckedClass(checkbox) {
-  checkbox.closest('.checkbox-item').classList.toggle('checked', checkbox.checked);
-}
-
 // ─── AFFICHAGE DÉTAILS ────────────────────────────────────────────────────────
 
 async function loadMaintenanceDetails() {
@@ -69,12 +67,10 @@ async function loadMaintenanceDetails() {
     document.getElementById("MaintenanceDetails").textContent = "ID de maintenance manquant.";
     return;
   }
-
   try {
     const res = await fetch(`${API}/maintenances/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement de la maintenance");
     maintenance = await res.json();
-
     renderMaintenanceDetails();
     await loadProduits();
     await loadProduitsAssocies();
@@ -86,7 +82,7 @@ async function loadMaintenanceDetails() {
 function renderMaintenanceDetails() {
   const m = maintenance;
 
-  // Opérateurs : lire depuis operateurs, operateursList (parsé par le controller), ou les colonnes legacy
+  // Opérateurs
   let operateursList = [];
   if (m.operateursList && Array.isArray(m.operateursList) && m.operateursList.length > 0) {
     operateursList = m.operateursList;
@@ -97,11 +93,11 @@ function renderMaintenanceDetails() {
   }
   const operateursDisplay = operateursList.length ? operateursList.join(' / ') : 'N/A';
 
-  // Types / nature des travaux
+  // Types
   const types = parseTypes(m.types_intervention || m.type);
   const travauxDisplay = types.length ? types.join(', ') : 'N/A';
 
-  // Horaires : construire un mini tableau
+  // Horaires
   const jours = parseJours(m.jours_intervention);
   let horaireHtml = '';
 
@@ -112,7 +108,6 @@ function renderMaintenanceDetails() {
       const idx = JOURS_JS.indexOf(d.getDay());
       if (idx !== -1) joursMap[JOURS[idx]] = j;
     });
-
     horaireHtml = `<div style="overflow-x:auto; margin-top:0.5rem;">
       <table class="horaires-table" style="min-width:700px;">
         <thead><tr>
@@ -161,7 +156,6 @@ function renderMaintenanceDetails() {
   document.getElementById("MaintenanceDetails").innerHTML = `
     <div class="site-detail"><strong>N° RI / Chrono :</strong> ${m.numero_ri || 'N/A'}</div>
     <div class="site-detail"><strong>Désignation produit / site :</strong> ${m.designation_produit_site || 'N/A'}</div>
-    <div class="site-detail"><strong>Catégorie :</strong> ${m.categorie || 'N/A'}</div>
     <div class="site-detail"><strong>Type d'intervention :</strong> ${m.types_intervention || m.type || 'N/A'}</div>
     <div class="site-detail"><strong>Département :</strong> ${m.departement || 'N/A'}</div>
     <div class="site-detail"><strong>Date demande :</strong> ${formatDateDisplay(m.date_demande)}</div>
@@ -176,229 +170,11 @@ function renderMaintenanceDetails() {
     <div class="site-detail"><strong>Garantie :</strong> ${m.garantie === 1 || m.garantie === true ? '✅ Oui' : '❌ Non'}</div>
     <div class="site-detail"><strong>Nature des travaux :</strong> ${travauxDisplay}</div>
     ${m.commentaire ? `<div class="site-detail"><strong>Commentaire :</strong> ${m.commentaire}</div>` : ''}
-
     <div style="margin-top: 1.25rem;">
       <strong style="display:block; margin-bottom:0.5rem; color:var(--gray-700);">🕐 Horaires d'intervention :</strong>
       ${horaireHtml}
     </div>
   `;
-
-  // ─── Boutons RI / PDF ─────────────────────────────
-
-const btnApercu = document.getElementById("btnApercuRI");
-const btnPdf = document.getElementById("btnPdfRI");
-
-if (btnApercu && btnPdf && maintenance.id_maintenance) {
-
-  btnApercu.onclick = () => {
-    window.open(`${API}/maintenances/${maintenance.id_maintenance}/html`, "_blank");
-  };
-
-  btnPdf.onclick = () => {
-    window.open(`${API}/maintenances/${maintenance.id_maintenance}/pdf`, "_blank");
-  };
-}
-
-}
-
-// ─── MODIFIER LA MAINTENANCE ──────────────────────────────────────────────────
-
-function showEditMaintenanceForm() {
-  if (!maintenance || !maintenance.id_maintenance) { alert("Maintenance non chargée"); return; }
-
-  const m = maintenance;
-
-  // Identification
-  document.getElementById("editChrono").value = m.numero_ri || '';
-  document.getElementById("editDateDemande").value = formatDateForInput(m.date_demande);
-  document.getElementById("editClient").value = m.client_nom || m.site_nom || '';
-  document.getElementById("editDesignation").value = m.designation_produit_site || '';
-  document.getElementById("editDateAccordClient").value = formatDateForInput(m.date_accord_client);
-  document.getElementById("editContact").value = m.contact || '';
-  document.getElementById("editCategorie").value = m.categorie || '';
-  document.getElementById("editDateIntervention").value = formatDateForInput(m.date_maintenance);
-  document.getElementById("editTypeProduit").value = m.type_produit || '';
-  document.getElementById("editTypeIntervention").value = '';
-  document.getElementById("editDepartement").value = m.departement || '';
-  document.getElementById("editNumeroCommande").value = m.numero_commande || '';
-  document.getElementById("editEtat").value = m.etat || '';
-  document.getElementById("editCommentaire").value = m.commentaire || '';
-
-  // Opérateurs
-  const operateursList = parseOperateurs(m.operateurs || [m.operateur_1, m.operateur_2, m.operateur_3].filter(Boolean).join('\n'));
-  document.getElementById("editOperateurs").value = operateursList.join('\n');
-
-  // Horaires 7 jours
-  // Reset
-  JOURS.forEach(j => {
-    ['matin_arr','matin_dep','apm_arr','apm_dep'].forEach(slot => {
-      const el = document.getElementById(`h_${j}_${slot}`);
-      if (el) el.value = '';
-    });
-  });
-
-  const jours = parseJours(m.jours_intervention);
-  if (jours.length > 0) {
-    jours.forEach(jour => {
-      const d = new Date(jour.date_jour);
-      const idx = JOURS_JS.indexOf(d.getDay());
-      if (idx === -1) return;
-      const j = JOURS[idx];
-      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
-      set(`h_${j}_matin_arr`, jour.heure_arrivee_matin);
-      set(`h_${j}_matin_dep`, jour.heure_depart_matin);
-      set(`h_${j}_apm_arr`, jour.heure_arrivee_aprem);
-      set(`h_${j}_apm_dep`, jour.heure_depart_aprem);
-    });
-  } else if (m.date_maintenance) {
-    const d = new Date(m.date_maintenance);
-    const idx = JOURS_JS.indexOf(d.getDay());
-    if (idx !== -1) {
-      const j = JOURS[idx];
-      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
-      set(`h_${j}_matin_arr`, m.heure_arrivee_matin);
-      set(`h_${j}_matin_dep`, m.heure_depart_matin);
-      set(`h_${j}_apm_arr`, m.heure_arrivee_aprem);
-      set(`h_${j}_apm_dep`, m.heure_depart_aprem);
-    }
-  }
-
-  // Nature des travaux — reset toutes les cases
-  const chkIds = ['installation','curative','revision','autres_g','contrat','autres_d'];
-  chkIds.forEach(id => {
-    const el = document.getElementById(`chk_${id}`);
-    if (el) { el.checked = false; el.closest('.checkbox-item').classList.remove('checked'); }
-  });
-
-  const types = parseTypes(m.types_intervention || m.type);
-  const typeMap = {
-    'Installation': 'installation',
-    'Intervention Curative': 'curative',
-    'Intervention curative': 'curative',
-    'Révision': 'revision',
-    'Contrat de maintenance': 'contrat',
-    'Location': 'location',
-    'Accident': 'accident',
-    'Vandalisme': 'vandalisme',
-    'Orage': 'orage',
-    'Autres': 'autres_g',
-  };
-  types.forEach(t => {
-    const id = typeMap[t];
-    if (id) {
-      const el = document.getElementById(`chk_${id}`);
-      if (el) { el.checked = true; el.closest('.checkbox-item').classList.add('checked'); }
-    }
-  });
-
-  // Garantie
-  const garantieOui = m.garantie === 1 || m.garantie === true || m.garantie === 'Oui';
-  document.getElementById("garantieOui").checked = garantieOui;
-  document.getElementById("garantieNon").checked = !garantieOui;
-
-  document.getElementById("editMaintenanceForm").style.display = "block";
-}
-
-function hideEditMaintenanceForm() {
-  document.getElementById("editMaintenanceForm").style.display = "none";
-}
-
-async function updateMaintenance(event) {
-  event.preventDefault();
-  if (!confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?")) return;
-
-  // Collecte des types cochés
-  const chkMap = {
-    chk_installation: 'Installation',
-    chk_curative: 'Intervention Curative',
-    chk_revision: 'Révision',
-    chk_autres_g: 'Autres',
-    chk_contrat: 'Contrat de maintenance',
-    chk_autres_d: 'Autres',
-  };
-  const types = Object.entries(chkMap)
-    .filter(([id]) => document.getElementById(id)?.checked)
-    .map(([, val]) => val);
-  // Dédoublonner
-  const typesUniq = [...new Set(types)];
-
-  // Collecte des jours
-  const jours = [];
-  const dateIntervention = document.getElementById("editDateIntervention").value;
-
-  JOURS.forEach((j, idx) => {
-    const arr_m = document.getElementById(`h_${j}_matin_arr`)?.value;
-    const dep_m = document.getElementById(`h_${j}_matin_dep`)?.value;
-    const arr_a = document.getElementById(`h_${j}_apm_arr`)?.value;
-    const dep_a = document.getElementById(`h_${j}_apm_dep`)?.value;
-
-    if (arr_m || dep_m || arr_a || dep_a) {
-      // Calculer une date approximative pour ce jour de la semaine
-      // On prend la date d'intervention comme base et on trouve le bon jour
-      const baseDate = new Date(dateIntervention || Date.now());
-      const baseDow = baseDate.getDay(); // 0=dim
-      const targetDow = JOURS_JS[idx];
-      const diff = targetDow - baseDow;
-      const jourDate = new Date(baseDate);
-      jourDate.setDate(jourDate.getDate() + diff);
-
-      jours.push({
-        date_jour: jourDate.toISOString().split('T')[0],
-        heure_arrivee_matin: arr_m || null,
-        heure_depart_matin: dep_m || null,
-        heure_arrivee_aprem: arr_a || null,
-        heure_depart_aprem: dep_a || null
-      });
-    }
-  });
-
-  // Opérateurs
-  const operateursRaw = document.getElementById("editOperateurs").value;
-  const operateursList = operateursRaw.split('\n').map(s => s.trim()).filter(Boolean);
-
-  const garantie = document.querySelector('input[name="editGarantie"]:checked')?.value === 'Oui' ? 1 : 0;
-
-  const data = {
-    id_site: maintenance.id_site,
-    numero_ri: document.getElementById("editChrono").value || null,
-    designation_produit_site: document.getElementById("editDesignation").value || null,
-    categorie: document.getElementById("editCategorie").value || null,
-    types: typesUniq,
-    type: typesUniq.join(',') || null,
-    departement: document.getElementById("editDepartement").value || null,
-    date_demande: document.getElementById("editDateDemande").value || null,
-    date_accord_client: document.getElementById("editDateAccordClient").value || null,
-    date_maintenance: dateIntervention || null,
-    contact: document.getElementById("editContact").value || null,
-    type_produit: document.getElementById("editTypeProduit").value || null,
-    numero_commande: document.getElementById("editNumeroCommande").value || null,
-    operateurs: operateursList,
-    // Legacy
-    operateur_1: operateursList[0] || null,
-    operateur_2: operateursList[1] || null,
-    operateur_3: operateursList[2] || null,
-    jours: jours.length > 0 ? jours : undefined,
-    etat: document.getElementById("editEtat").value || null,
-    commentaire: document.getElementById("editCommentaire").value || null,
-    garantie
-  };
-
-  try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-
-    if (!res.ok) { alert("Erreur lors de la modification de la maintenance"); return; }
-
-    hideEditMaintenanceForm();
-    await loadMaintenanceDetails();
-    alert("✓ Maintenance modifiée avec succès !");
-  } catch (err) {
-    console.error(err);
-    alert("Erreur serveur");
-  }
 }
 
 // ─── PRODUITS ─────────────────────────────────────────────────────────────────
@@ -431,10 +207,10 @@ async function loadProduitsAssocies() {
 
       const details = document.createElement("details");
       const etat = (p.etat || "").toLowerCase();
-      if (etat === "ok") details.classList.add("equipement-ok");
-      else if (etat === "nok") details.classList.add("equipement-nok");
-      else if (etat === "passable") details.classList.add("equipement-passable");
-      else details.classList.add("equipement-autre");
+      if (etat === "ok")           details.classList.add("equipement-ok");
+      else if (etat === "nok")     details.classList.add("equipement-nok");
+      else if (etat === "passable")details.classList.add("equipement-passable");
+      else                         details.classList.add("equipement-autre");
 
       const summary = document.createElement("summary");
       summary.textContent = `${p.nom} — ${p.etat || "N/A"}`;
@@ -463,21 +239,29 @@ async function loadProduitsAssocies() {
         <div class="photos-grid">
           ${photos.map(photo => `
             <div class="photo-item">
-              <img src="${API}${photo.chemin_photo}" alt="Photo" onclick="openPhotoModal('${API}${photo.chemin_photo}')" />
+              <img src="${API}${photo.chemin_photo}" alt="Photo"
+                   onclick="openPhotoModal('${API}${photo.chemin_photo}')" />
               <div class="photo-actions">
-                <button onclick="deletePhoto(${photo.id_photo}, ${p.id_produit})" class="btn-remove-produit" title="Supprimer">🗑️</button>
+                <button onclick="deletePhoto(${photo.id_photo}, ${p.id_produit})"
+                        class="btn-remove-produit" title="Supprimer">🗑️</button>
               </div>
               ${photo.commentaire ? `<p class="photo-description">${photo.commentaire}</p>` : ''}
             </div>
           `).join('')}
         </div>
         ${photos.length < 5
-          ? `<button onclick="showAddPhotoForm(${p.id_produit})" class="primary" style="margin-top:1rem;">📷 Ajouter des photos (${photos.length}/5)</button>`
+          ? `<button onclick="showAddPhotoForm(${p.id_produit})" class="primary" style="margin-top:1rem;">
+               📷 Ajouter des photos (${photos.length}/5)
+             </button>`
           : '<p style="color:#FFC107; margin-top:1rem;">⚠️ Limite de 5 photos atteinte</p>'
         }
         <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button onclick="editProduitMaintenance(${p.id_produit})" class="btn-edit-produit">Modifier les informations</button>
-          <button onclick="removeProduit(${p.id_produit})" class="btn-remove-produit">Retirer de la maintenance</button>
+          <button onclick="editProduitMaintenance(${p.id_produit})" class="btn-edit-produit">
+            Modifier les informations
+          </button>
+          <button onclick="removeProduit(${p.id_produit})" class="btn-remove-produit">
+            Retirer de la maintenance
+          </button>
         </div>
       `;
       details.appendChild(content);
@@ -627,11 +411,11 @@ async function addProduitToMaintenance(event) {
       body: JSON.stringify({
         id_maintenance,
         id_produit,
-        etat: document.getElementById("produitEtat").value || null,
-        commentaire: document.getElementById("produitCommentaire").value || null,
-        etat_constate: document.getElementById("produitEtatConstate").value || null,
+        etat:              document.getElementById("produitEtat").value || null,
+        commentaire:       document.getElementById("produitCommentaire").value || null,
+        etat_constate:     document.getElementById("produitEtatConstate").value || null,
         travaux_effectues: document.getElementById("produitTravauxEffectues").value || null,
-        ri_interne: document.getElementById("produitRiInterne").value || null
+        ri_interne:        document.getElementById("produitRiInterne").value || null
       })
     });
     if (!resAssoc.ok) { const e = await resAssoc.json(); alert(e.error || "Erreur"); return; }
@@ -681,11 +465,11 @@ async function updateProduitMaintenance(event) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        etat: document.getElementById("editProduitEtat").value || null,
-        commentaire: document.getElementById("editProduitCommentaire").value || null,
-        etat_constate: document.getElementById("editProduitEtatConstate").value || null,
+        etat:              document.getElementById("editProduitEtat").value || null,
+        commentaire:       document.getElementById("editProduitCommentaire").value || null,
+        etat_constate:     document.getElementById("editProduitEtatConstate").value || null,
         travaux_effectues: document.getElementById("editProduitTravauxEffectues").value || null,
-        ri_interne: document.getElementById("editProduitRiInterne").value || null
+        ri_interne:        document.getElementById("editProduitRiInterne").value || null
       })
     });
     if (!res.ok) { alert("Erreur lors de la modification"); return; }
@@ -704,7 +488,7 @@ async function removeProduit(id_produit) {
   } catch (err) { console.error(err); alert("Erreur serveur"); }
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+// ─── PHOTO INPUT ──────────────────────────────────────────────────────────────
 
 function initPhotoInput() {
   const photoInput = document.getElementById("photoInput");
@@ -731,5 +515,3 @@ function initPhotoInput() {
     }
   });
 }
-
-loadMaintenanceDetails();

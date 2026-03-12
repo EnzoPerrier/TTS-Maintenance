@@ -42,7 +42,7 @@ function toggleCheckedClass(checkbox) {
 function resetHorairesForm() {
   JOURS.forEach(j => {
     ['matin_arr','matin_dep','apm_arr','apm_dep'].forEach(slot => {
-      const el = document.getElementById(`add_${j}_${slot}`);
+      const el = document.getElementById(`idx_${j}_${slot}`);
       if (el) el.value = '';
     });
   });
@@ -51,19 +51,19 @@ function resetHorairesForm() {
 function resetTravauxCheckboxes() {
   const ids = ['installation','curative','revision','autres_g','contrat','autres_d'];
   ids.forEach(id => {
-    const el = document.getElementById(`add_chk_${id}`);
+    const el = document.getElementById(`idx_chk_${id}`);
     if (el) { el.checked = false; el.closest('.checkbox-item').classList.remove('checked'); }
   });
 }
 
 function collectTypes() {
   const chkMap = {
-    add_chk_installation: 'Installation',
-    add_chk_curative: 'Intervention Curative',
-    add_chk_revision: 'Révision',
-    add_chk_autres_g: 'Autres',
-    add_chk_contrat: 'Contrat de maintenance',
-    add_chk_autres_d: 'Autres',
+    idx_chk_installation: 'Installation',
+    idx_chk_curative: 'Intervention Curative',
+    idx_chk_revision: 'Révision',
+    idx_chk_autres_g: 'Autres',
+    idx_chk_contrat: 'Contrat de maintenance',
+    idx_chk_autres_d: 'Autres',
   };
   const types = Object.entries(chkMap)
     .filter(([id]) => document.getElementById(id)?.checked)
@@ -74,10 +74,10 @@ function collectTypes() {
 function collectJours(dateIntervention) {
   const jours = [];
   JOURS.forEach((j, idx) => {
-    const arr_m = document.getElementById(`add_${j}_matin_arr`)?.value;
-    const dep_m = document.getElementById(`add_${j}_matin_dep`)?.value;
-    const arr_a = document.getElementById(`add_${j}_apm_arr`)?.value;
-    const dep_a = document.getElementById(`add_${j}_apm_dep`)?.value;
+    const arr_m = document.getElementById(`idx_${j}_matin_arr`)?.value;
+    const dep_m = document.getElementById(`idx_${j}_matin_dep`)?.value;
+    const arr_a = document.getElementById(`idx_${j}_apm_arr`)?.value;
+    const dep_a = document.getElementById(`idx_${j}_apm_dep`)?.value;
 
     if (arr_m || dep_m || arr_a || dep_a) {
       const baseDate = new Date(dateIntervention || Date.now());
@@ -218,7 +218,6 @@ async function loadMaintenances() {
       else if (etat.includes("cours")) etatColor = "#FFC107";
       else if (etat.includes("planif")) etatColor = "#0066CC";
 
-      // Opérateurs : lire depuis opérateurs ou colonnes legacy
       let operateursList = [];
       if (m.operateurs) {
         operateursList = m.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
@@ -269,7 +268,7 @@ function showAddMaintenanceForm() {
   document.getElementById("maintenanceForm").reset();
   resetHorairesForm();
   resetTravauxCheckboxes();
-  document.getElementById("addGarantieNon").checked = true;
+  document.getElementById("idxGarantieNon").checked = true;
   document.getElementById("maintenanceFormTitle").textContent = "📋 Ajouter une maintenance";
   document.getElementById("maintenanceSubmitLabel").textContent = "Ajouter";
   document.getElementById("addMaintenanceForm").style.display = "block";
@@ -286,7 +285,7 @@ function hideAddMaintenanceForm() {
 async function addMaintenance(event) {
   event.preventDefault();
 
-  const dateIntervention = document.getElementById("maintenanceDate").value;
+  const dateIntervention = document.getElementById("maintenanceDateMaintenance").value;
   const types = collectTypes();
   const jours = collectJours(dateIntervention);
 
@@ -316,7 +315,7 @@ async function addMaintenance(event) {
     operateur_3: operateursList[2] || null,
     jours: jours.length > 0 ? jours : undefined,
     etat: document.getElementById("maintenanceEtat").value || null,
-    commentaire: document.getElementById("commentaireMaintenance").value || null,
+    commentaire: document.getElementById("maintenanceCommentaire").value || null,
     garantie
   };
 
@@ -350,18 +349,17 @@ function editMaintenance(id_maintenance) {
   // Identification
   document.getElementById("maintenanceChrono").value = m.numero_ri || '';
   document.getElementById("maintenanceDateDemande").value = formatDateForInput(m.date_demande);
-  document.getElementById("maintenanceClient").value = m.client_nom || m.site_nom || '';
   document.getElementById("maintenanceDesignation").value = m.designation_produit_site || '';
   document.getElementById("maintenanceDateAccordClient").value = formatDateForInput(m.date_accord_client);
   document.getElementById("maintenanceContact").value = m.contact || '';
   document.getElementById("maintenanceCategorie").value = m.categorie || '';
-  document.getElementById("maintenanceDate").value = formatDateForInput(m.date_maintenance);
+  document.getElementById("maintenanceDateMaintenance").value = formatDateForInput(m.date_maintenance);
   document.getElementById("maintenanceTypeProduit").value = m.type_produit || '';
   document.getElementById("maintenanceTypeIntervention").value = '';
   document.getElementById("maintenanceDepartement").value = m.departement || '';
   document.getElementById("maintenanceNumeroCommande").value = m.numero_commande || '';
   document.getElementById("maintenanceEtat").value = m.etat || '';
-  document.getElementById("commentaireMaintenance").value = m.commentaire || '';
+  document.getElementById("maintenanceCommentaire").value = m.commentaire || '';
 
   // Opérateurs
   let operateursList = [];
@@ -383,10 +381,10 @@ function editMaintenance(id_maintenance) {
       if (idx === -1) return;
       const j = JOURS[idx];
       const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
-      set(`add_${j}_matin_arr`, jour.heure_arrivee_matin);
-      set(`add_${j}_matin_dep`, jour.heure_depart_matin);
-      set(`add_${j}_apm_arr`, jour.heure_arrivee_aprem);
-      set(`add_${j}_apm_dep`, jour.heure_depart_aprem);
+      set(`idx_${j}_matin_arr`, jour.heure_arrivee_matin);
+      set(`idx_${j}_matin_dep`, jour.heure_depart_matin);
+      set(`idx_${j}_apm_arr`, jour.heure_arrivee_aprem);
+      set(`idx_${j}_apm_dep`, jour.heure_depart_aprem);
     });
   } else if (m.date_maintenance) {
     const d = new Date(m.date_maintenance);
@@ -394,10 +392,10 @@ function editMaintenance(id_maintenance) {
     if (idx !== -1) {
       const j = JOURS[idx];
       const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
-      set(`add_${j}_matin_arr`, m.heure_arrivee_matin);
-      set(`add_${j}_matin_dep`, m.heure_depart_matin);
-      set(`add_${j}_apm_arr`, m.heure_arrivee_aprem);
-      set(`add_${j}_apm_dep`, m.heure_depart_aprem);
+      set(`idx_${j}_matin_arr`, m.heure_arrivee_matin);
+      set(`idx_${j}_matin_dep`, m.heure_depart_matin);
+      set(`idx_${j}_apm_arr`, m.heure_arrivee_aprem);
+      set(`idx_${j}_apm_dep`, m.heure_depart_aprem);
     }
   }
 
@@ -405,12 +403,12 @@ function editMaintenance(id_maintenance) {
   resetTravauxCheckboxes();
   const typesStr = m.types_intervention || m.type || '';
   const typeMap = {
-    'Installation': 'add_chk_installation',
-    'Intervention Curative': 'add_chk_curative',
-    'Intervention curative': 'add_chk_curative',
-    'Révision': 'add_chk_revision',
-    'Contrat de maintenance': 'add_chk_contrat',
-    'Autres': 'add_chk_autres_g',
+    'Installation': 'idx_chk_installation',
+    'Intervention Curative': 'idx_chk_curative',
+    'Intervention curative': 'idx_chk_curative',
+    'Révision': 'idx_chk_revision',
+    'Contrat de maintenance': 'idx_chk_contrat',
+    'Autres': 'idx_chk_autres_g',
   };
   typesStr.split(',').map(t => t.trim()).filter(Boolean).forEach(t => {
     const id = typeMap[t];
@@ -422,8 +420,8 @@ function editMaintenance(id_maintenance) {
 
   // Garantie
   const garantieOui = m.garantie === 1 || m.garantie === true || m.garantie === 'Oui';
-  document.getElementById("addGarantieOui").checked = garantieOui;
-  document.getElementById("addGarantieNon").checked = !garantieOui;
+  document.getElementById("idxGarantieOui").checked = garantieOui;
+  document.getElementById("idxGarantieNon").checked = !garantieOui;
 
   document.getElementById("maintenanceFormTitle").textContent = "📝 Modifier la maintenance";
   document.getElementById("maintenanceSubmitLabel").textContent = "Valider";

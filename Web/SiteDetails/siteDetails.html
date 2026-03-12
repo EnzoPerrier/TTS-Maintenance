@@ -89,7 +89,7 @@
       box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
     }
 
-    /* Reset checkbox inside checkbox-item — must NOT inherit form-group input styles */
+    /* Reset checkbox inside checkbox-item */
     .checkbox-item input[type="checkbox"] {
       all: revert;
       width: 18px !important;
@@ -205,11 +205,6 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    .checkbox-item.checked {
-      border-color: var(--primary-blue);
-      background: rgba(0,102,204,0.08);
     }
 
     .checkbox-item.checked {
@@ -383,7 +378,7 @@
   <!-- =============================================
        MODAL AJOUT / MODIFICATION MAINTENANCE
   ============================================== -->
-  <div id="addMaintenanceForm" class="modal">
+  <div id="addMaintenanceForm" class="modal" style="display:none">
     <form id="maintenanceForm" onsubmit="addMaintenance(event)" class="maintenance-form-modern">
       <h3 id="maintenanceFormTitle">📋 Ajouter une maintenance</h3>
 
@@ -394,7 +389,7 @@
           <h4>Identification</h4>
         </div>
 
-        <div class="form-row form-row-3">
+        <div class="form-row">
           <div class="form-group">
             <label for="maintenanceChrono">Chrono d'interv. <span class="required-star">*</span></label>
             <input type="text" id="maintenanceChrono" placeholder="Ex: RI251210" required />
@@ -402,10 +397,6 @@
           <div class="form-group">
             <label for="maintenanceDateDemande">Date demande</label>
             <input type="date" id="maintenanceDateDemande" />
-          </div>
-          <div class="form-group">
-            <label for="maintenanceClient">Client <span class="required-star">*</span></label>
-            <input type="text" id="maintenanceClient" placeholder="Nom du client" required />
           </div>
         </div>
 
@@ -437,8 +428,8 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="maintenanceDate">Date intervention</label>
-            <input type="date" id="maintenanceDate" />
+            <label for="maintenanceDateMaintenance">Date intervention</label>
+            <input type="date" id="maintenanceDateMaintenance" />
           </div>
           <div class="form-group">
             <label for="maintenanceTypeProduit">Type panneau / produit</label>
@@ -460,7 +451,7 @@
           </div>
           <div class="form-group">
             <label for="maintenanceDepartement">Départements</label>
-            <input type="text" id="maintenanceDepartement" placeholder="Ex: 06, 13..." />
+            <input type="text" id="maintenanceDepartement" placeholder="SDRT, SSP, STEP..." />
           </div>
           <div class="form-group">
             <label for="maintenanceNumeroCommande">N° D'affaire / CDE</label>
@@ -479,8 +470,8 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="commentaireMaintenance">Commentaire</label>
-            <textarea id="commentaireMaintenance" placeholder="Commentaire interne..." rows="2"></textarea>
+            <label for="maintenanceCommentaire">Commentaire</label>
+            <textarea id="maintenanceCommentaire" placeholder="Commentaire interne..." rows="2"></textarea>
           </div>
         </div>
       </div>
@@ -495,7 +486,7 @@
           <label for="maintenanceOperateurs">Initiales des opérateurs</label>
           <textarea id="maintenanceOperateurs" class="operators-tags-input"
             placeholder="Saisir les initiales, appuyer sur Entrée entre chaque personne&#10;Ex: VM&#10;JD&#10;ML_H (suffixe _H = hotline)"></textarea>
-          <span class="operators-hint">💡 Séparer chaque personne par la touche "Entrée". Ajouter _H à la fin pour indiquer une hotline (ex: VM_H)</span>
+          <span class="operators-hint">💡 Séparer chaque personne par la touche "Entrée". Ajouter _H pour indiquer une hotline (ex: VM_H)</span>
         </div>
       </div>
 
@@ -523,44 +514,44 @@
               <tr><td class="period-sub" colspan="8">☀️ Matin</td></tr>
               <tr>
                 <td class="period-sub">Arrivée</td>
-                <td><input type="time" id="add_lundi_matin_arr" /></td>
-                <td><input type="time" id="add_mardi_matin_arr" /></td>
-                <td><input type="time" id="add_mercredi_matin_arr" /></td>
-                <td><input type="time" id="add_jeudi_matin_arr" /></td>
-                <td><input type="time" id="add_vendredi_matin_arr" /></td>
-                <td><input type="time" id="add_samedi_matin_arr" /></td>
-                <td><input type="time" id="add_dimanche_matin_arr" /></td>
+                <td><input type="time" id="idx_lundi_matin_arr" /></td>
+                <td><input type="time" id="idx_mardi_matin_arr" /></td>
+                <td><input type="time" id="idx_mercredi_matin_arr" /></td>
+                <td><input type="time" id="idx_jeudi_matin_arr" /></td>
+                <td><input type="time" id="idx_vendredi_matin_arr" /></td>
+                <td><input type="time" id="idx_samedi_matin_arr" /></td>
+                <td><input type="time" id="idx_dimanche_matin_arr" /></td>
               </tr>
               <tr>
                 <td class="period-sub">Départ</td>
-                <td><input type="time" id="add_lundi_matin_dep" /></td>
-                <td><input type="time" id="add_mardi_matin_dep" /></td>
-                <td><input type="time" id="add_mercredi_matin_dep" /></td>
-                <td><input type="time" id="add_jeudi_matin_dep" /></td>
-                <td><input type="time" id="add_vendredi_matin_dep" /></td>
-                <td><input type="time" id="add_samedi_matin_dep" /></td>
-                <td><input type="time" id="add_dimanche_matin_dep" /></td>
+                <td><input type="time" id="idx_lundi_matin_dep" /></td>
+                <td><input type="time" id="idx_mardi_matin_dep" /></td>
+                <td><input type="time" id="idx_mercredi_matin_dep" /></td>
+                <td><input type="time" id="idx_jeudi_matin_dep" /></td>
+                <td><input type="time" id="idx_vendredi_matin_dep" /></td>
+                <td><input type="time" id="idx_samedi_matin_dep" /></td>
+                <td><input type="time" id="idx_dimanche_matin_dep" /></td>
               </tr>
               <tr><td class="period-sub" colspan="8">🌤️ Après-midi</td></tr>
               <tr>
                 <td class="period-sub">Arrivée</td>
-                <td><input type="time" id="add_lundi_apm_arr" /></td>
-                <td><input type="time" id="add_mardi_apm_arr" /></td>
-                <td><input type="time" id="add_mercredi_apm_arr" /></td>
-                <td><input type="time" id="add_jeudi_apm_arr" /></td>
-                <td><input type="time" id="add_vendredi_apm_arr" /></td>
-                <td><input type="time" id="add_samedi_apm_arr" /></td>
-                <td><input type="time" id="add_dimanche_apm_arr" /></td>
+                <td><input type="time" id="idx_lundi_apm_arr" /></td>
+                <td><input type="time" id="idx_mardi_apm_arr" /></td>
+                <td><input type="time" id="idx_mercredi_apm_arr" /></td>
+                <td><input type="time" id="idx_jeudi_apm_arr" /></td>
+                <td><input type="time" id="idx_vendredi_apm_arr" /></td>
+                <td><input type="time" id="idx_samedi_apm_arr" /></td>
+                <td><input type="time" id="idx_dimanche_apm_arr" /></td>
               </tr>
               <tr>
                 <td class="period-sub">Départ</td>
-                <td><input type="time" id="add_lundi_apm_dep" /></td>
-                <td><input type="time" id="add_mardi_apm_dep" /></td>
-                <td><input type="time" id="add_mercredi_apm_dep" /></td>
-                <td><input type="time" id="add_jeudi_apm_dep" /></td>
-                <td><input type="time" id="add_vendredi_apm_dep" /></td>
-                <td><input type="time" id="add_samedi_apm_dep" /></td>
-                <td><input type="time" id="add_dimanche_apm_dep" /></td>
+                <td><input type="time" id="idx_lundi_apm_dep" /></td>
+                <td><input type="time" id="idx_mardi_apm_dep" /></td>
+                <td><input type="time" id="idx_mercredi_apm_dep" /></td>
+                <td><input type="time" id="idx_jeudi_apm_dep" /></td>
+                <td><input type="time" id="idx_vendredi_apm_dep" /></td>
+                <td><input type="time" id="idx_samedi_apm_dep" /></td>
+                <td><input type="time" id="idx_dimanche_apm_dep" /></td>
               </tr>
             </tbody>
           </table>
@@ -577,29 +568,29 @@
         <div class="travaux-grid">
           <div class="travaux-col">
             <label class="checkbox-item">
-              <input type="checkbox" id="add_chk_installation" value="Installation" onchange="toggleCheckedClass(this)" />
+              <input type="checkbox" id="idx_chk_installation" value="Installation" onchange="toggleCheckedClass(this)" />
               <span>Installation</span>
             </label>
             <label class="checkbox-item">
-              <input type="checkbox" id="add_chk_curative" value="Intervention Curative" onchange="toggleCheckedClass(this)" />
+              <input type="checkbox" id="idx_chk_curative" value="Intervention Curative" onchange="toggleCheckedClass(this)" />
               <span>Intervention Curative</span>
             </label>
             <label class="checkbox-item">
-              <input type="checkbox" id="add_chk_revision" value="Révision" onchange="toggleCheckedClass(this)" />
+              <input type="checkbox" id="idx_chk_revision" value="Révision" onchange="toggleCheckedClass(this)" />
               <span>Révision</span>
             </label>
             <label class="checkbox-item">
-              <input type="checkbox" id="add_chk_autres_g" value="Autres" onchange="toggleCheckedClass(this)" />
+              <input type="checkbox" id="idx_chk_autres_g" value="Autres" onchange="toggleCheckedClass(this)" />
               <span>Autres</span>
             </label>
           </div>
           <div class="travaux-col">
             <label class="checkbox-item">
-              <input type="checkbox" id="add_chk_contrat" value="Contrat de maintenance" onchange="toggleCheckedClass(this)" />
+              <input type="checkbox" id="idx_chk_contrat" value="Contrat de maintenance" onchange="toggleCheckedClass(this)" />
               <span>Contrat de maintenance</span>
             </label>
             <label class="checkbox-item">
-              <input type="checkbox" id="add_chk_autres_d" value="Autres" onchange="toggleCheckedClass(this)" />
+              <input type="checkbox" id="idx_chk_autres_d" value="Autres" onchange="toggleCheckedClass(this)" />
               <span>Autres</span>
             </label>
           </div>
@@ -609,11 +600,11 @@
           <label style="display:block; font-weight:600; color:var(--gray-700); margin-bottom:0.5rem;">Garantie</label>
           <div class="garantie-row">
             <label class="garantie-option">
-              <input type="radio" name="maintenanceGarantie" id="addGarantieOui" value="Oui" />
+              <input type="radio" name="maintenanceGarantie" id="idxGarantieOui" value="Oui" />
               ✅ Oui
             </label>
             <label class="garantie-option">
-              <input type="radio" name="maintenanceGarantie" id="addGarantieNon" value="Non" checked />
+              <input type="radio" name="maintenanceGarantie" id="idxGarantieNon" value="Non" checked />
               ❌ Non
             </label>
           </div>
@@ -623,7 +614,7 @@
       <!-- Boutons -->
       <div class="form-actions">
         <button class="primary" type="submit" id="maintenanceSubmitBtn">
-          <span>✓</span> <span id="maintenanceSubmitLabel">Ajouter</span>
+          <span>✓</span> <span id="maintenanceSubmitLabel">Valider</span>
         </button>
         <button type="button" onclick="hideAddMaintenanceForm()" class="btn-secondary">
           <span>✕</span> Annuler

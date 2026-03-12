@@ -341,10 +341,11 @@
     }
 
     /* ========================================
-       FORMULAIRE MAINTENANCE — MODAL
+       STYLES DU FORMULAIRE MAINTENANCE (PARTIAL)
+       Ces styles sont nécessaires ici car le partial
+       est injecté dans le DOM de cette page.
     ======================================== */
-    #editMaintenanceForm.modal {
-      display: none;
+    #maintenanceFormOverlay {
       position: fixed;
       top: 0;
       left: 0;
@@ -357,11 +358,7 @@
       justify-content: center;
     }
 
-    #editMaintenanceForm.modal[style*="display: block"] {
-      display: flex !important;
-    }
-
-    #editMaintenanceForm .maintenance-form-modern {
+    #maintenanceFormOverlay .maintenance-form-modern {
       background: var(--white);
       padding: 2.5rem;
       border-radius: var(--radius-lg);
@@ -374,25 +371,13 @@
     }
 
     @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     .maintenance-form-modern h3 {
@@ -421,9 +406,7 @@
       border-bottom: 2px solid var(--primary-blue);
     }
 
-    .section-icon {
-      font-size: 1.4rem;
-    }
+    .section-icon { font-size: 1.4rem; }
 
     .section-header h4 {
       margin: 0;
@@ -439,22 +422,11 @@
       margin-bottom: 1rem;
     }
 
-    .form-row-3 {
-      grid-template-columns: repeat(3, 1fr);
-    }
+    .form-row-3 { grid-template-columns: repeat(3, 1fr); }
+    .form-row-4 { grid-template-columns: repeat(4, 1fr); }
 
-    .form-row-4 {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group.full-width {
-      grid-column: 1 / -1;
-    }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group.full-width { grid-column: 1 / -1; }
 
     .form-group label {
       margin-bottom: 0.4rem;
@@ -463,10 +435,7 @@
       font-size: 0.9rem;
     }
 
-    .required-star {
-      color: #e53e3e;
-      margin-left: 2px;
-    }
+    .required-star { color: #e53e3e; margin-left: 2px; }
 
     .form-group input,
     .form-group select,
@@ -488,25 +457,10 @@
       box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
     }
 
-    /* Opérateurs : zone textarea avec tag pills */
-    .operators-tags-input {
-      min-height: 80px;
-      resize: vertical;
-      font-family: inherit;
-    }
+    .operators-tags-input { min-height: 80px; resize: vertical; font-family: inherit; }
+    .operators-hint { font-size: 0.8rem; color: var(--gray-500); margin-top: 0.3rem; font-style: italic; }
 
-    .operators-hint {
-      font-size: 0.8rem;
-      color: var(--gray-500);
-      margin-top: 0.3rem;
-      font-style: italic;
-    }
-
-    /* Horaires : tableau 7 jours */
-    .horaires-7jours {
-      overflow-x: auto;
-    }
-
+    .horaires-7jours { overflow-x: auto; }
     .horaires-7jours table {
       width: 100%;
       border-collapse: collapse;
@@ -522,21 +476,9 @@
       font-weight: 600;
     }
 
-    .horaires-7jours th:first-child {
-      background: var(--gray-600);
-      text-align: left;
-    }
-
-    .horaires-7jours td {
-      padding: 0.35rem 0.4rem;
-      border: 1px solid var(--gray-200);
-      text-align: center;
-    }
-
-    .horaires-7jours tr:nth-child(even) td {
-      background: var(--gray-50);
-    }
-
+    .horaires-7jours th:first-child { background: var(--gray-600); text-align: left; }
+    .horaires-7jours td { padding: 0.35rem 0.4rem; border: 1px solid var(--gray-200); text-align: center; }
+    .horaires-7jours tr:nth-child(even) td { background: var(--gray-50); }
     .horaires-7jours .period-sub {
       background: var(--gray-100);
       font-weight: 600;
@@ -555,18 +497,8 @@
       background: var(--white);
     }
 
-    /* Nature des travaux : grille checkboxes */
-    .travaux-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.6rem;
-    }
-
-    .travaux-col {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
+    .travaux-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .travaux-col { display: flex; flex-direction: column; gap: 0.5rem; }
 
     .checkbox-item {
       display: flex;
@@ -585,43 +517,14 @@
       user-select: none;
       box-sizing: border-box;
       width: 100%;
-      overflow: hidden;
     }
 
-    .checkbox-item:hover {
-      border-color: var(--primary-blue);
-      background: rgba(0, 102, 204, 0.04);
-    }
+    .checkbox-item:hover { border-color: var(--primary-blue); background: rgba(0, 102, 204, 0.04); }
+    .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; cursor: pointer; accent-color: var(--primary-blue); flex-shrink: 0; margin: 0; }
+    .checkbox-item span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .checkbox-item.checked { border-color: var(--primary-blue); background: rgba(0, 102, 204, 0.08); }
 
-    .checkbox-item input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      min-width: 18px;
-      cursor: pointer;
-      accent-color: var(--primary-blue);
-      flex-shrink: 0;
-      margin: 0;
-    }
-
-    .checkbox-item span {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .checkbox-item.checked {
-      border-color: var(--primary-blue);
-      background: rgba(0, 102, 204, 0.08);
-    }
-
-    /* Garantie radio */
-    .garantie-row {
-      display: flex;
-      gap: 1rem;
-      margin-top: 0.5rem;
-    }
-
+    .garantie-row { display: flex; gap: 1rem; margin-top: 0.5rem; }
     .garantie-option {
       display: flex;
       align-items: center;
@@ -634,20 +537,9 @@
       transition: var(--transition);
       font-weight: 500;
     }
+    .garantie-option:hover { border-color: var(--primary-blue); background: rgba(0, 102, 204, 0.04); }
+    .garantie-option input { accent-color: var(--primary-blue); width: 16px; height: 16px; cursor: pointer; }
 
-    .garantie-option:hover {
-      border-color: var(--primary-blue);
-      background: rgba(0, 102, 204, 0.04);
-    }
-
-    .garantie-option input {
-      accent-color: var(--primary-blue);
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-    }
-
-    /* Boutons actions */
     .form-actions {
       display: flex;
       gap: 1rem;
@@ -667,21 +559,10 @@
       gap: 0.5rem;
     }
 
-    .btn-secondary {
-      background: var(--gray-600) !important;
-    }
-
-    .btn-secondary:hover {
-      background: var(--gray-800) !important;
-    }
-
-    .btn-edit-produit {
-      background: var(--gray-600) !important;
-    }
-
-    .btn-remove-produit {
-      background: var(--danger) !important;
-    }
+    .btn-secondary { background: var(--gray-600) !important; }
+    .btn-secondary:hover { background: var(--gray-800) !important; }
+    .btn-edit-produit { background: var(--gray-600) !important; }
+    .btn-remove-produit { background: var(--danger) !important; }
 
     /* ========================================
        MODAL PHOTO EN GRAND
@@ -690,10 +571,8 @@
       display: none;
       position: fixed;
       z-index: 10000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
       background-color: rgba(0, 0, 0, 0.95);
       align-items: center;
       justify-content: center;
@@ -709,62 +588,34 @@
 
     .photo-modal-close {
       position: absolute;
-      top: 30px;
-      right: 50px;
+      top: 30px; right: 50px;
       color: var(--white);
       font-size: 50px;
       font-weight: bold;
       cursor: pointer;
       background: rgba(0, 0, 0, 0.5);
-      width: 60px;
-      height: 60px;
+      width: 60px; height: 60px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .photo-modal-close:hover {
-      background: rgba(220, 53, 69, 0.8);
-    }
-
-    .photo-help-text {
-      font-size: 0.9rem;
-      color: var(--gray-600);
-      margin-top: 0.5rem;
-      font-style: italic;
-    }
+    .photo-modal-close:hover { background: rgba(220, 53, 69, 0.8); }
+    .photo-help-text { font-size: 0.9rem; color: var(--gray-600); margin-top: 0.5rem; font-style: italic; }
 
     /* ========================================
        RESPONSIVE
     ======================================== */
     @media (max-width: 768px) {
-
-      .form-row-3,
-      .form-row-4 {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .travaux-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .details-grid {
-        grid-template-columns: 1fr 1fr;
-      }
+      .form-row-3, .form-row-4 { grid-template-columns: 1fr 1fr; }
+      .travaux-grid { grid-template-columns: 1fr; }
+      .details-grid { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 480px) {
-
-      .form-row,
-      .form-row-3,
-      .form-row-4 {
-        grid-template-columns: 1fr;
-      }
-
-      .details-grid {
-        grid-template-columns: 1fr;
-      }
+      .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+      .details-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -777,21 +628,22 @@
       <h1>📋 Détails de la maintenance</h1>
       <div id="MaintenanceDetails"></div>
 
-      <button class="primary" onclick="showEditMaintenanceForm()"
-        style="margin-top: 1rem; background: var(--gray-600);">
-        ✏️ Modifier la maintenance
-      </button>
-
-      <div id="riActions" style="display:flex;overflow:hidden;border-radius:8px;margin-top:1rem;">
-        <button id="btnApercuRI"
-          style="background:#198754;color:white;padding:0.6rem 1rem;border:none;border-right:1px solid rgba(255,255,255,0.3);cursor:pointer;">
-          👁 Aperçu RI
+      <span style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <button class="primary" onclick="showEditMaintenanceForm(maintenance)" style="background: var(--gray-600);">
+          ✏️ Modifier la maintenance
         </button>
 
-        <button id="btnPdfRI" style="background:#157347;color:white;padding:0.6rem 1rem;border:none;cursor:pointer;">
-          ⬇ PDF
-        </button>
-      </div>
+        <div id="riActions" style="display:flex; overflow:hidden; border-radius:8px;">
+          <button id="btnApercuRI"
+            style="background:#198754;color:white;padding:0.6rem 1rem;border:none;border-right:1px solid rgba(255,255,255,0.3);cursor:pointer;">
+            👁 Aperçu RI
+          </button>
+          <button id="btnPdfRI"
+            style="background:#157347;color:white;padding:0.6rem 1rem;border:none;cursor:pointer;">
+            ⬇ PDF
+          </button>
+        </div>
+      </span>
 
       <h2 style="margin-top: 2rem;">🔧 Produits associés</h2>
       <button class="primary" onclick="showAddProduitForm()" style="margin: 1rem 0;">
@@ -802,259 +654,11 @@
   </main>
 
   <!-- =============================================
-       MODAL MODIFICATION MAINTENANCE
+       FORMULAIRE MAINTENANCE — chargé depuis Partials/
+       Le HTML du formulaire est injecté ici dynamiquement
+       par loadMaintenanceForm() au démarrage de la page.
   ============================================== -->
-  <div id="editMaintenanceForm" class="modal" style="display: none;">
-    <form id="maintenanceEditForm" onsubmit="updateMaintenance(event)" class="maintenance-form-modern">
-      <h3>📝 Modifier la maintenance</h3>
-
-      <!-- ── IDENTIFICATION ── -->
-      <div class="form-section">
-        <div class="section-header">
-          <span class="section-icon">🪪</span>
-          <h4>Identification</h4>
-        </div>
-
-        <div class="form-row form-row-3">
-          <div class="form-group">
-            <label for="editChrono">Chrono d'interv. <span class="required-star">*</span></label>
-            <input type="text" id="editChrono" placeholder="Ex: RI251210" required />
-          </div>
-          <div class="form-group">
-            <label for="editDateDemande">Date demande</label>
-            <input type="date" id="editDateDemande" />
-          </div>
-          <div class="form-group">
-            <label for="editClient">Client <span class="required-star">*</span></label>
-            <input type="text" id="editClient" placeholder="Nom du client" required />
-          </div>
-        </div>
-
-        <div class="form-row form-row-3">
-          <div class="form-group">
-            <label for="editDesignation">Désign. produit / site</label>
-            <input type="text" id="editDesignation" placeholder="Désignation produit ou site" />
-          </div>
-          <div class="form-group">
-            <label for="editDateAccordClient">Date accord client</label>
-            <input type="date" id="editDateAccordClient" />
-          </div>
-          <div class="form-group">
-            <label for="editContact">Contact</label>
-            <input type="text" id="editContact" placeholder="Nom du contact" />
-          </div>
-        </div>
-
-        <div class="form-row form-row-3">
-          <div class="form-group">
-            <label for="editCategorie">Catégorie <span class="required-star">*</span></label>
-            <select id="editCategorie" required>
-              <option value="">-- Sélectionner --</option>
-              <option value="Signalisation">Signalisation</option>
-              <option value="Éclairage">Éclairage</option>
-              <option value="Sécurité">Sécurité</option>
-              <option value="Infrastructure">Infrastructure</option>
-              <option value="Autre">Autre</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="editDateIntervention">Date intervention</label>
-            <input type="date" id="editDateIntervention" />
-          </div>
-          <div class="form-group">
-            <label for="editTypeProduit">Type panneau / produit</label>
-            <input type="text" id="editTypeProduit" placeholder="Ex: TJT, PMV..." />
-          </div>
-        </div>
-
-        <div class="form-row form-row-3">
-          <div class="form-group">
-            <label for="editTypeIntervention">Type d'intervention</label>
-            <select id="editTypeIntervention">
-              <option value="">-- Sélectionner --</option>
-              <option value="Installation">Installation</option>
-              <option value="Intervention Curative">Intervention Curative</option>
-              <option value="Révision">Révision</option>
-              <option value="Contrat de maintenance">Contrat de maintenance</option>
-              <option value="Autres">Autres</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="editDepartement">Départements</label>
-            <input type="text" id="editDepartement" placeholder="Ex: 06, 13..." />
-          </div>
-          <div class="form-group">
-            <label for="editNumeroCommande">N° D'affaire / CDE</label>
-            <input type="text" id="editNumeroCommande" placeholder="N° Commande / Affaire" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="editEtat">État</label>
-            <select id="editEtat">
-              <option value="">-- État --</option>
-              <option value="Planifiée">📅 Planifiée</option>
-              <option value="En cours">⚙️ En cours</option>
-              <option value="Terminée">✅ Terminée</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="editCommentaire">Commentaire</label>
-            <textarea id="editCommentaire" placeholder="Commentaire interne..." rows="2"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── OPÉRATEURS ── -->
-      <div class="form-section">
-        <div class="section-header">
-          <span class="section-icon">👷</span>
-          <h4>Personnes affectées</h4>
-        </div>
-        <div class="form-group">
-          <label for="editOperateurs">Initiales des opérateurs</label>
-          <textarea id="editOperateurs" class="operators-tags-input"
-            placeholder="Saisir les initiales, appuyer sur Entrée entre chaque personne&#10;Ex: VM&#10;JD&#10;ML_H (suffixe _H = hotline)"></textarea>
-          <span class="operators-hint">💡 Séparer chaque personne par la touche "Entrée". Ajouter _H à la fin pour
-            indiquer une hotline (ex: VM_H)</span>
-        </div>
-      </div>
-
-      <!-- ── HORAIRES 7 JOURS ── -->
-      <div class="form-section">
-        <div class="section-header">
-          <span class="section-icon">🕐</span>
-          <h4>Horaires d'intervention — Matin ☀️ &amp; Après-midi 🌤️</h4>
-        </div>
-        <div class="horaires-7jours">
-          <table>
-            <thead>
-              <tr>
-                <th style="min-width:90px;"></th>
-                <th>LUNDI</th>
-                <th>MARDI</th>
-                <th>MERCREDI</th>
-                <th>JEUDI</th>
-                <th>VENDREDI</th>
-                <th>SAMEDI</th>
-                <th>DIMANCHE</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="period-sub" colspan="8">☀️ Matin</td>
-              </tr>
-              <tr>
-                <td class="period-sub">Arrivée</td>
-                <td><input type="time" id="h_lundi_matin_arr" /></td>
-                <td><input type="time" id="h_mardi_matin_arr" /></td>
-                <td><input type="time" id="h_mercredi_matin_arr" /></td>
-                <td><input type="time" id="h_jeudi_matin_arr" /></td>
-                <td><input type="time" id="h_vendredi_matin_arr" /></td>
-                <td><input type="time" id="h_samedi_matin_arr" /></td>
-                <td><input type="time" id="h_dimanche_matin_arr" /></td>
-              </tr>
-              <tr>
-                <td class="period-sub">Départ</td>
-                <td><input type="time" id="h_lundi_matin_dep" /></td>
-                <td><input type="time" id="h_mardi_matin_dep" /></td>
-                <td><input type="time" id="h_mercredi_matin_dep" /></td>
-                <td><input type="time" id="h_jeudi_matin_dep" /></td>
-                <td><input type="time" id="h_vendredi_matin_dep" /></td>
-                <td><input type="time" id="h_samedi_matin_dep" /></td>
-                <td><input type="time" id="h_dimanche_matin_dep" /></td>
-              </tr>
-              <tr>
-                <td class="period-sub" colspan="8">🌤️ Après-midi</td>
-              </tr>
-              <tr>
-                <td class="period-sub">Arrivée</td>
-                <td><input type="time" id="h_lundi_apm_arr" /></td>
-                <td><input type="time" id="h_mardi_apm_arr" /></td>
-                <td><input type="time" id="h_mercredi_apm_arr" /></td>
-                <td><input type="time" id="h_jeudi_apm_arr" /></td>
-                <td><input type="time" id="h_vendredi_apm_arr" /></td>
-                <td><input type="time" id="h_samedi_apm_arr" /></td>
-                <td><input type="time" id="h_dimanche_apm_arr" /></td>
-              </tr>
-              <tr>
-                <td class="period-sub">Départ</td>
-                <td><input type="time" id="h_lundi_apm_dep" /></td>
-                <td><input type="time" id="h_mardi_apm_dep" /></td>
-                <td><input type="time" id="h_mercredi_apm_dep" /></td>
-                <td><input type="time" id="h_jeudi_apm_dep" /></td>
-                <td><input type="time" id="h_vendredi_apm_dep" /></td>
-                <td><input type="time" id="h_samedi_apm_dep" /></td>
-                <td><input type="time" id="h_dimanche_apm_dep" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ── NATURE DES TRAVAUX ── -->
-      <div class="form-section">
-        <div class="section-header">
-          <span class="section-icon">⚠️</span>
-          <h4>Nature des travaux</h4>
-        </div>
-
-        <div class="travaux-grid">
-          <div class="travaux-col">
-            <label class="checkbox-item" id="lbl-installation">
-              <input type="checkbox" id="chk_installation" value="Installation" onchange="toggleCheckedClass(this)" />
-              <span>Installation</span>
-            </label>
-            <label class="checkbox-item" id="lbl-curative">
-              <input type="checkbox" id="chk_curative" value="Intervention Curative"
-                onchange="toggleCheckedClass(this)" />
-              <span>Intervention Curative</span>
-            </label>
-            <label class="checkbox-item" id="lbl-revision">
-              <input type="checkbox" id="chk_revision" value="Révision" onchange="toggleCheckedClass(this)" />
-              <span>Révision</span>
-            </label>
-            <label class="checkbox-item" id="lbl-autres_g">
-              <input type="checkbox" id="chk_autres_g" value="Autres" onchange="toggleCheckedClass(this)" />
-              <span>Autres</span>
-            </label>
-          </div>
-          <div class="travaux-col">
-            <label class="checkbox-item" id="lbl-contrat">
-              <input type="checkbox" id="chk_contrat" value="Contrat de maintenance"
-                onchange="toggleCheckedClass(this)" />
-              <span>Contrat de maintenance</span>
-            </label>
-            <label class="checkbox-item" id="lbl-autres_d">
-              <input type="checkbox" id="chk_autres_d" value="Autres" onchange="toggleCheckedClass(this)" />
-              <span>Autres</span>
-            </label>
-          </div>
-        </div>
-
-        <div style="margin-top: 1.25rem;">
-          <label style="display:block; font-weight:600; color:var(--gray-700); margin-bottom:0.5rem;">Garantie</label>
-          <div class="garantie-row">
-            <label class="garantie-option">
-              <input type="radio" name="editGarantie" id="garantieOui" value="Oui" />
-              ✅ Oui
-            </label>
-            <label class="garantie-option">
-              <input type="radio" name="editGarantie" id="garantieNon" value="Non" checked />
-              ❌ Non
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Boutons -->
-      <div class="form-actions">
-        <button class="primary" type="submit">✓ Valider</button>
-        <button type="button" onclick="hideEditMaintenanceForm()" class="btn-secondary">✕ Annuler</button>
-      </div>
-    </form>
-  </div>
+  <div id="maintenance-form-container"></div>
 
   <!-- Formulaire pour associer un produit -->
   <div id="addProduitForm" class="modal">
@@ -1092,8 +696,7 @@
         <p class="photo-help-text">💡 Vous pouvez sélectionner jusqu'à 5 photos simultanément</p>
         <input type="file" id="photoInput" accept="image/*" multiple />
         <div id="photoPreview"></div>
-        <textarea id="photoDescriptionAddProduit"
-          placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
+        <textarea id="photoDescriptionAddProduit" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
       </div>
 
       <button class="primary" type="submit">✓ Associer</button>
@@ -1124,8 +727,7 @@
       <textarea id="editProduitEtatConstate" placeholder="Décrivez l'état constaté lors de la maintenance"></textarea>
 
       <label for="editProduitTravauxEffectues" class="form-label">🔧 Travaux effectués</label>
-      <textarea id="editProduitTravauxEffectues"
-        placeholder="Détaillez les travaux effectués sur ce produit"></textarea>
+      <textarea id="editProduitTravauxEffectues" placeholder="Détaillez les travaux effectués sur ce produit"></textarea>
 
       <label for="editProduitRiInterne" class="form-label">📝 RI interne</label>
       <input type="text" id="editProduitRiInterne" placeholder="Numéro de RI interne" />
@@ -1141,6 +743,12 @@
     <img class="photo-modal-content" id="modalPhoto" alt="Photo agrandie">
   </div>
 
+  <!-- =============================================
+       SCRIPTS
+       1. Le partial JS (fonctions du formulaire)
+       2. Le JS spécifique à cette page
+  ============================================== -->
+  <script src="../Partials/MaintenanceForm.js"></script>
   <script src="MaintenanceDetails.js" defer></script>
 </body>
 

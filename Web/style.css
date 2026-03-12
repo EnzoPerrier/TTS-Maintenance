@@ -648,6 +648,17 @@ button#editBtn:hover {
   font-weight: 600;
 }
 
+#maintenanceForm input[type="checkbox"],
+#maintenanceForm input[type="radio"] {
+  width: auto;
+  padding: 0;
+  margin-bottom: 0;
+  margin-right: 0.5rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+
 /* ========================================
    DETAILS (ACCORDIONS)
 ======================================== */

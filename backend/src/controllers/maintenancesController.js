@@ -17,7 +17,6 @@ let templateHTML;
   }
 })();
 
-// Fonction utilitaire pour formater les dates au format JJ/MM/AAAA
 function formatDateForDisplay(dateString) {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -27,46 +26,54 @@ function formatDateForDisplay(dateString) {
   return `${day}/${month}/${year}`;
 }
 
-// Fonction pour formater les heures (HH:MM:SS -> HHhMM)
 function formatTimeForDisplay(timeString) {
   if (!timeString) return '';
   const [hours, minutes] = timeString.split(':');
   return `${hours}h${minutes}`;
 }
 
-// Parser les jours depuis JSON
-function parseJoursIntervention(joursJson) {
-  if (!joursJson) return [];
-  try {
-    if (typeof joursJson === 'object') return joursJson;
-    return JSON.parse(joursJson);
-  } catch (e) {
-    console.error('Erreur parsing jours:', e);
-    return [];
-  }
+function parseEtatConstate(texte) {
+  if (!texte) return [];
+  const lignes = texte.split('\n').filter(l => l.trim());
+  const grouped = [];
+  let currentZone = null;
+  let currentSousZone = null;
+  lignes.forEach(ligne => {
+    ligne = ligne.trim();
+    if (/^\d+\.\s+[A-Z\s:]+:$/.test(ligne)) {
+      currentZone = { titre: ligne, sousSection: [] };
+      grouped.push(currentZone);
+      currentSousZone = null;
+    } else if (/^\d+\.\d+\)/.test(ligne)) {
+      if (!currentZone) { currentZone = { titre: 'CONSTAT', sousSection: [] }; grouped.push(currentZone); }
+      currentSousZone = { titre: ligne, items: [] };
+      currentZone.sousSection.push(currentSousZone);
+    } else if (ligne.startsWith('-')) {
+      if (currentSousZone) {
+        currentSousZone.items.push(ligne);
+      } else if (currentZone) {
+        if (currentZone.sousSection.length === 0) { currentSousZone = { titre: '', items: [] }; currentZone.sousSection.push(currentSousZone); }
+        else { currentSousZone = currentZone.sousSection[currentZone.sousSection.length - 1]; }
+        currentSousZone.items.push(ligne);
+      }
+    }
+  });
+  return grouped;
 }
 
-// Parser les types depuis la chaîne séparée par virgules
-function parseTypesIntervention(typesStr) {
-  if (!typesStr) return [];
-  return typesStr.split(',').map(t => t.trim()).filter(Boolean);
-}
-
-// Parser la liste des opérateurs (séparés par des sauts de ligne ou virgules)
-function parseOperateurs(operateursStr) {
-  if (!operateursStr) return [];
-  // Supporte à la fois '\n' et ',' comme séparateurs
-  return operateursStr
-    .split(/[\n,]/)
-    .map(o => o.trim())
-    .filter(Boolean);
-}
-
-// Sérialiser la liste des opérateurs en chaîne
-function serializeOperateurs(operateurs) {
-  if (!operateurs) return null;
-  if (Array.isArray(operateurs)) return operateurs.filter(Boolean).join('\n');
-  return operateurs;
+function generateEtatConstateHTML(etatsGroupes) {
+  if (!etatsGroupes || etatsGroupes.length === 0) return '<p>Aucun état constaté</p>';
+  let html = '';
+  etatsGroupes.forEach(section => {
+    if (section.titre) html += `<h3>${section.titre}</h3>`;
+    if (section.sousSection && Array.isArray(section.sousSection)) {
+      section.sousSection.forEach(sous => {
+        if (sous.titre) html += `<h4>${sous.titre}</h4>`;
+        if (sous.items && Array.isArray(sous.items)) sous.items.forEach(item => { html += `<p>${item}</p>`; });
+      });
+    }
+  });
+  return html;
 }
 
 function combineEtatsConstates(produits) {
@@ -74,9 +81,7 @@ function combineEtatsConstates(produits) {
   produits.forEach((produit, index) => {
     if (produit.etat_constate) {
       allEtats.push(`<h4>PRODUIT ${index + 1}: ${produit.produit_nom}</h4>`);
-      produit.etat_constate.split('\n').filter(l => l.trim()).forEach(ligne => {
-        allEtats.push(`<p>${ligne.trim()}</p>`);
-      });
+      produit.etat_constate.split('\n').filter(l => l.trim()).forEach(ligne => { allEtats.push(`<p>${ligne.trim()}</p>`); });
     }
   });
   return allEtats.length > 0 ? allEtats.join('') : '<p>Aucun état constaté</p>';
@@ -87,154 +92,148 @@ function combineTravauxEffectues(produits) {
   produits.forEach((produit, index) => {
     if (produit.travaux_effectues) {
       allTravaux.push(`<h4>PRODUIT ${index + 1}: ${produit.produit_nom}</h4>`);
-      produit.travaux_effectues.split('\n').filter(l => l.trim()).forEach(ligne => {
-        allTravaux.push(`<p>${ligne.trim()}</p>`);
-      });
+      produit.travaux_effectues.split('\n').filter(l => l.trim()).forEach(ligne => { allTravaux.push(`<p>${ligne.trim()}</p>`); });
     }
   });
   return allTravaux.length > 0 ? allTravaux.join('') : '<p>Aucun travail effectué</p>';
 }
 
 function transformDataForTemplate(maintenance, site, produits) {
-  // Opérateurs : stockés en colonne JSON ou texte multi-lignes
-  const operateursList = parseOperateurs(maintenance.operateurs || [
-    maintenance.operateur_1,
-    maintenance.operateur_2,
-    maintenance.operateur_3
-  ].filter(Boolean).join('\n'));
-
-  const operateurs = operateursList.join(' & ');
+  let operateurs = '';
+  if (maintenance.operateurs) {
+    operateurs = maintenance.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean).join(' & ');
+  } else {
+    operateurs = [maintenance.operateur_1, maintenance.operateur_2, maintenance.operateur_3].filter(Boolean).join(' & ');
+  }
 
   const nomsProduitsStr = produits.map(p => p.produit_nom).join(', ');
   const etatConstateHTML = combineEtatsConstates(produits);
   const travauxHTML = combineTravauxEffectues(produits);
-
   const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
   const tempsParJour = {
-    lundi: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
-    mardi: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
+    lundi:    { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
+    mardi:    { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
     mercredi: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
-    jeudi: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
+    jeudi:    { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
     vendredi: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
-    samedi: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
+    samedi:   { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } },
     dimanche: { matin: { arrivee: '', depart: '' }, apm: { arrivee: '', depart: '' } }
   };
 
-  const jours = parseJoursIntervention(maintenance.jours_intervention);
+  let jours = [];
+  if (maintenance.jours_intervention) {
+    try {
+      jours = typeof maintenance.jours_intervention === 'object'
+        ? maintenance.jours_intervention
+        : JSON.parse(maintenance.jours_intervention);
+    } catch(e) { jours = []; }
+  }
 
   if (jours.length > 0) {
     jours.forEach(jour => {
-      const dateObj = new Date(jour.date_jour);
-      const jourNom = joursSemaine[dateObj.getDay()];
+      const d = new Date(jour.date_jour);
+      const jourNom = joursSemaine[d.getDay()];
       if (jourNom && tempsParJour[jourNom]) {
         tempsParJour[jourNom].matin.arrivee = formatTimeForDisplay(jour.heure_arrivee_matin);
-        tempsParJour[jourNom].matin.depart = formatTimeForDisplay(jour.heure_depart_matin);
-        tempsParJour[jourNom].apm.arrivee = formatTimeForDisplay(jour.heure_arrivee_aprem);
-        tempsParJour[jourNom].apm.depart = formatTimeForDisplay(jour.heure_depart_aprem);
+        tempsParJour[jourNom].matin.depart  = formatTimeForDisplay(jour.heure_depart_matin);
+        tempsParJour[jourNom].apm.arrivee   = formatTimeForDisplay(jour.heure_arrivee_aprem);
+        tempsParJour[jourNom].apm.depart    = formatTimeForDisplay(jour.heure_depart_aprem);
       }
     });
-  } else {
+  } else if (maintenance.heure_arrivee_matin || maintenance.heure_arrivee_aprem) {
     const dateObj = new Date(maintenance.date_maintenance);
     const jourActuel = joursSemaine[dateObj.getDay()];
     if (jourActuel && tempsParJour[jourActuel]) {
       tempsParJour[jourActuel].matin.arrivee = formatTimeForDisplay(maintenance.heure_arrivee_matin);
-      tempsParJour[jourActuel].matin.depart = formatTimeForDisplay(maintenance.heure_depart_matin);
-      tempsParJour[jourActuel].apm.arrivee = formatTimeForDisplay(maintenance.heure_arrivee_aprem);
-      tempsParJour[jourActuel].apm.depart = formatTimeForDisplay(maintenance.heure_depart_aprem);
+      tempsParJour[jourActuel].matin.depart  = formatTimeForDisplay(maintenance.heure_depart_matin);
+      tempsParJour[jourActuel].apm.arrivee   = formatTimeForDisplay(maintenance.heure_arrivee_aprem);
+      tempsParJour[jourActuel].apm.depart    = formatTimeForDisplay(maintenance.heure_depart_aprem);
     }
   }
 
-  const types = parseTypesIntervention(maintenance.types_intervention || maintenance.type);
+  const typesStr = maintenance.types_intervention || maintenance.type || '';
+  const typesList = typesStr.split(',').map(t => t.trim());
+  const hasType = (val) => typesList.some(t => t.toLowerCase() === val.toLowerCase());
 
   const typeChecked = {
-    installation: types.includes('Installation') ? 'checked' : '',
-    curatif: types.includes('Intervention Curative') || types.includes('Intervention curative') || types.includes('Curatif') ? 'checked' : '',
-    revision: types.includes('Révision') || types.includes('Preventif') ? 'checked' : '',
-    contrat: types.includes('Contrat de maintenance') ? 'checked' : '',
-    location: types.includes('Location') ? 'checked' : '',
-    accident: types.includes('Accident') ? 'checked' : '',
-    vandalisme: types.includes('Vandalisme') ? 'checked' : '',
-    orage: types.includes('Orage') ? 'checked' : '',
-    autre: types.includes('Autres') || types.includes('Autre') ? 'checked' : '',
-    garantie: (maintenance.garantie === 1 || maintenance.garantie === true || maintenance.garantie === 'Oui') ? 'checked' : ''
+    installation: hasType('Installation') ? 'checked' : '',
+    curatif:      (hasType('Intervention Curative') || hasType('Curatif')) ? 'checked' : '',
+    revision:     (hasType('Révision') || hasType('Revision') || hasType('Preventif')) ? 'checked' : '',
+    contrat:      hasType('Contrat de maintenance') ? 'checked' : '',
+    location:     hasType('Location') ? 'checked' : '',
+    accident:     hasType('Accident') ? 'checked' : '',
+    vandalisme:   hasType('Vandalisme') ? 'checked' : '',
+    orage:        hasType('Orage') ? 'checked' : '',
+    autre:        (hasType('Autres') || hasType('Autre')) ? 'checked' : '',
+    garantie:     maintenance.garantie ? 'checked' : ''
   };
 
   return {
-    chrono: maintenance.numero_ri || '',
-    date: formatDateForDisplay(maintenance.date_maintenance),
-    dateDemandeDisplay: formatDateForDisplay(maintenance.date_demande),
-    dateAccordClientDisplay: formatDateForDisplay(maintenance.date_accord_client),
-    categorie: maintenance.categorie || '',
-    typeIntervention: maintenance.types_intervention || maintenance.type || '',
-    technicien: operateurs || '',
-    operateursList,
-    client: maintenance.client_nom || maintenance.site_nom || '',
-    contact: maintenance.client_contact || maintenance.contact || '',
+    chrono:      maintenance.numero_ri || '',
+    date:        formatDateForDisplay(maintenance.date_maintenance),
+    dateDemande: formatDateForDisplay(maintenance.date_demande),
+    dateAccord:  formatDateForDisplay(maintenance.date_accord_client),
+    technicien:  operateurs || '',
+    client:      maintenance.client_nom || maintenance.site_nom || '',
+    contact:     maintenance.client_contact || maintenance.contact || '',
     typePanneau: maintenance.type_produit || nomsProduitsStr,
-    designationProduitSite: maintenance.designation_produit_site || '',
-    numAffaire: maintenance.numero_commande || '',
+    numAffaire:  maintenance.numero_commande || '',
     departement: maintenance.departement || '',
-    garantieValeur: maintenance.garantie === 1 || maintenance.garantie === true || maintenance.garantie === 'Oui' ? 'Oui' : 'Non',
+    designation: maintenance.designation_produit_site || '',
+    categorie:   maintenance.categorie || '',
+    etat:        maintenance.etat || '',
 
-    lundiMatin: tempsParJour.lundi.matin.arrivee,
-    lundiMatinDepart: tempsParJour.lundi.matin.depart,
-    lundiApm: tempsParJour.lundi.apm.arrivee,
-    lundiApmDepart: tempsParJour.lundi.apm.depart,
-
-    mardiMatin: tempsParJour.mardi.matin.arrivee,
-    mardiMatinDepart: tempsParJour.mardi.matin.depart,
-    mardiApm: tempsParJour.mardi.apm.arrivee,
-    mardiApmDepart: tempsParJour.mardi.apm.depart,
-
-    mercrediMatin: tempsParJour.mercredi.matin.arrivee,
+    lundiMatin:          tempsParJour.lundi.matin.arrivee,
+    lundiMatinDepart:    tempsParJour.lundi.matin.depart,
+    lundiApm:            tempsParJour.lundi.apm.arrivee,
+    lundiApmDepart:      tempsParJour.lundi.apm.depart,
+    mardiMatin:          tempsParJour.mardi.matin.arrivee,
+    mardiMatinDepart:    tempsParJour.mardi.matin.depart,
+    mardiApm:            tempsParJour.mardi.apm.arrivee,
+    mardiApmDepart:      tempsParJour.mardi.apm.depart,
+    mercrediMatin:       tempsParJour.mercredi.matin.arrivee,
     mercrediMatinDepart: tempsParJour.mercredi.matin.depart,
-    mercrediApm: tempsParJour.mercredi.apm.arrivee,
-    mercrediApmDepart: tempsParJour.mercredi.apm.depart,
-
-    jeudiMatin: tempsParJour.jeudi.matin.arrivee,
-    jeudiMatinDepart: tempsParJour.jeudi.matin.depart,
-    jeudiApm: tempsParJour.jeudi.apm.arrivee,
-    jeudiApmDepart: tempsParJour.jeudi.apm.depart,
-
-    vendrediMatin: tempsParJour.vendredi.matin.arrivee,
+    mercrediApm:         tempsParJour.mercredi.apm.arrivee,
+    mercrediApmDepart:   tempsParJour.mercredi.apm.depart,
+    jeudiMatin:          tempsParJour.jeudi.matin.arrivee,
+    jeudiMatinDepart:    tempsParJour.jeudi.matin.depart,
+    jeudiApm:            tempsParJour.jeudi.apm.arrivee,
+    jeudiApmDepart:      tempsParJour.jeudi.apm.depart,
+    vendrediMatin:       tempsParJour.vendredi.matin.arrivee,
     vendrediMatinDepart: tempsParJour.vendredi.matin.depart,
-    vendrediApm: tempsParJour.vendredi.apm.arrivee,
-    vendrediApmDepart: tempsParJour.vendredi.apm.depart,
-
-    samediMatin: tempsParJour.samedi.matin.arrivee,
-    samediMatinDepart: tempsParJour.samedi.matin.depart,
-    samediApm: tempsParJour.samedi.apm.arrivee,
-    samediApmDepart: tempsParJour.samedi.apm.depart,
-
-    dimancheMatin: tempsParJour.dimanche.matin.arrivee,
+    vendrediApm:         tempsParJour.vendredi.apm.arrivee,
+    vendrediApmDepart:   tempsParJour.vendredi.apm.depart,
+    samediMatin:         tempsParJour.samedi.matin.arrivee,
+    samediMatinDepart:   tempsParJour.samedi.matin.depart,
+    samediApm:           tempsParJour.samedi.apm.arrivee,
+    samediApmDepart:     tempsParJour.samedi.apm.depart,
+    dimancheMatin:       tempsParJour.dimanche.matin.arrivee,
     dimancheMatinDepart: tempsParJour.dimanche.matin.depart,
-    dimancheApm: tempsParJour.dimanche.apm.arrivee,
-    dimancheApmDepart: tempsParJour.dimanche.apm.depart,
+    dimancheApm:         tempsParJour.dimanche.apm.arrivee,
+    dimancheApmDepart:   tempsParJour.dimanche.apm.depart,
 
     installationChecked: typeChecked.installation,
-    curatifChecked: typeChecked.curatif,
-    revisionChecked: typeChecked.revision,
-    garantieChecked: typeChecked.garantie,
-    contratChecked: typeChecked.contrat,
-    locationChecked: typeChecked.location,
-    accidentChecked: typeChecked.accident,
-    vandalismeChecked: typeChecked.vandalisme,
-    orageChecked: typeChecked.orage,
-    autreChecked: typeChecked.autre,
+    curatifChecked:      typeChecked.curatif,
+    revisionChecked:     typeChecked.revision,
+    garantieChecked:     typeChecked.garantie,
+    contratChecked:      typeChecked.contrat,
+    locationChecked:     typeChecked.location,
+    accidentChecked:     typeChecked.accident,
+    vandalismeChecked:   typeChecked.vandalisme,
+    orageChecked:        typeChecked.orage,
+    autreChecked:        typeChecked.autre,
 
-    etatConstateContent: etatConstateHTML,
+    etatConstateContent:     etatConstateHTML,
     travauxEffectuesContent: travauxHTML,
 
-    interventionTermineeChecked: maintenance.etat === 'Terminé' ? 'checked' : '',
-    signatureTTS: operateurs || '',
+    interventionTermineeChecked: (maintenance.etat === 'Terminée') ? 'checked' : '',
+    signatureTTS:    operateurs || '',
     signatureClient: ''
   };
 }
 
-// ─── ROUTES ──────────────────────────────────────────────────────────────────
-
-// GET /maintenances
+// GET /maintenances → toutes les maintenances
 exports.getAllMaintenances = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM maintenances ORDER BY date_maintenance DESC");
@@ -245,12 +244,19 @@ exports.getAllMaintenances = async (req, res) => {
   }
 };
 
-// GET /maintenances/NotFinished
+// GET /maintenances/NotFinished --> toutes les maintenances en cours (pas terminées) — MODIFIÉ : ajout JOIN client/site
 exports.getAllMaintenancesNotFinished = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM maintenances WHERE etat <> 'Terminée' ORDER BY date_maintenance DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT m.*,
+       s.nom AS site_nom,
+       c.nom AS client_nom
+      FROM maintenances m
+      LEFT JOIN sites s ON m.id_site = s.id_site
+      LEFT JOIN clients c ON s.id_client = c.id_client
+      WHERE m.etat <> 'Terminée'
+      ORDER BY m.date_maintenance DESC;
+    `);
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -262,49 +268,20 @@ exports.getAllMaintenancesNotFinished = async (req, res) => {
 exports.getMaintenanceById = async (req, res) => {
   const { id } = req.params;
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM maintenances WHERE id_maintenance = ?",
-      [id]
-    );
+    const [rows] = await db.query(`
+      SELECT m.*,
+             s.nom as site_nom,
+             s.adresse as site_adresse,
+             c.nom as client_nom,
+             c.contact as client_contact
+      FROM maintenances m
+      LEFT JOIN sites s ON m.id_site = s.id_site
+      LEFT JOIN clients c ON s.id_client = c.id_client
+      WHERE m.id_maintenance = ?
+    `, [id]);
     if (rows.length === 0)
       return res.status(404).json({ error: "Maintenance non trouvée" });
-
-    const maintenance = rows[0];
-
-    // Parser les types
-    if (maintenance.types_intervention) {
-      maintenance.types = parseTypesIntervention(maintenance.types_intervention);
-    } else if (maintenance.type) {
-      maintenance.types = [maintenance.type];
-    } else {
-      maintenance.types = [];
-    }
-
-    // Parser les jours
-    if (maintenance.jours_intervention) {
-      maintenance.jours = parseJoursIntervention(maintenance.jours_intervention);
-    } else {
-      maintenance.jours = [{
-        date_jour: maintenance.date_maintenance,
-        heure_arrivee_matin: maintenance.heure_arrivee_matin,
-        heure_depart_matin: maintenance.heure_depart_matin,
-        heure_arrivee_aprem: maintenance.heure_arrivee_aprem,
-        heure_depart_aprem: maintenance.heure_depart_aprem
-      }];
-    }
-
-    // Parser les opérateurs
-    if (maintenance.operateurs) {
-      maintenance.operateursList = parseOperateurs(maintenance.operateurs);
-    } else {
-      maintenance.operateursList = [
-        maintenance.operateur_1,
-        maintenance.operateur_2,
-        maintenance.operateur_3
-      ].filter(Boolean);
-    }
-
-    res.json(maintenance);
+    res.json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -331,32 +308,25 @@ exports.generateMaintenanceHTML = async (req, res) => {
   const { id } = req.params;
   try {
     const [maintenance] = await db.query(`
-      SELECT m.*, 
-             s.nom as site_nom, 
-             s.adresse as site_adresse,
-             c.nom as client_nom,
-             c.contact as client_contact
+      SELECT m.*, s.nom as site_nom, s.adresse as site_adresse,
+             c.nom as client_nom, c.contact as client_contact
       FROM maintenances m
       LEFT JOIN sites s ON m.id_site = s.id_site
       LEFT JOIN clients c ON s.id_client = c.id_client
       WHERE m.id_maintenance = ?
     `, [id]);
-
     if (maintenance.length === 0)
       return res.status(404).json({ error: "Maintenance non trouvée" });
-
     const [produits] = await db.query(`
-      SELECT mp.etat, mp.commentaire, mp.etat_constate, mp.travaux_effectues, 
+      SELECT mp.etat, mp.commentaire, mp.etat_constate, mp.travaux_effectues,
              p.nom as produit_nom, p.description as produit_description
       FROM maintenance_produits mp
       LEFT JOIN produits p ON mp.id_produit = p.id_produit
       WHERE mp.id_maintenance = ?
     `, [id]);
-
     const data = transformDataForTemplate(maintenance[0], maintenance[0], produits);
     const template = handlebars.compile(templateHTML);
     const html = template(data);
-
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (err) {
@@ -371,20 +341,15 @@ exports.generateMaintenancePDF = async (req, res) => {
   let browser;
   try {
     const [maintenance] = await db.query(`
-      SELECT m.*, 
-             s.nom as site_nom, 
-             s.adresse as site_adresse,
-             c.nom as client_nom,
-             c.contact as client_contact
+      SELECT m.*, s.nom as site_nom, s.adresse as site_adresse,
+             c.nom as client_nom, c.contact as client_contact
       FROM maintenances m
       LEFT JOIN sites s ON m.id_site = s.id_site
       LEFT JOIN clients c ON s.id_client = c.id_client
       WHERE m.id_maintenance = ?
     `, [id]);
-
     if (maintenance.length === 0)
       return res.status(404).json({ error: "Maintenance non trouvée" });
-
     const [produits] = await db.query(`
       SELECT mp.etat, mp.commentaire, mp.etat_constate, mp.travaux_effectues,
              p.nom as produit_nom, p.description as produit_description
@@ -392,25 +357,13 @@ exports.generateMaintenancePDF = async (req, res) => {
       LEFT JOIN produits p ON mp.id_produit = p.id_produit
       WHERE mp.id_maintenance = ?
     `, [id]);
-
     const data = transformDataForTemplate(maintenance[0], maintenance[0], produits);
     const template = handlebars.compile(templateHTML);
     const html = template(data);
-
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
+    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
-    });
-
+    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } });
     const filename = `rapport-${data.chrono || maintenance[0].id_maintenance}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -426,133 +379,30 @@ exports.generateMaintenancePDF = async (req, res) => {
 // POST /maintenances
 exports.createMaintenance = async (req, res) => {
   const {
-    // Identification
-    numero_ri,                  // Chrono d'intervention (obligatoire)
-    designation_produit_site,   // Désignation produit/site
-    categorie,                  // Catégorie (obligatoire)
-    types,                      // Array : Nature des travaux (multi-select)
-    type,                       // Fallback string
-    departement,
-    date_demande,
-    date_accord_client,
-    date_maintenance,           // Date intervention
-    // Client
-    id_site,
-    contact,
-    type_produit,
-    numero_commande,
-    // Opérateurs (array envoyé depuis le front, séparés par Entrée)
-    operateurs,                 // Array ou chaîne multi-lignes
-    operateur_1,                // Fallback legacy
-    operateur_2,
-    operateur_3,
-    // Jours (array multi-jours)
-    jours,
-    // Heures legacy (un seul jour)
-    heure_arrivee_matin,
-    heure_depart_matin,
-    heure_arrivee_aprem,
-    heure_depart_aprem,
-    // Nature des travaux / garantie
-    garantie,                   // 'Oui' | 'Non' | true | false | 1 | 0
-    // Autres
-    etat,
-    commentaire,
-    commentaire_interne
+    id_site, date_maintenance, type, etat, commentaire,
+    operateur_1, operateur_2, operateur_3,
+    heure_arrivee_matin, heure_depart_matin, heure_arrivee_aprem, heure_depart_aprem,
+    garantie, commentaire_interne, contact, type_produit, numero_commande, numero_ri, departement
   } = req.body;
-
   try {
-    // Types
-    let typesStr = null;
-    if (types && Array.isArray(types) && types.length > 0) {
-      typesStr = types.join(',');
-    } else if (type) {
-      typesStr = type;
-    }
-
-    // Jours
-    let joursJson = null;
-    let dateMaintenance = date_maintenance;
-    if (jours && Array.isArray(jours) && jours.length > 0) {
-      joursJson = JSON.stringify(jours);
-      dateMaintenance = jours[0].date_jour;
-    }
-
-    // Opérateurs : on stocke en colonne `operateurs` (texte multi-lignes)
-    const operateursStr = serializeOperateurs(operateurs || [operateur_1, operateur_2, operateur_3].filter(Boolean));
-
-    // Garantie : normaliser en booléen/entier
-    const garantieVal = (garantie === 'Oui' || garantie === true || garantie === 1) ? 1 : 0;
-
     const [result] = await db.query(
       `INSERT INTO maintenances (
-        id_site,
-        numero_ri,
-        designation_produit_site,
-        categorie,
-        type,
-        types_intervention,
-        jours_intervention,
-        departement,
-        date_demande,
-        date_accord_client,
-        date_maintenance,
-        contact,
-        type_produit,
-        numero_commande,
-        operateurs,
-        operateur_1,
-        operateur_2,
-        operateur_3,
-        heure_arrivee_matin,
-        heure_depart_matin,
-        heure_arrivee_aprem,
-        heure_depart_aprem,
-        garantie,
-        etat,
-        commentaire,
-        commentaire_interne,
-        date_creation
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id_site, date_maintenance, type, etat, commentaire, date_creation,
+        operateur_1, operateur_2, operateur_3,
+        heure_arrivee_matin, heure_depart_matin, heure_arrivee_aprem, heure_depart_aprem,
+        garantie, commentaire_interne, contact, type_produit, numero_commande, numero_ri, departement
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id_site,
-        numero_ri || null,
-        designation_produit_site || null,
-        categorie || null,
-        typesStr,
-        typesStr,
-        joursJson,
-        departement || null,
-        date_demande || null,
-        date_accord_client || null,
-        dateMaintenance || null,
-        contact || null,
-        type_produit || null,
-        numero_commande || null,
-        operateursStr,
-        // Colonnes legacy pour compatibilité
-        (Array.isArray(operateurs) ? operateurs[0] : operateur_1) || null,
-        (Array.isArray(operateurs) ? operateurs[1] : operateur_2) || null,
-        (Array.isArray(operateurs) ? operateurs[2] : operateur_3) || null,
-        heure_arrivee_matin || null,
-        heure_depart_matin || null,
-        heure_arrivee_aprem || null,
-        heure_depart_aprem || null,
-        garantieVal,
-        etat || null,
-        commentaire || null,
-        commentaire_interne || null,
-        new Date().toISOString().split('T')[0]
+        id_site, date_maintenance, type, etat, commentaire,
+        new Date().toISOString().split('T')[0],
+        operateur_1 || null, operateur_2 || null, operateur_3 || null,
+        heure_arrivee_matin || null, heure_depart_matin || null,
+        heure_arrivee_aprem || null, heure_depart_aprem || null,
+        garantie || 0, commentaire_interne || null, contact || null,
+        type_produit || null, numero_commande || null, numero_ri || null, departement || null
       ]
     );
-
-    res.status(201).json({
-      id_maintenance: result.insertId,
-      id_site,
-      numero_ri,
-      date_maintenance: dateMaintenance,
-      etat
-    });
+    res.status(201).json({ id_maintenance: result.insertId, id_site, date_maintenance, type, etat, commentaire });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -563,108 +413,52 @@ exports.createMaintenance = async (req, res) => {
 exports.updateMaintenance = async (req, res) => {
   const { id } = req.params;
   const {
-    id_site,
-    numero_ri,
-    designation_produit_site,
-    categorie,
-    types,
-    type,
-    departement,
-    date_demande,
-    date_accord_client,
-    date_maintenance,
-    contact,
-    type_produit,
-    numero_commande,
-    operateurs,
-    operateur_1,
-    operateur_2,
-    operateur_3,
-    jours,
-    heure_arrivee_matin,
-    heure_depart_matin,
-    heure_arrivee_aprem,
-    heure_depart_aprem,
-    garantie,
-    etat,
-    commentaire,
-    commentaire_interne
+    id_site, date_maintenance, types, type, types_intervention,
+    etat, commentaire, commentaire_interne, contact, type_produit,
+    numero_commande, numero_ri, departement, designation_produit_site,
+    categorie, date_demande, date_accord_client,
+    operateurs, operateur_1, operateur_2, operateur_3,
+    jours, garantie
   } = req.body;
 
   try {
-    let typesStr = null;
-    if (types && Array.isArray(types) && types.length > 0) {
-      typesStr = types.join(',');
-    } else if (type) {
-      typesStr = type;
+    let finalIdSite = id_site || null;
+    if (!finalIdSite) {
+      const [rows] = await db.query('SELECT id_site FROM maintenances WHERE id_maintenance = ?', [id]);
+      if (rows.length === 0) return res.status(404).json({ error: "Maintenance non trouvée" });
+      finalIdSite = rows[0].id_site;
     }
+
+    let typesStr = null;
+    if (types && Array.isArray(types) && types.length > 0) typesStr = [...new Set(types)].join(',');
+    else if (types_intervention) typesStr = types_intervention;
+    else if (type) typesStr = type;
+
+    let operateursStr = null;
+    if (operateurs && Array.isArray(operateurs)) operateursStr = operateurs.join('\n');
+    else if (operateurs && typeof operateurs === 'string') operateursStr = operateurs;
 
     let joursJson = null;
-    let dateMaintenance = date_maintenance;
-    if (jours && Array.isArray(jours) && jours.length > 0) {
-      joursJson = JSON.stringify(jours);
-      dateMaintenance = jours[0].date_jour;
-    }
-
-    const operateursStr = serializeOperateurs(operateurs || [operateur_1, operateur_2, operateur_3].filter(Boolean));
-    const garantieVal = (garantie === 'Oui' || garantie === true || garantie === 1) ? 1 : 0;
+    if (jours && Array.isArray(jours) && jours.length > 0) joursJson = JSON.stringify(jours);
 
     const [result] = await db.query(
       `UPDATE maintenances SET
-        id_site = ?,
-        numero_ri = ?,
-        designation_produit_site = ?,
-        categorie = ?,
-        type = ?,
-        types_intervention = ?,
-        jours_intervention = ?,
-        departement = ?,
-        date_demande = ?,
-        date_accord_client = ?,
-        date_maintenance = ?,
-        contact = ?,
-        type_produit = ?,
-        numero_commande = ?,
-        operateurs = ?,
-        operateur_1 = ?,
-        operateur_2 = ?,
-        operateur_3 = ?,
-        heure_arrivee_matin = ?,
-        heure_depart_matin = ?,
-        heure_arrivee_aprem = ?,
-        heure_depart_aprem = ?,
-        garantie = ?,
-        etat = ?,
-        commentaire = ?,
-        commentaire_interne = ?
+        id_site = ?, numero_ri = ?, designation_produit_site = ?, categorie = ?,
+        type = ?, types_intervention = ?, jours_intervention = ?,
+        departement = ?, date_demande = ?, date_accord_client = ?, date_maintenance = ?,
+        contact = ?, type_produit = ?, numero_commande = ?,
+        operateurs = ?, operateur_1 = ?, operateur_2 = ?, operateur_3 = ?,
+        heure_arrivee_matin = NULL, heure_depart_matin = NULL,
+        heure_arrivee_aprem = NULL, heure_depart_aprem = NULL,
+        garantie = ?, etat = ?, commentaire = ?, commentaire_interne = ?
       WHERE id_maintenance = ?`,
       [
-        id_site,
-        numero_ri || null,
-        designation_produit_site || null,
-        categorie || null,
-        typesStr,
-        typesStr,
-        joursJson,
-        departement || null,
-        date_demande || null,
-        date_accord_client || null,
-        dateMaintenance || null,
-        contact || null,
-        type_produit || null,
-        numero_commande || null,
-        operateursStr,
-        (Array.isArray(operateurs) ? operateurs[0] : operateur_1) || null,
-        (Array.isArray(operateurs) ? operateurs[1] : operateur_2) || null,
-        (Array.isArray(operateurs) ? operateurs[2] : operateur_3) || null,
-        heure_arrivee_matin || null,
-        heure_depart_matin || null,
-        heure_arrivee_aprem || null,
-        heure_depart_aprem || null,
-        garantieVal,
-        etat || null,
-        commentaire || null,
-        commentaire_interne || null,
+        finalIdSite, numero_ri || null, designation_produit_site || null, categorie || null,
+        typesStr, typesStr, joursJson,
+        departement || null, date_demande || null, date_accord_client || null, date_maintenance || null,
+        contact || null, type_produit || null, numero_commande || null,
+        operateursStr, operateur_1 || null, operateur_2 || null, operateur_3 || null,
+        garantie != null ? garantie : 0, etat || null, commentaire || null, commentaire_interne || null,
         id
       ]
     );
@@ -683,13 +477,9 @@ exports.updateMaintenance = async (req, res) => {
 exports.deleteMaintenance = async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await db.query(
-      "DELETE FROM maintenances WHERE id_maintenance = ?",
-      [id]
-    );
+    const [result] = await db.query("DELETE FROM maintenances WHERE id_maintenance = ?", [id]);
     if (result.affectedRows === 0)
       return res.status(404).json({ error: "Maintenance non trouvée" });
-
     res.json({ message: "Maintenance supprimée" });
   } catch (err) {
     console.error(err);
