@@ -6,10 +6,6 @@ const id_client = params.get("id_client");
 let allSites = [];
 let allEquipements = [];
 let allMaintenances = [];
-let editingMaintenanceId = null;
-
-const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
-const JOURS_JS = [1,2,3,4,5,6,0];
 
 document.getElementById("backBtn").addEventListener("click", () => window.history.back());
 
@@ -27,71 +23,41 @@ function formatDateForInput(dateString) {
 }
 
 function parseDate(dateStr) {
-  if (!dateStr) return new Date(0);
+  if (!dateStr) return "N/A";
   const date = new Date(dateStr);
-  if (isNaN(date)) return new Date(0);
+  if (isNaN(date)) return dateStr;
   return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()}`;
 }
 
-function toggleCheckedClass(checkbox) {
-  checkbox.closest('.checkbox-item').classList.toggle('checked', checkbox.checked);
+function printQR(id) { window.open(`${API}/qrcodes/showqr/${id}`, "_blank"); }
+
+// ─── CALLBACKS PARTIAL maintenanceForm.js ────────────────────────────────────
+
+window.onMaintenanceUpdated = async () => {
+  await loadAllMaintenances();
+};
+
+function editMaintenanceById(id) {
+  const m = allMaintenances.find(x => x.id_maintenance == id);
+  if (!m) { alert("Maintenance introuvable"); return; }
+  showEditMaintenanceForm(m);
 }
 
-function resetHorairesForm() {
-  JOURS.forEach(j => {
-    ['matin_arr','matin_dep','apm_arr','apm_dep'].forEach(slot => {
-      const el = document.getElementById(`cli_${j}_${slot}`);
-      if (el) el.value = '';
-    });
-  });
+async function deleteMaintenance(id_maintenance) {
+  if (!confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)")) return;
+  try {
+    const res = await fetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
+    if (!res.ok) { alert("Erreur lors de la suppression de la maintenance"); return; }
+    await loadAllMaintenances();
+    alert("✓ Maintenance supprimée avec succès !");
+  } catch (err) { console.error(err); alert("Erreur serveur"); }
 }
 
-function resetTravauxCheckboxes() {
-  ['installation','curative','revision','autres_g','contrat','autres_d'].forEach(id => {
-    const el = document.getElementById(`cli_chk_${id}`);
-    if (el) { el.checked = false; el.closest('.checkbox-item').classList.remove('checked'); }
-  });
-}
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 
-function collectTypes() {
-  const chkMap = {
-    cli_chk_installation: 'Installation',
-    cli_chk_curative: 'Intervention Curative',
-    cli_chk_revision: 'Révision',
-    cli_chk_autres_g: 'Autres',
-    cli_chk_contrat: 'Contrat de maintenance',
-    cli_chk_autres_d: 'Autres',
-  };
-  const types = Object.entries(chkMap)
-    .filter(([id]) => document.getElementById(id)?.checked)
-    .map(([, val]) => val);
-  return [...new Set(types)];
-}
-
-function collectJours(dateIntervention) {
-  const jours = [];
-  JOURS.forEach((j, idx) => {
-    const arr_m = document.getElementById(`cli_${j}_matin_arr`)?.value;
-    const dep_m = document.getElementById(`cli_${j}_matin_dep`)?.value;
-    const arr_a = document.getElementById(`cli_${j}_apm_arr`)?.value;
-    const dep_a = document.getElementById(`cli_${j}_apm_dep`)?.value;
-    if (arr_m || dep_m || arr_a || dep_a) {
-      const baseDate = new Date(dateIntervention || Date.now());
-      const targetDow = JOURS_JS[idx];
-      const diff = targetDow - baseDate.getDay();
-      const jourDate = new Date(baseDate);
-      jourDate.setDate(jourDate.getDate() + diff);
-      jours.push({
-        date_jour: jourDate.toISOString().split('T')[0],
-        heure_arrivee_matin: arr_m || null,
-        heure_depart_matin: dep_m || null,
-        heure_arrivee_aprem: arr_a || null,
-        heure_depart_aprem: dep_a || null
-      });
-    }
-  });
-  return jours;
-}
+loadMaintenanceForm("maintenance-form-container");
+loadClientDetails();
+loadSites();
 
 // ─── CHARGEMENT CLIENT ────────────────────────────────────────────────────────
 
@@ -160,8 +126,6 @@ async function loadSites() {
 
 // ─── ÉQUIPEMENTS ──────────────────────────────────────────────────────────────
 
-function printQR(id) { window.open(`${API}/qrcodes/showqr/${id}`, "_blank"); }
-
 async function loadAllEquipements() {
   try {
     allEquipements = [];
@@ -174,8 +138,8 @@ async function loadAllEquipements() {
     EquipDiv.innerHTML = "";
 
     document.getElementById("statsEquipements").textContent = allEquipements.length;
-    document.getElementById("statsOK").textContent = allEquipements.filter(p => p.etat === "OK").length;
-    document.getElementById("statsNOK").textContent = allEquipements.filter(p => p.etat === "NOK").length;
+    document.getElementById("statsOK").textContent       = allEquipements.filter(p => p.etat === "OK").length;
+    document.getElementById("statsNOK").textContent      = allEquipements.filter(p => p.etat === "NOK").length;
     document.getElementById("statsPassable").textContent = allEquipements.filter(p => p.etat === "Passable").length;
 
     if (allEquipements.length === 0) { EquipDiv.innerHTML = "<p>Aucun équipement associé à ce client.</p>"; return; }
@@ -200,16 +164,15 @@ async function loadAllEquipements() {
 
       equipementsBySite[site.id_site].forEach(p => {
         const li = document.createElement("li");
-        li.setAttribute("id", "produitsList");
         const etat = (p.etat || "").toLowerCase();
-        if (etat === "ok") li.classList.add("equipement-ok");
-        else if (etat === "nok") li.classList.add("equipement-nok");
+        if (etat === "ok")            li.classList.add("equipement-ok");
+        else if (etat === "nok")      li.classList.add("equipement-nok");
         else if (etat === "passable") li.classList.add("equipement-passable");
-        else li.classList.add("equipement-autre");
+        else                          li.classList.add("equipement-autre");
 
         let etatColor = "#6C757D";
-        if (etat === "ok") etatColor = "#28A745";
-        else if (etat === "nok") etatColor = "#DC3545";
+        if (etat === "ok")            etatColor = "#28A745";
+        else if (etat === "nok")      etatColor = "#DC3545";
         else if (etat === "passable") etatColor = "#FFC107";
 
         li.innerHTML = `
@@ -220,9 +183,9 @@ async function loadAllEquipements() {
             <br/><small style="color:#6C757D;">${p.description || ""}</small>
           </div>
           <div>
-            <button onclick="deleteProduit(${p.id_produit})">Supprimer</button>
-            <button onclick="editProduit(${p.id_produit})">Modifier</button>
-            <button onclick="printQR(${p.id_produit})">QR</button>
+            <button class="btn-danger" onclick="deleteProduit(${p.id_produit})">Supprimer</button>
+            <button class="btn-edit" onclick="editProduit(${p.id_produit})">Modifier</button>
+            <button class="btn-qr" onclick="printQR(${p.id_produit})">QR</button>
             <button onclick="window.location.href='../ProduitDetails/produitDetails.html?id_produit=${p.id_produit}'" style="background:var(--secondary-blue);">Détails</button>
           </div>
         `;
@@ -255,9 +218,9 @@ async function loadAllMaintenances() {
     MaintDiv.innerHTML = "";
 
     document.getElementById("statsMaintenances").textContent = allMaintenances.length;
-    document.getElementById("statsPlanifiees").textContent = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("planif")).length;
-    document.getElementById("statsEnCours").textContent = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("cours")).length;
-    document.getElementById("statsTerminees").textContent = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("termin")).length;
+    document.getElementById("statsPlanifiees").textContent   = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("planif")).length;
+    document.getElementById("statsEnCours").textContent      = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("cours")).length;
+    document.getElementById("statsTerminees").textContent    = allMaintenances.filter(m => (m.etat||"").toLowerCase().includes("termin")).length;
 
     if (allMaintenances.length === 0) { MaintDiv.innerHTML = "<p>Aucune maintenance associée à ce client.</p>"; return; }
 
@@ -282,22 +245,22 @@ async function loadAllMaintenances() {
         const details = document.createElement("details");
         details.classList.add("maintenance");
         const etat = (m.etat || "").toLowerCase();
-        if (etat.includes("termin")) details.classList.add("maintenance-terminee");
-        else if (etat.includes("cours")) details.classList.add("maintenance-en-cours");
+        if (etat.includes("termin"))      details.classList.add("maintenance-terminee");
+        else if (etat.includes("cours"))  details.classList.add("maintenance-en-cours");
         else if (etat.includes("planif")) details.classList.add("maintenance-planifiee");
-        else details.classList.add("maintenance-autre");
+        else                              details.classList.add("maintenance-autre");
 
         const summary = document.createElement("summary");
         let icone = "🔧";
-        if (etat.includes("termin")) icone = "✅";
-        else if (etat.includes("cours")) icone = "⚙️";
+        if (etat.includes("termin"))      icone = "✅";
+        else if (etat.includes("cours"))  icone = "⚙️";
         else if (etat.includes("planif")) icone = "📅";
         summary.innerHTML = `${icone} ${m.types_intervention || m.type || "Maintenance"} - ${parseDate(m.date_maintenance)}`;
         details.appendChild(summary);
 
         let etatColor = "#6C757D";
-        if (etat.includes("termin")) etatColor = "#28A745";
-        else if (etat.includes("cours")) etatColor = "#FFC107";
+        if (etat.includes("termin"))      etatColor = "#28A745";
+        else if (etat.includes("cours"))  etatColor = "#FFC107";
         else if (etat.includes("planif")) etatColor = "#0066CC";
 
         let operateursList = [];
@@ -315,8 +278,8 @@ async function loadAllMaintenances() {
           <div><strong>Commentaire :</strong> ${m.commentaire || "N/A"}</div>
           <div><strong>Garantie :</strong> ${m.garantie ? '✅ Oui' : '❌ Non'}</div>
           <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-            <button onclick="deleteMaintenance(${m.id_maintenance})" style="background:#DC3545;">Supprimer</button>
-            <button onclick="editMaintenance(${m.id_maintenance})" style="background:#6C757D;">Modifier</button>
+            <button class="btn-danger" onclick="deleteMaintenance(${m.id_maintenance})">Supprimer</button>
+            <button class="btn-edit" onclick="editMaintenanceById(${m.id_maintenance})">Modifier</button>
             <a href="../MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}"
               style="display:inline-block;padding:0.625rem 1.25rem;background:#0066CC;color:white;border-radius:8px;text-decoration:none;">Voir détails</a>
             <div style="display:flex;overflow:hidden;border-radius:8px;">
@@ -338,160 +301,7 @@ async function loadAllMaintenances() {
   }
 }
 
-// ─── MODIFIER MAINTENANCE ─────────────────────────────────────────────────────
-
-async function editMaintenance(id_maintenance) {
-  try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`);
-    if (!res.ok) { alert("Erreur lors du chargement de la maintenance"); return; }
-    const m = await res.json();
-    editingMaintenanceId = id_maintenance;
-
-    // Identification
-    document.getElementById("maintenanceChrono").value = m.numero_ri || '';
-    document.getElementById("maintenanceDateDemande").value = formatDateForInput(m.date_demande);
-    document.getElementById("maintenanceDesignation").value = m.designation_produit_site || '';
-    document.getElementById("maintenanceDateAccordClient").value = formatDateForInput(m.date_accord_client);
-    document.getElementById("maintenanceContact").value = m.contact || '';
-    document.getElementById("maintenanceCategorie").value = m.categorie || '';
-    document.getElementById("maintenanceDateMaintenance").value = formatDateForInput(m.date_maintenance);
-    document.getElementById("maintenanceTypeProduit").value = m.type_produit || '';
-    document.getElementById("maintenanceTypeIntervention").value = '';
-    document.getElementById("maintenanceDepartement").value = m.departement || '';
-    document.getElementById("maintenanceNumeroCommande").value = m.numero_commande || '';
-    document.getElementById("maintenanceEtat").value = m.etat || '';
-    document.getElementById("maintenanceCommentaire").value = m.commentaire || '';
-
-    // Opérateurs
-    let operateursList = [];
-    if (m.operateurs) operateursList = m.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-    else operateursList = [m.operateur_1, m.operateur_2, m.operateur_3].filter(Boolean);
-    document.getElementById("maintenanceOperateurs").value = operateursList.join('\n');
-
-    // Horaires
-    resetHorairesForm();
-    let jours = [];
-    if (m.jours_intervention) {
-      try { jours = typeof m.jours_intervention === 'object' ? m.jours_intervention : JSON.parse(m.jours_intervention); }
-      catch { jours = []; }
-    }
-    if (jours.length > 0) {
-      jours.forEach(jour => {
-        const d = new Date(jour.date_jour);
-        const idx = JOURS_JS.indexOf(d.getDay());
-        if (idx === -1) return;
-        const j = JOURS[idx];
-        const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
-        set(`cli_${j}_matin_arr`, jour.heure_arrivee_matin);
-        set(`cli_${j}_matin_dep`, jour.heure_depart_matin);
-        set(`cli_${j}_apm_arr`, jour.heure_arrivee_aprem);
-        set(`cli_${j}_apm_dep`, jour.heure_depart_aprem);
-      });
-    } else if (m.date_maintenance) {
-      const d = new Date(m.date_maintenance);
-      const idx = JOURS_JS.indexOf(d.getDay());
-      if (idx !== -1) {
-        const j = JOURS[idx];
-        const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val.substring(0,5); };
-        set(`cli_${j}_matin_arr`, m.heure_arrivee_matin);
-        set(`cli_${j}_matin_dep`, m.heure_depart_matin);
-        set(`cli_${j}_apm_arr`, m.heure_arrivee_aprem);
-        set(`cli_${j}_apm_dep`, m.heure_depart_aprem);
-      }
-    }
-
-    // Nature des travaux
-    resetTravauxCheckboxes();
-    const typesStr = m.types_intervention || m.type || '';
-    const typeMap = {
-      'Installation': 'cli_chk_installation',
-      'Intervention Curative': 'cli_chk_curative',
-      'Intervention curative': 'cli_chk_curative',
-      'Révision': 'cli_chk_revision',
-      'Contrat de maintenance': 'cli_chk_contrat',
-      'Autres': 'cli_chk_autres_g',
-    };
-    typesStr.split(',').map(t => t.trim()).filter(Boolean).forEach(t => {
-      const id = typeMap[t];
-      if (id) {
-        const el = document.getElementById(id);
-        if (el) { el.checked = true; el.closest('.checkbox-item').classList.add('checked'); }
-      }
-    });
-
-    // Garantie
-    const garantieOui = m.garantie === 1 || m.garantie === true || m.garantie === 'Oui';
-    document.getElementById("cliGarantieOui").checked = garantieOui;
-    document.getElementById("cliGarantieNon").checked = !garantieOui;
-
-    document.getElementById("addMaintenanceForm").style.display = "block";
-  } catch (err) {
-    console.error(err);
-    alert("Erreur serveur");
-  }
-}
-
-async function updateMaintenanceSubmit(event) {
-  event.preventDefault();
-  if (!editingMaintenanceId) { alert("Erreur : ID de maintenance manquant"); return; }
-  if (!confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?")) return;
-
-  const dateIntervention = document.getElementById("maintenanceDateMaintenance").value;
-  const types = collectTypes();
-  const jours = collectJours(dateIntervention);
-  const operateursRaw = document.getElementById("maintenanceOperateurs").value;
-  const operateursList = operateursRaw.split('\n').map(s => s.trim()).filter(Boolean);
-  const garantie = document.querySelector('input[name="maintenanceGarantie"]:checked')?.value === 'Oui' ? 1 : 0;
-
-  const data = {
-    numero_ri: document.getElementById("maintenanceChrono").value || null,
-    designation_produit_site: document.getElementById("maintenanceDesignation").value || null,
-    categorie: document.getElementById("maintenanceCategorie").value || null,
-    types,
-    type: types.join(',') || document.getElementById("maintenanceTypeIntervention").value || null,
-    types_intervention: types.join(',') || document.getElementById("maintenanceTypeIntervention").value || null,
-    departement: document.getElementById("maintenanceDepartement").value || null,
-    date_demande: document.getElementById("maintenanceDateDemande").value || null,
-    date_accord_client: document.getElementById("maintenanceDateAccordClient").value || null,
-    date_maintenance: dateIntervention || null,
-    contact: document.getElementById("maintenanceContact").value || null,
-    type_produit: document.getElementById("maintenanceTypeProduit").value || null,
-    numero_commande: document.getElementById("maintenanceNumeroCommande").value || null,
-    operateurs: operateursList,
-    operateur_1: operateursList[0] || null,
-    operateur_2: operateursList[1] || null,
-    operateur_3: operateursList[2] || null,
-    jours: jours.length > 0 ? jours : undefined,
-    etat: document.getElementById("maintenanceEtat").value || null,
-    commentaire: document.getElementById("maintenanceCommentaire").value || null,
-    garantie
-  };
-
-  try {
-    const res = await fetch(`${API}/maintenances/${editingMaintenanceId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) { alert("Erreur lors de la modification de la maintenance"); return; }
-    hideAddMaintenanceForm();
-    loadAllMaintenances();
-    alert("✓ Maintenance modifiée avec succès !");
-  } catch (err) {
-    console.error(err);
-    alert("Erreur serveur");
-  }
-}
-
-function hideAddMaintenanceForm() {
-  document.getElementById("addMaintenanceForm").style.display = "none";
-  editingMaintenanceId = null;
-  document.getElementById("maintenanceForm").reset();
-  resetHorairesForm();
-  resetTravauxCheckboxes();
-}
-
-// ─── SUPPRESSION ──────────────────────────────────────────────────────────────
+// ─── SUPPRESSION / ÉDITION PRODUITS ──────────────────────────────────────────
 
 async function deleteProduit(id_produit) {
   if (!confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)")) return;
@@ -499,25 +309,10 @@ async function deleteProduit(id_produit) {
     const res = await fetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression de l'équipement"); return; }
     loadAllEquipements();
-    alert("Équipement supprimé avec succès !");
-  } catch (err) { console.error(err); alert("Erreur serveur lors de la suppression"); }
+    alert("✓ Équipement supprimé avec succès !");
+  } catch (err) { console.error(err); alert("Erreur serveur"); }
 }
 
 function editProduit(id_produit) {
   window.location.href = `../ProduitDetails/produitDetails.html?id_produit=${id_produit}`;
 }
-
-async function deleteMaintenance(id_maintenance) {
-  if (!confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)")) return;
-  try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
-    if (!res.ok) { alert("Erreur lors de la suppression de la maintenance"); return; }
-    loadAllMaintenances();
-    alert("✓ Maintenance supprimée avec succès !");
-  } catch (err) { console.error(err); alert("Erreur serveur"); }
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-
-loadClientDetails();
-loadSites();

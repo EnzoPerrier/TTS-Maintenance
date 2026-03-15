@@ -88,9 +88,7 @@ function renderMaintenanceDetails() {
     operateursList = m.operateursList;
   } else if (m.operateurs) {
     operateursList = parseOperateurs(m.operateurs);
-  } else {
-    operateursList = [m.operateur_1, m.operateur_2, m.operateur_3].filter(Boolean);
-  }
+  } 
   const operateursDisplay = operateursList.length ? operateursList.join(' / ') : 'N/A';
 
   // Types

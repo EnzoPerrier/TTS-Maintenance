@@ -99,11 +99,10 @@ function combineTravauxEffectues(produits) {
 }
 
 function transformDataForTemplate(maintenance, site, produits) {
+  // La colonne `operateurs` est la seule source (operateur_1/2/3 supprimés de la BDD)
   let operateurs = '';
   if (maintenance.operateurs) {
     operateurs = maintenance.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean).join(' & ');
-  } else {
-    operateurs = [maintenance.operateur_1, maintenance.operateur_2, maintenance.operateur_3].filter(Boolean).join(' & ');
   }
 
   const nomsProduitsStr = produits.map(p => p.produit_nom).join(', ');
@@ -142,6 +141,7 @@ function transformDataForTemplate(maintenance, site, produits) {
       }
     });
   } else if (maintenance.heure_arrivee_matin || maintenance.heure_arrivee_aprem) {
+    // Fallback : utiliser les heures de la maintenance sur le jour de la date
     const dateObj = new Date(maintenance.date_maintenance);
     const jourActuel = joursSemaine[dateObj.getDay()];
     if (jourActuel && tempsParJour[jourActuel]) {
@@ -181,7 +181,6 @@ function transformDataForTemplate(maintenance, site, produits) {
     numAffaire:  maintenance.numero_commande || '',
     departement: maintenance.departement || '',
     designation: maintenance.designation_produit_site || '',
-    categorie:   maintenance.categorie || '',
     etat:        maintenance.etat || '',
 
     lundiMatin:          tempsParJour.lundi.matin.arrivee,
@@ -244,18 +243,18 @@ exports.getAllMaintenances = async (req, res) => {
   }
 };
 
-// GET /maintenances/NotFinished --> toutes les maintenances en cours (pas terminées) — MODIFIÉ : ajout JOIN client/site
+// GET /maintenances/NotFinished → toutes les maintenances non terminées
 exports.getAllMaintenancesNotFinished = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT m.*,
-       s.nom AS site_nom,
-       c.nom AS client_nom
+             s.nom AS site_nom,
+             c.nom AS client_nom
       FROM maintenances m
       LEFT JOIN sites s ON m.id_site = s.id_site
       LEFT JOIN clients c ON s.id_client = c.id_client
       WHERE m.etat <> 'Terminée'
-      ORDER BY m.date_maintenance DESC;
+      ORDER BY m.date_maintenance DESC
     `);
     res.json(rows);
   } catch (err) {
@@ -270,10 +269,10 @@ exports.getMaintenanceById = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT m.*,
-             s.nom as site_nom,
-             s.adresse as site_adresse,
-             c.nom as client_nom,
-             c.contact as client_contact
+             s.nom AS site_nom,
+             s.adresse AS site_adresse,
+             c.nom AS client_nom,
+             c.contact AS client_contact
       FROM maintenances m
       LEFT JOIN sites s ON m.id_site = s.id_site
       LEFT JOIN clients c ON s.id_client = c.id_client
@@ -308,8 +307,9 @@ exports.generateMaintenanceHTML = async (req, res) => {
   const { id } = req.params;
   try {
     const [maintenance] = await db.query(`
-      SELECT m.*, s.nom as site_nom, s.adresse as site_adresse,
-             c.nom as client_nom, c.contact as client_contact
+      SELECT m.*,
+             s.nom AS site_nom, s.adresse AS site_adresse,
+             c.nom AS client_nom, c.contact AS client_contact
       FROM maintenances m
       LEFT JOIN sites s ON m.id_site = s.id_site
       LEFT JOIN clients c ON s.id_client = c.id_client
@@ -317,13 +317,15 @@ exports.generateMaintenanceHTML = async (req, res) => {
     `, [id]);
     if (maintenance.length === 0)
       return res.status(404).json({ error: "Maintenance non trouvée" });
+
     const [produits] = await db.query(`
       SELECT mp.etat, mp.commentaire, mp.etat_constate, mp.travaux_effectues,
-             p.nom as produit_nom, p.description as produit_description
+             p.nom AS produit_nom, p.description AS produit_description
       FROM maintenance_produits mp
       LEFT JOIN produits p ON mp.id_produit = p.id_produit
       WHERE mp.id_maintenance = ?
     `, [id]);
+
     const data = transformDataForTemplate(maintenance[0], maintenance[0], produits);
     const template = handlebars.compile(templateHTML);
     const html = template(data);
@@ -341,8 +343,9 @@ exports.generateMaintenancePDF = async (req, res) => {
   let browser;
   try {
     const [maintenance] = await db.query(`
-      SELECT m.*, s.nom as site_nom, s.adresse as site_adresse,
-             c.nom as client_nom, c.contact as client_contact
+      SELECT m.*,
+             s.nom AS site_nom, s.adresse AS site_adresse,
+             c.nom AS client_nom, c.contact AS client_contact
       FROM maintenances m
       LEFT JOIN sites s ON m.id_site = s.id_site
       LEFT JOIN clients c ON s.id_client = c.id_client
@@ -350,20 +353,28 @@ exports.generateMaintenancePDF = async (req, res) => {
     `, [id]);
     if (maintenance.length === 0)
       return res.status(404).json({ error: "Maintenance non trouvée" });
+
     const [produits] = await db.query(`
       SELECT mp.etat, mp.commentaire, mp.etat_constate, mp.travaux_effectues,
-             p.nom as produit_nom, p.description as produit_description
+             p.nom AS produit_nom, p.description AS produit_description
       FROM maintenance_produits mp
       LEFT JOIN produits p ON mp.id_produit = p.id_produit
       WHERE mp.id_maintenance = ?
     `, [id]);
+
     const data = transformDataForTemplate(maintenance[0], maintenance[0], produits);
     const template = handlebars.compile(templateHTML);
     const html = template(data);
+
     browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } });
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+    });
+
     const filename = `rapport-${data.chrono || maintenance[0].id_maintenance}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -379,30 +390,93 @@ exports.generateMaintenancePDF = async (req, res) => {
 // POST /maintenances
 exports.createMaintenance = async (req, res) => {
   const {
-    id_site, date_maintenance, type, etat, commentaire,
-    operateur_1, operateur_2, operateur_3,
-    heure_arrivee_matin, heure_depart_matin, heure_arrivee_aprem, heure_depart_aprem,
-    garantie, commentaire_interne, contact, type_produit, numero_commande, numero_ri, departement
+    id_site,
+    date_maintenance,
+    type,
+    types_intervention,
+    etat,
+    commentaire,
+    operateurs,
+    heure_arrivee_matin,
+    heure_depart_matin,
+    heure_arrivee_aprem,
+    heure_depart_aprem,
+    jours,
+    garantie,
+    commentaire_interne,
+    contact,
+    type_produit,
+    numero_commande,
+    numero_ri,
+    departement,
+    designation_produit_site,
+    date_demande,
+    date_accord_client
   } = req.body;
+
   try {
+    // Normalisation du champ types
+    let typesStr = null;
+    if (Array.isArray(types_intervention) && types_intervention.length > 0)
+      typesStr = [...new Set(types_intervention)].join(',');
+    else if (typeof types_intervention === 'string' && types_intervention)
+      typesStr = types_intervention;
+    else if (type)
+      typesStr = type;
+
+    // Normalisation des opérateurs
+    let operateursStr = null;
+    if (Array.isArray(operateurs)) operateursStr = operateurs.join('\n');
+    else if (typeof operateurs === 'string') operateursStr = operateurs || null;
+
+    // Normalisation des jours
+    let joursJson = null;
+    if (Array.isArray(jours) && jours.length > 0) joursJson = JSON.stringify(jours);
+
     const [result] = await db.query(
       `INSERT INTO maintenances (
-        id_site, date_maintenance, type, etat, commentaire, date_creation,
-        operateur_1, operateur_2, operateur_3,
+        id_site, date_maintenance, type, types_intervention, etat, commentaire, date_creation,
+        operateurs,
         heure_arrivee_matin, heure_depart_matin, heure_arrivee_aprem, heure_depart_aprem,
-        garantie, commentaire_interne, contact, type_produit, numero_commande, numero_ri, departement
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        jours_intervention,
+        garantie, commentaire_interne, contact, type_produit, numero_commande, numero_ri,
+        departement, designation_produit_site, date_demande, date_accord_client
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id_site, date_maintenance, type, etat, commentaire,
+        id_site,
+        date_maintenance,
+        typesStr,
+        typesStr,
+        etat,
+        commentaire,
         new Date().toISOString().split('T')[0],
-        operateur_1 || null, operateur_2 || null, operateur_3 || null,
-        heure_arrivee_matin || null, heure_depart_matin || null,
-        heure_arrivee_aprem || null, heure_depart_aprem || null,
-        garantie || 0, commentaire_interne || null, contact || null,
-        type_produit || null, numero_commande || null, numero_ri || null, departement || null
+        operateursStr,
+        heure_arrivee_matin || null,
+        heure_depart_matin || null,
+        heure_arrivee_aprem || null,
+        heure_depart_aprem || null,
+        joursJson,
+        garantie != null ? garantie : 0,
+        commentaire_interne || null,
+        contact || null,
+        type_produit || null,
+        numero_commande || null,
+        numero_ri || null,
+        departement || null,
+        designation_produit_site || null,
+        date_demande || null,
+        date_accord_client || null
       ]
     );
-    res.status(201).json({ id_maintenance: result.insertId, id_site, date_maintenance, type, etat, commentaire });
+
+    res.status(201).json({
+      id_maintenance: result.insertId,
+      id_site,
+      date_maintenance,
+      type: typesStr,
+      etat,
+      commentaire
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -413,15 +487,29 @@ exports.createMaintenance = async (req, res) => {
 exports.updateMaintenance = async (req, res) => {
   const { id } = req.params;
   const {
-    id_site, date_maintenance, types, type, types_intervention,
-    etat, commentaire, commentaire_interne, contact, type_produit,
-    numero_commande, numero_ri, departement, designation_produit_site,
-    categorie, date_demande, date_accord_client,
-    operateurs, operateur_1, operateur_2, operateur_3,
-    jours, garantie
+    id_site,
+    date_maintenance,
+    types,
+    type,
+    types_intervention,
+    etat,
+    commentaire,
+    commentaire_interne,
+    contact,
+    type_produit,
+    numero_commande,
+    numero_ri,
+    departement,
+    designation_produit_site,
+    date_demande,
+    date_accord_client,
+    operateurs,
+    jours,
+    garantie
   } = req.body;
 
   try {
+    // Récupérer id_site si non fourni
     let finalIdSite = id_site || null;
     if (!finalIdSite) {
       const [rows] = await db.query('SELECT id_site FROM maintenances WHERE id_maintenance = ?', [id]);
@@ -429,36 +517,65 @@ exports.updateMaintenance = async (req, res) => {
       finalIdSite = rows[0].id_site;
     }
 
+    // Normalisation des types
     let typesStr = null;
-    if (types && Array.isArray(types) && types.length > 0) typesStr = [...new Set(types)].join(',');
+    if (Array.isArray(types) && types.length > 0) typesStr = [...new Set(types)].join(',');
     else if (types_intervention) typesStr = types_intervention;
     else if (type) typesStr = type;
 
+    // Normalisation des opérateurs
     let operateursStr = null;
-    if (operateurs && Array.isArray(operateurs)) operateursStr = operateurs.join('\n');
-    else if (operateurs && typeof operateurs === 'string') operateursStr = operateurs;
+    if (Array.isArray(operateurs)) operateursStr = operateurs.join('\n');
+    else if (typeof operateurs === 'string') operateursStr = operateurs || null;
 
+    // Normalisation des jours
     let joursJson = null;
-    if (jours && Array.isArray(jours) && jours.length > 0) joursJson = JSON.stringify(jours);
+    if (Array.isArray(jours) && jours.length > 0) joursJson = JSON.stringify(jours);
 
     const [result] = await db.query(
       `UPDATE maintenances SET
-        id_site = ?, numero_ri = ?, designation_produit_site = ?, categorie = ?,
-        type = ?, types_intervention = ?, jours_intervention = ?,
-        departement = ?, date_demande = ?, date_accord_client = ?, date_maintenance = ?,
-        contact = ?, type_produit = ?, numero_commande = ?,
-        operateurs = ?, operateur_1 = ?, operateur_2 = ?, operateur_3 = ?,
-        heure_arrivee_matin = NULL, heure_depart_matin = NULL,
-        heure_arrivee_aprem = NULL, heure_depart_aprem = NULL,
-        garantie = ?, etat = ?, commentaire = ?, commentaire_interne = ?
+        id_site = ?,
+        numero_ri = ?,
+        designation_produit_site = ?,
+        type = ?,
+        types_intervention = ?,
+        jours_intervention = ?,
+        departement = ?,
+        date_demande = ?,
+        date_accord_client = ?,
+        date_maintenance = ?,
+        contact = ?,
+        type_produit = ?,
+        numero_commande = ?,
+        operateurs = ?,
+        heure_arrivee_matin = NULL,
+        heure_depart_matin = NULL,
+        heure_arrivee_aprem = NULL,
+        heure_depart_aprem = NULL,
+        garantie = ?,
+        etat = ?,
+        commentaire = ?,
+        commentaire_interne = ?
       WHERE id_maintenance = ?`,
       [
-        finalIdSite, numero_ri || null, designation_produit_site || null, categorie || null,
-        typesStr, typesStr, joursJson,
-        departement || null, date_demande || null, date_accord_client || null, date_maintenance || null,
-        contact || null, type_produit || null, numero_commande || null,
-        operateursStr, operateur_1 || null, operateur_2 || null, operateur_3 || null,
-        garantie != null ? garantie : 0, etat || null, commentaire || null, commentaire_interne || null,
+        finalIdSite,
+        numero_ri || null,
+        designation_produit_site || null,
+        typesStr,
+        typesStr,
+        joursJson,
+        departement || null,
+        date_demande || null,
+        date_accord_client || null,
+        date_maintenance || null,
+        contact || null,
+        type_produit || null,
+        numero_commande || null,
+        operateursStr,
+        garantie != null ? garantie : 0,
+        etat || null,
+        commentaire || null,
+        commentaire_interne || null,
         id
       ]
     );

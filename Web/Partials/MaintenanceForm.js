@@ -24,6 +24,7 @@ const JOURS    = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanc
 const JOURS_JS = [1, 2, 3, 4, 5, 6, 0]; // correspondance getDay()
 
 let _editingMaintenanceId = null;
+let _contextIdSite = null; // id_site injecté par la page hôte lors d'un ajout
 
 // ─── HTML DU FORMULAIRE ───────────────────────────────────────────────────────
 
@@ -300,9 +301,13 @@ function loadMaintenanceForm(containerId = "maintenance-form-container") {
 
 // ─── AFFICHAGE / MASQUAGE ─────────────────────────────────────────────────────
 
-/** Ouvre le formulaire en mode AJOUT */
-function showMaintenanceForm() {
+/**
+ * Ouvre le formulaire en mode AJOUT.
+ * @param {object} [context] - contexte optionnel, ex: { id_site: 42 }
+ */
+function showMaintenanceForm(context = {}) {
   _editingMaintenanceId = null;
+  _contextIdSite = context.id_site || null;
   _resetForm();
   document.getElementById("maintenanceFormTitle").textContent = "📋 Ajouter une maintenance";
   document.getElementById("maintenanceSubmitLabel").textContent = "Ajouter";
@@ -400,7 +405,7 @@ async function handleMaintenanceSubmit(event) {
       const res = await fetch(`${API}/maintenances`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ ...data, id_site: _contextIdSite || undefined })
       });
       if (!res.ok) { alert("Erreur lors de la création de la maintenance"); return; }
       const newMaintenance = await res.json();
@@ -475,9 +480,6 @@ function _collectFormData() {
     etat:                     _getVal("mf_etat")               || null,
     commentaire:              _getVal("mf_commentaire")        || null,
     operateurs:               operateursList,
-    operateur_1:              operateursList[0]                || null,
-    operateur_2:              operateursList[1]                || null,
-    operateur_3:              operateursList[2]                || null,
     jours:                    jours.length > 0 ? jours : undefined,
     garantie
   };

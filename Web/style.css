@@ -11,6 +11,7 @@
   --gray-200: #DEE2E6;
   --gray-300: #CED4DA;
   --gray-600: #6C757D;
+  --gray-700: #495057;
   --gray-800: #343A40;
   --white: #FFFFFF;
   --success: #28A745;
@@ -129,14 +130,8 @@ section.active {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 section h2 {
@@ -216,14 +211,11 @@ footer {
   transform: scale(1.05) rotate(90deg);
 }
 
-/* Modal et formulaire clients */
 #addClientForm.modal {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   z-index: 9999;
@@ -271,15 +263,8 @@ footer {
   box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
-#addClientForm textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-#addClientForm button {
-  margin-right: 0.75rem;
-  margin-top: 0.5rem;
-}
+#addClientForm textarea { resize: vertical; min-height: 100px; }
+#addClientForm button   { margin-right: 0.75rem; margin-top: 0.5rem; }
 
 #addClientForm h3 {
   margin-bottom: 1.5rem;
@@ -365,7 +350,7 @@ footer {
 }
 
 /* ========================================
-   BUTTONS GÉNÉRAUX
+   BUTTONS GENERAUX
 ======================================== */
 button {
   background: var(--primary-blue);
@@ -386,54 +371,47 @@ button:hover {
   box-shadow: var(--shadow-md);
 }
 
-button:active {
-  transform: translateY(0);
-}
+button:active { transform: translateY(0); }
 
-button.primary {
-  background: var(--primary-blue);
-}
+button.primary       { background: var(--primary-blue); }
+button.primary:hover { background: var(--primary-dark); }
 
-button.primary:hover {
-  background: var(--primary-dark);
-}
-
-#produitsList button[onclick^="deleteProduit"],
+/* Boutons d'action — classes utilitaires utilisables partout */
+.btn-danger,
 button#deleteBtn {
-  background: var(--danger);
+  background: var(--danger) !important;
 }
-
-#produitsList button[onclick^="deleteProduit"]:hover,
+.btn-danger:hover,
 button#deleteBtn:hover {
-  background: #C82333;
+  background: #C82333 !important;
 }
 
-#produitsList button[onclick^="editProduit"] {
-  background: var(--gray-600);
+.btn-edit {
+  background: var(--gray-600) !important;
+}
+.btn-edit:hover {
+  background: var(--gray-800) !important;
 }
 
-#produitsList button[onclick^="editProduit"]:hover {
-  background: var(--gray-800);
-}
-
-#produitsList button[onclick^="printQR"],
+.btn-qr,
 button#editBtn {
-  background: var(--accent-orange);
+  background: var(--accent-orange) !important;
 }
-
-#produitsList button[onclick^="printQR"]:hover,
+.btn-qr:hover,
 button#editBtn:hover {
-  background: #E65C00;
+  background: #E65C00 !important;
 }
 
-#backBtn {
-  margin-bottom: 1.5rem;
-  background: var(--gray-600);
-}
+/* Rétrocompatibilité — anciens sélecteurs onclick */
+#produitsList button[onclick^="deleteProduit"] { background: var(--danger); }
+#produitsList button[onclick^="deleteProduit"]:hover { background: #C82333; }
+#produitsList button[onclick^="editProduit"]   { background: var(--gray-600); }
+#produitsList button[onclick^="editProduit"]:hover { background: var(--gray-800); }
+#produitsList button[onclick^="printQR"]       { background: var(--accent-orange); }
+#produitsList button[onclick^="printQR"]:hover { background: #E65C00; }
 
-#backBtn:hover {
-  background: var(--gray-800);
-}
+#backBtn       { margin-bottom: 1.5rem; background: var(--gray-600); }
+#backBtn:hover { background: var(--gray-800); }
 
 /* ========================================
    FLOATING ACTION BUTTON (FAB)
@@ -474,19 +452,18 @@ button#editBtn:hover {
 }
 
 /* ========================================
-   MODAL / FORMS
+   MODAL / FORMS (anciens + partial)
 ======================================== */
 #addSiteForm.modal,
 #addProduitForm.modal,
 #addMaintenanceForm.modal,
 #addEquipementForm.modal,
-#editProduitForm.modal {
+#editProduitForm.modal,
+#maintenanceFormOverlay {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   z-index: 9999;
@@ -503,6 +480,11 @@ button#editBtn:hover {
   display: flex !important;
 }
 
+/* Le partial utilise display:flex directement */
+#maintenanceFormOverlay[style*="display: flex"] {
+  display: flex !important;
+}
+
 #addSiteForm form,
 #addProduitForm form,
 #addMaintenanceForm form,
@@ -510,7 +492,8 @@ button#editBtn:hover {
 #editProduitForm form,
 #produitForm,
 #maintenanceForm,
-#equipementForm {
+#equipementForm,
+#maintenanceFormOverlay .maintenance-form-modern {
   background: var(--white);
   padding: 2.5rem;
   border-radius: var(--radius-lg);
@@ -524,41 +507,24 @@ button#editBtn:hover {
   z-index: 10000;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Le formulaire maintenance partial est plus large */
+#maintenanceFormOverlay .maintenance-form-modern {
+  max-width: 1000px;
 }
 
-#addSiteForm input,
-#addSiteForm select,
-#addSiteForm textarea,
-#addProduitForm input,
-#addProduitForm select,
-#addProduitForm textarea,
-#addMaintenanceForm input,
-#addMaintenanceForm select,
-#addMaintenanceForm textarea,
-#addEquipementForm input,
-#addEquipementForm select,
-#addEquipementForm textarea,
-#editProduitForm input,
-#editProduitForm select,
-#editProduitForm textarea,
-#produitForm input,
-#produitForm select,
-#produitForm textarea,
-#maintenanceForm input,
-#maintenanceForm select,
-#maintenanceForm textarea,
-#equipementForm input,
-#equipementForm select,
-#equipementForm textarea {
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#addSiteForm input, #addSiteForm select, #addSiteForm textarea,
+#addProduitForm input, #addProduitForm select, #addProduitForm textarea,
+#addMaintenanceForm input, #addMaintenanceForm select, #addMaintenanceForm textarea,
+#addEquipementForm input, #addEquipementForm select, #addEquipementForm textarea,
+#editProduitForm input, #editProduitForm select, #editProduitForm textarea,
+#produitForm input, #produitForm select, #produitForm textarea,
+#maintenanceForm input, #maintenanceForm select, #maintenanceForm textarea,
+#equipementForm input, #equipementForm select, #equipementForm textarea {
   width: 100%;
   padding: 0.875rem;
   border: 2px solid var(--gray-200);
@@ -570,56 +536,30 @@ button#editBtn:hover {
   background: var(--gray-50);
 }
 
-#addSiteForm input:focus,
-#addSiteForm select:focus,
-#addSiteForm textarea:focus,
-#addProduitForm input:focus,
-#addProduitForm select:focus,
-#addProduitForm textarea:focus,
-#addMaintenanceForm input:focus,
-#addMaintenanceForm select:focus,
-#addMaintenanceForm textarea:focus,
-#addEquipementForm input:focus,
-#addEquipementForm select:focus,
-#addEquipementForm textarea:focus,
-#editProduitForm input:focus,
-#editProduitForm select:focus,
-#editProduitForm textarea:focus,
-#produitForm input:focus,
-#produitForm select:focus,
-#produitForm textarea:focus,
-#maintenanceForm input:focus,
-#maintenanceForm select:focus,
-#maintenanceForm textarea:focus,
-#equipementForm input:focus,
-#equipementForm select:focus,
-#equipementForm textarea:focus {
+#addSiteForm input:focus, #addSiteForm select:focus, #addSiteForm textarea:focus,
+#addProduitForm input:focus, #addProduitForm select:focus, #addProduitForm textarea:focus,
+#addMaintenanceForm input:focus, #addMaintenanceForm select:focus, #addMaintenanceForm textarea:focus,
+#addEquipementForm input:focus, #addEquipementForm select:focus, #addEquipementForm textarea:focus,
+#editProduitForm input:focus, #editProduitForm select:focus, #editProduitForm textarea:focus,
+#produitForm input:focus, #produitForm select:focus, #produitForm textarea:focus,
+#maintenanceForm input:focus, #maintenanceForm select:focus, #maintenanceForm textarea:focus,
+#equipementForm input:focus, #equipementForm select:focus, #equipementForm textarea:focus {
   outline: none;
   border-color: var(--primary-blue);
   background: var(--white);
   box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
-#addSiteForm textarea,
-#addProduitForm textarea,
-#addMaintenanceForm textarea,
-#addEquipementForm textarea,
-#editProduitForm textarea,
-#produitForm textarea,
-#maintenanceForm textarea,
-#equipementForm textarea {
+#addSiteForm textarea, #addProduitForm textarea, #addMaintenanceForm textarea,
+#addEquipementForm textarea, #editProduitForm textarea,
+#produitForm textarea, #maintenanceForm textarea, #equipementForm textarea {
   resize: vertical;
   min-height: 100px;
 }
 
-#addSiteForm button,
-#addProduitForm button,
-#addMaintenanceForm button,
-#addEquipementForm button,
-#editProduitForm button,
-#produitForm button,
-#maintenanceForm button,
-#equipementForm button {
+#addSiteForm button, #addProduitForm button, #addMaintenanceForm button,
+#addEquipementForm button, #editProduitForm button,
+#produitForm button, #maintenanceForm button, #equipementForm button {
   margin-right: 0.75rem;
   margin-top: 0.5rem;
 }
@@ -639,17 +579,14 @@ button#editBtn:hover {
   border-left: 4px solid var(--primary-blue);
 }
 
-#editProduitForm p strong {
-  color: var(--gray-600);
-}
+#editProduitForm p strong { color: var(--gray-600); }
+#editProduitForm p span   { color: var(--primary-blue); font-weight: 600; }
 
-#editProduitForm p span {
-  color: var(--primary-blue);
-  font-weight: 600;
-}
-
+/* Fix checkboxes et radios dans les formulaires modaux */
 #maintenanceForm input[type="checkbox"],
-#maintenanceForm input[type="radio"] {
+#maintenanceForm input[type="radio"],
+#maintenanceFormOverlay input[type="checkbox"],
+#maintenanceFormOverlay input[type="radio"] {
   width: auto;
   padding: 0;
   margin-bottom: 0;
@@ -658,6 +595,249 @@ button#editBtn:hover {
   background: none;
   box-shadow: none;
 }
+
+/* ========================================
+   FORMULAIRE MAINTENANCE PARTIAL
+   (styles specifiques au partial maintenanceForm.js)
+======================================== */
+.maintenance-form-modern h3 {
+  font-size: 1.6rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-blue);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-section {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--gray-200);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--primary-blue);
+}
+
+.section-icon { font-size: 1.4rem; }
+
+.section-header h4 {
+  margin: 0;
+  color: var(--primary-blue);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row-3 { grid-template-columns: repeat(3, 1fr); }
+.form-row-4 { grid-template-columns: repeat(4, 1fr); }
+
+.form-group { display: flex; flex-direction: column; }
+.form-group.full-width { grid-column: 1 / -1; }
+
+.form-group label {
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+}
+
+.required-star { color: #e53e3e; margin-left: 2px; }
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.7rem 0.85rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  transition: var(--transition);
+  background: var(--white);
+  color: var(--gray-800);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Reset checkbox dans checkbox-item */
+.checkbox-item input[type="checkbox"] {
+  all: revert;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  padding: 0 !important;
+  border: revert !important;
+  border-radius: 3px !important;
+  background: revert !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  accent-color: var(--primary-blue);
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.operators-tags-input { min-height: 80px; resize: vertical; font-family: inherit; }
+
+.operators-hint {
+  font-size: 0.8rem;
+  color: var(--gray-600);
+  margin-top: 0.3rem;
+  font-style: italic;
+}
+
+/* Horaires 7 jours */
+.horaires-7jours { overflow-x: auto; }
+
+.horaires-7jours table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+  font-size: 0.88rem;
+}
+
+.horaires-7jours th {
+  background: var(--primary-blue);
+  color: white;
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.horaires-7jours th:first-child { background: var(--gray-600); text-align: left; }
+
+.horaires-7jours td {
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--gray-200);
+  text-align: center;
+}
+
+.horaires-7jours tr:nth-child(even) td { background: var(--gray-50); }
+
+.horaires-7jours .period-sub {
+  background: var(--gray-100);
+  font-weight: 600;
+  color: var(--gray-600);
+  text-align: left;
+  padding-left: 0.75rem;
+}
+
+.horaires-7jours input[type="time"] {
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+  width: 100%;
+  min-width: 80px;
+  background: var(--white);
+  margin-bottom: 0;
+}
+
+/* Nature des travaux */
+.travaux-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.travaux-col { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.checkbox-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.6rem 0.85rem;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--gray-200);
+  transition: var(--transition);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--gray-800);
+  user-select: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.checkbox-item:hover {
+  border-color: var(--primary-blue);
+  background: rgba(0, 102, 204, 0.04);
+}
+
+.checkbox-item > span {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkbox-item.checked {
+  border-color: var(--primary-blue);
+  background: rgba(0, 102, 204, 0.08);
+}
+
+/* Garantie radio */
+.garantie-row { display: flex; gap: 1rem; margin-top: 0.5rem; }
+
+.garantie-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--gray-200);
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.garantie-option:hover { border-color: var(--primary-blue); background: rgba(0, 102, 204, 0.04); }
+.garantie-option input { accent-color: var(--primary-blue); width: 16px; height: 16px; cursor: pointer; }
+
+/* Boutons du formulaire maintenance */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--gray-200);
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.btn-secondary       { background: var(--gray-600) !important; }
+.btn-secondary:hover { background: var(--gray-800) !important; }
 
 /* ========================================
    DETAILS (ACCORDIONS)
@@ -671,15 +851,8 @@ details {
   transition: var(--transition);
 }
 
-details:hover {
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-sm);
-}
-
-details[open] {
-  background: var(--gray-50);
-  border-color: var(--primary-blue);
-}
+details:hover { border-color: var(--primary-blue); box-shadow: var(--shadow-sm); }
+details[open] { background: var(--gray-50); border-color: var(--primary-blue); }
 
 summary {
   font-weight: 600;
@@ -691,9 +864,7 @@ summary {
   user-select: none;
 }
 
-summary:hover {
-  background: var(--gray-100);
-}
+summary:hover { background: var(--gray-100); }
 
 details > div {
   padding: 1rem;
@@ -706,9 +877,7 @@ details > div {
   border-bottom: 1px solid var(--gray-100);
 }
 
-.site-detail:last-child {
-  border-bottom: none;
-}
+.site-detail:last-child { border-bottom: none; }
 
 .site-detail strong {
   color: var(--gray-600);
@@ -720,45 +889,14 @@ details > div {
 /* ========================================
    STATUS COLORS
 ======================================== */
-.maintenance-terminee,
-details.maintenance-terminee {
-  border-left: 4px solid var(--success);
-}
-
-.maintenance-en-cours,
-details.maintenance-en-cours {
-  border-left: 4px solid var(--warning);
-}
-
-.maintenance-planifiee,
-details.maintenance-planifiee {
-  border-left: 4px solid var(--secondary-blue);
-}
-
-.maintenance-autre,
-details.maintenance-autre {
-  border-left: 4px solid var(--gray-300);
-}
-
-.equipement-ok,
-details.equipement-ok {
-  border-left: 4px solid var(--success);
-}
-
-.equipement-nok,
-details.equipement-nok {
-  border-left: 4px solid var(--danger);
-}
-
-.equipement-passable,
-details.equipement-passable {
-  border-left: 4px solid var(--warning);
-}
-
-.equipement-autre,
-details.equipement-autre {
-  border-left: 4px solid var(--gray-300);
-}
+.maintenance-terminee,  details.maintenance-terminee  { border-left: 4px solid var(--success); }
+.maintenance-en-cours,  details.maintenance-en-cours  { border-left: 4px solid var(--warning); }
+.maintenance-planifiee, details.maintenance-planifiee { border-left: 4px solid var(--secondary-blue); }
+.maintenance-autre,     details.maintenance-autre     { border-left: 4px solid var(--gray-300); }
+.equipement-ok,         details.equipement-ok         { border-left: 4px solid var(--success); }
+.equipement-nok,        details.equipement-nok        { border-left: 4px solid var(--danger); }
+.equipement-passable,   details.equipement-passable   { border-left: 4px solid var(--warning); }
+.equipement-autre,      details.equipement-autre      { border-left: 4px solid var(--gray-300); }
 
 /* ========================================
    LINKS
@@ -771,21 +909,13 @@ a {
   border-bottom: 2px solid transparent;
 }
 
-a:hover {
-  color: var(--primary-dark);
-  border-bottom-color: var(--primary-dark);
-}
+a:hover { color: var(--primary-dark); border-bottom-color: var(--primary-dark); }
 
 /* ========================================
-   PAGES DÉTAILS
+   PAGES DETAILS
 ======================================== */
-#siteDetails,
-#MaintenancesList,
-#EquipementsList,
-#MaintenanceDetails,
-#ListeProduits {
-  margin-top: 1rem;
-}
+#siteDetails, #MaintenancesList, #EquipementsList,
+#MaintenanceDetails, #ListeProduits { margin-top: 1rem; }
 
 #MaintenanceDetails {
   background: var(--white);
@@ -795,14 +925,8 @@ a:hover {
   margin-bottom: 2rem;
 }
 
-#MaintenanceDetails .site-detail {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--gray-100);
-}
-
-#MaintenanceDetails .site-detail:last-child {
-  border-bottom: none;
-}
+#MaintenanceDetails .site-detail { padding: 0.75rem 0; border-bottom: 1px solid var(--gray-100); }
+#MaintenanceDetails .site-detail:last-child { border-bottom: none; }
 
 /* ========================================
    CARTE GPS
@@ -821,17 +945,9 @@ a:hover {
   z-index: 1;
 }
 
-#mapContainer:hover {
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-lg);
-}
+#mapContainer:hover { border-color: var(--primary-blue); box-shadow: var(--shadow-lg); }
 
-#map {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  z-index: 1;
-}
+#map { width: 100%; height: 100%; position: relative; z-index: 1; }
 
 .map-title {
   font-size: 1.25rem;
@@ -884,26 +1000,15 @@ a:hover {
 .stat-card-modern::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
+  top: 0; left: 0;
+  width: 100%; height: 4px;
   background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
 }
 
-.stat-card-modern.stat-card-info::before {
-  background: linear-gradient(90deg, var(--secondary-blue), var(--primary-blue));
-}
+.stat-card-modern.stat-card-info::before    { background: linear-gradient(90deg, var(--secondary-blue), var(--primary-blue)); }
+.stat-card-modern.stat-card-primary::before { background: linear-gradient(90deg, var(--accent-orange), #FF8533); }
 
-.stat-card-modern.stat-card-primary::before {
-  background: linear-gradient(90deg, var(--accent-orange), #FF8533);
-}
-
-.stat-card-modern:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-blue);
-}
+.stat-card-modern:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary-blue); }
 
 .stat-header {
   display: flex;
@@ -919,38 +1024,18 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 48px; height: 48px;
   background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
   border-radius: var(--radius-md);
 }
 
-.stat-label-modern {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--gray-800);
-  letter-spacing: -0.3px;
-}
+.stat-label-modern { font-size: 1.1rem; font-weight: 600; color: var(--gray-800); letter-spacing: -0.3px; }
 
-.stat-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+.stat-details { display: flex; flex-direction: column; gap: 1rem; }
 
-.stat-main-value {
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--primary-blue);
-  line-height: 1;
-  letter-spacing: -1px;
-}
+.stat-main-value { font-size: 3rem; font-weight: 700; color: var(--primary-blue); line-height: 1; letter-spacing: -1px; }
 
-.stat-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+.stat-breakdown { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .stat-item {
   display: flex;
@@ -962,60 +1047,22 @@ a:hover {
   transition: var(--transition);
 }
 
-.stat-item:hover {
-  background: var(--gray-100);
-  transform: translateX(4px);
-}
+.stat-item:hover { background: var(--gray-100); transform: translateX(4px); }
 
-.stat-item .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
+.stat-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-.stat-item.stat-success .dot {
-  background: var(--success);
-  box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
-}
+.stat-item.stat-success .dot { background: var(--success); box-shadow: 0 0 8px rgba(40, 167, 69, 0.4); }
+.stat-item.stat-danger .dot  { background: var(--danger);  box-shadow: 0 0 8px rgba(220, 53, 69, 0.4); }
+.stat-item.stat-warning .dot { background: var(--warning); box-shadow: 0 0 8px rgba(255, 193, 7, 0.4); }
+.stat-item.stat-info .dot    { background: var(--secondary-blue); box-shadow: 0 0 8px rgba(51, 153, 255, 0.4); }
 
-.stat-item.stat-danger .dot {
-  background: var(--danger);
-  box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
-}
-
-.stat-item.stat-warning .dot {
-  background: var(--warning);
-  box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
-}
-
-.stat-item.stat-info .dot {
-  background: var(--secondary-blue);
-  box-shadow: 0 0 8px rgba(51, 153, 255, 0.4);
-}
-
-.stat-item .label {
-  flex: 1;
-  font-size: 0.95rem;
-  color: var(--gray-600);
-  font-weight: 500;
-}
-
-.stat-item .value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--gray-800);
-  min-width: 40px;
-  text-align: right;
-}
+.stat-item .label { flex: 1; font-size: 0.95rem; color: var(--gray-600); font-weight: 500; }
+.stat-item .value { font-size: 1.25rem; font-weight: 700; color: var(--gray-800); min-width: 40px; text-align: right; }
 
 /* ========================================
-   AMÉLIORATION DES LISTES D'ÉQUIPEMENTS
+   EQUIPEMENTS
 ======================================== */
-#EquipementsList {
-  list-style: none;
-  padding: 0;
-}
+#EquipementsList { list-style: none; padding: 0; }
 
 #EquipementsList li {
   background: var(--white);
@@ -1030,71 +1077,23 @@ a:hover {
   gap: 1rem;
 }
 
-#EquipementsList li:hover {
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-sm);
-  transform: translateX(4px);
-}
+#EquipementsList li:hover { border-color: var(--primary-blue); box-shadow: var(--shadow-sm); transform: translateX(4px); }
 
 /* ========================================
    LISTE PRODUITS DANS MAINTENANCE
 ======================================== */
-#ListeProduits details {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  transition: var(--transition);
-}
+#ListeProduits details { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem; transition: var(--transition); }
+#ListeProduits details:hover { border-color: var(--primary-blue); box-shadow: var(--shadow-sm); }
+#ListeProduits details[open] { background: var(--gray-50); border-color: var(--primary-blue); }
 
-#ListeProduits details:hover {
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-sm);
-}
+#ListeProduits summary { font-weight: 600; color: var(--primary-blue); cursor: pointer; padding: 0.5rem; border-radius: var(--radius-sm); transition: var(--transition); user-select: none; font-size: 1.1rem; }
+#ListeProduits summary:hover { background: var(--gray-100); }
 
-#ListeProduits details[open] {
-  background: var(--gray-50);
-  border-color: var(--primary-blue);
-}
+#ListeProduits details > div { padding: 1rem; margin-top: 0.75rem; border-top: 1px solid var(--gray-200); }
+#ListeProduits details > div > div { padding: 0.5rem 0; border-bottom: 1px solid var(--gray-100); }
+#ListeProduits details > div > div:last-child { border-bottom: none; padding-top: 1rem; }
 
-#ListeProduits summary {
-  font-weight: 600;
-  color: var(--primary-blue);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
-  user-select: none;
-  font-size: 1.1rem;
-}
-
-#ListeProduits summary:hover {
-  background: var(--gray-100);
-}
-
-#ListeProduits details > div {
-  padding: 1rem;
-  margin-top: 0.75rem;
-  border-top: 1px solid var(--gray-200);
-}
-
-#ListeProduits details > div > div {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--gray-100);
-}
-
-#ListeProduits details > div > div:last-child {
-  border-bottom: none;
-  padding-top: 1rem;
-}
-
-#ListeProduits strong {
-  color: var(--gray-600);
-  font-weight: 600;
-  display: inline-block;
-  min-width: 200px;
-}
+#ListeProduits strong { color: var(--gray-600); font-weight: 600; display: inline-block; min-width: 200px; }
 
 #ListeProduits > p {
   text-align: center;
@@ -1105,391 +1104,159 @@ a:hover {
   border: 2px dashed var(--gray-300);
 }
 
-.btn-edit-produit {
-  background: var(--gray-600) !important;
-}
-
-.btn-edit-produit:hover {
-  background: var(--gray-800) !important;
-}
-
-.btn-remove-produit {
-  background: var(--danger) !important;
-}
-
-.btn-remove-produit:hover {
-  background: #C82333 !important;
-}
+.btn-edit-produit        { background: var(--gray-600) !important; }
+.btn-edit-produit:hover  { background: var(--gray-800) !important; }
+.btn-remove-produit      { background: var(--danger) !important; }
+.btn-remove-produit:hover{ background: #C82333 !important; }
 
 /* ========================================
    RESPONSIVE
 ======================================== */
 @media (max-width: 768px) {
-  header {
-    padding: 1rem 1.5rem;
-  }
+  header { padding: 1rem 1.5rem; }
+  header h1 { font-size: 1.5rem; }
+  main { padding: 0 1rem; margin: 1rem auto; }
+  section { padding: 1.5rem; }
+  section h2 { font-size: 1.5rem; }
 
-  header h1 {
-    font-size: 1.5rem;
-  }
+  #sitesList li, #produitsList li, #maintenancesList li { flex-direction: column; align-items: flex-start; }
+  #produitsList li div { width: 100%; justify-content: flex-start; }
 
-  main {
-    padding: 0 1rem;
-    margin: 1rem auto;
-  }
+  #addSiteBtn.fab, #addProductBtn.fab { width: 56px; height: 56px; bottom: 1.5rem; right: 1.5rem; font-size: 1.75rem; }
 
-  section {
-    padding: 1.5rem;
-  }
+  #addSiteForm form, #addProduitForm form, #addMaintenanceForm form,
+  #addEquipementForm form, #editProduitForm form,
+  #produitForm, #maintenanceForm, #equipementForm,
+  #maintenanceFormOverlay .maintenance-form-modern { padding: 1.5rem; }
 
-  section h2 {
-    font-size: 1.5rem;
-  }
+  .site-detail strong { min-width: 120px; }
+  .stats-grid-site { grid-template-columns: 1fr; }
+  .stat-main-value { font-size: 2.5rem; }
+  .stat-icon-modern { width: 40px; height: 40px; font-size: 2.5rem; }
 
-  #sitesList li,
-  #produitsList li,
-  #maintenancesList li {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .form-row-3, .form-row-4 { grid-template-columns: 1fr 1fr; }
+  .travaux-grid { grid-template-columns: 1fr; }
+}
 
-  #produitsList li div {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  #addSiteBtn.fab,
-  #addProductBtn.fab {
-    width: 56px;
-    height: 56px;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    font-size: 1.75rem;
-  }
-
-  #addSiteForm form,
-  #addProduitForm form,
-  #addMaintenanceForm form,
-  #addEquipementForm form,
-  #editProduitForm form,
-  #produitForm,
-  #maintenanceForm,
-  #equipementForm {
-    padding: 1.5rem;
-  }
-
-  .site-detail strong {
-    min-width: 120px;
-  }
-
-  .stats-grid-site {
-    grid-template-columns: 1fr;
-  }
-
-  .stat-main-value {
-    font-size: 2.5rem;
-  }
-
-  .stat-icon-modern {
-    width: 40px;
-    height: 40px;
-    font-size: 2.5rem;
-  }
+@media (max-width: 480px) {
+  .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
 }
 
 /* ========================================
-   MAP SUR LA PAGE D ACCUEIL
+   MAP PAGE D'ACCUEIL
 ======================================== */
-
-/* Conteneur de la carte principale */
 #allSitesMapContainer {
-  width: 100%;
-  height: 600px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  width: 100%; height: 600px;
+  border-radius: 8px; overflow: hidden;
+  margin-top: 1.5rem; margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   border: 2px solid #DEE2E6;
   transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
 }
 
-#allSitesMapContainer:hover {
-  border-color: #0066CC;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
+#allSitesMapContainer:hover { border-color: #0066CC; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+#allSitesMap { width: 100%; height: 100%; position: relative; z-index: 1; }
 
-#allSitesMap {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  z-index: 1;
-}
+.leaflet-container { height: 100%; width: 100%; z-index: 1; }
+.custom-marker { transition: all 0.3s ease; }
+.custom-marker:hover { transform: scale(1.15); z-index: 1000 !important; }
 
-/* S'assurer que Leaflet fonctionne correctement */
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  z-index: 1;
-}
+.leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.leaflet-popup-content { margin: 1rem; font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; }
+.leaflet-popup-tip { background: white; }
 
-/* Style pour les marqueurs personnalisés */
-.custom-marker {
-  transition: all 0.3s ease;
-}
-
-.custom-marker:hover {
-  transform: scale(1.15);
-  z-index: 1000 !important;
-}
-
-/* Style pour les popups Leaflet */
-.leaflet-popup-content-wrapper {
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-.leaflet-popup-content {
-  margin: 1rem;
-  font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.leaflet-popup-tip {
-  background: white;
-}
-
-/* Bouton dans la popup */
 .leaflet-popup-content button {
   margin-top: 0.75rem;
-  background: #0066CC;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  width: 100%;
+  background: #0066CC; color: white; border: none;
+  padding: 0.5rem 1rem; border-radius: 6px;
+  cursor: pointer; font-weight: 500; width: 100%;
   transition: all 0.3s ease;
 }
 
-.leaflet-popup-content button:hover {
-  background: #004A99;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
-}
+.leaflet-popup-content button:hover { background: #004A99; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,102,204,0.3); }
 
 /* ========================================
    GESTION DES PHOTOS
 ======================================== */
-
-/* Modal pour l'ajout de photos */
 #addPhotoFormModal {
   display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
   backdrop-filter: blur(4px);
   z-index: 9999;
-  align-items: center;
-  justify-content: center;
+  align-items: center; justify-content: center;
   animation: fadeIn 0.3s ease;
 }
 
-#addPhotoFormModal[style*="display: flex"] {
-  display: flex !important;
-}
+#addPhotoFormModal[style*="display: flex"] { display: flex !important; }
 
 #addPhotoFormModal form {
-  background: var(--white);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-  position: relative;
-  z-index: 10000;
+  background: var(--white); padding: 2.5rem;
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;
+  animation: slideUp 0.3s ease; position: relative; z-index: 10000;
 }
 
-/* Grille de photos */
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
+.photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem; }
 
 .photo-item {
-  position: relative;
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 2px solid var(--gray-200);
-  transition: var(--transition);
+  position: relative; background: var(--gray-50);
+  border-radius: var(--radius-md); overflow: hidden;
+  border: 2px solid var(--gray-200); transition: var(--transition);
 }
 
-.photo-item:hover {
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-4px);
-}
+.photo-item:hover { border-color: var(--primary-blue); box-shadow: var(--shadow-md); transform: translateY(-4px); }
+.photo-item img { width: 100%; height: 180px; object-fit: cover; display: block; }
 
-.photo-item img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  display: block;
-}
-
-.photo-actions {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  display: flex;
-  gap: 0.5rem;
-}
+.photo-actions { position: absolute; top: 0.5rem; right: 0.5rem; display: flex; gap: 0.5rem; }
 
 .photo-actions button {
-  background: rgba(220, 53, 69, 0.9);
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: var(--transition);
-  backdrop-filter: blur(4px);
+  background: rgba(220,53,69,0.9); color: white; border: none;
+  padding: 0.5rem; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 1rem; transition: var(--transition); backdrop-filter: blur(4px);
 }
 
-.photo-actions button:hover {
-  background: rgba(220, 53, 69, 1);
-  transform: scale(1.1);
-}
+.photo-actions button:hover { background: rgba(220,53,69,1); transform: scale(1.1); }
 
-.photo-description {
-  padding: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--gray-600);
-  border-top: 1px solid var(--gray-200);
-  margin: 0;
-  background: white;
-}
+.photo-description { padding: 0.75rem; font-size: 0.9rem; color: var(--gray-600); border-top: 1px solid var(--gray-200); margin: 0; background: white; }
 
-/* Formulaire d'ajout de photo */
 #photoPreview {
-  text-align: center;
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  min-height: 50px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
+  text-align: center; background: var(--gray-50);
+  border-radius: var(--radius-md); padding: 1rem;
+  min-height: 50px; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem;
 }
 
-#photoPreview img {
-  max-height: 150px;
-  max-width: 150px;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  object-fit: cover;
-}
+#photoPreview img { max-height: 150px; max-width: 150px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); object-fit: cover; }
 
-#fileCount {
-  padding: 0.5rem 1rem;
-  background: #E3F2FD;
-  border-radius: var(--radius-sm);
-  text-align: center;
-  font-weight: 600;
-}
+#fileCount { padding: 0.5rem 1rem; background: #E3F2FD; border-radius: var(--radius-sm); text-align: center; font-weight: 600; }
 
 #addPhotoFormModal input[type="file"] {
-  width: 100%;
-  padding: 0.875rem;
-  border: 2px dashed var(--gray-300);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  font-family: inherit;
-  transition: var(--transition);
-  background: var(--gray-50);
-  cursor: pointer;
+  width: 100%; padding: 0.875rem;
+  border: 2px dashed var(--gray-300); border-radius: var(--radius-md);
+  font-size: 1rem; margin-bottom: 1rem; font-family: inherit;
+  transition: var(--transition); background: var(--gray-50); cursor: pointer;
 }
 
-#addPhotoFormModal input[type="file"]:hover {
-  border-color: var(--primary-blue);
-  background: white;
-}
-
-#addPhotoFormModal input[type="file"]:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  background: var(--white);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-}
+#addPhotoFormModal input[type="file"]:hover { border-color: var(--primary-blue); background: white; }
+#addPhotoFormModal input[type="file"]:focus { outline: none; border-color: var(--primary-blue); background: var(--white); box-shadow: 0 0 0 3px rgba(0,102,204,0.1); }
 
 #addPhotoFormModal textarea {
-  width: 100%;
-  padding: 0.875rem;
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  font-family: inherit;
-  transition: var(--transition);
-  background: var(--gray-50);
-  resize: vertical;
-  min-height: 100px;
+  width: 100%; padding: 0.875rem;
+  border: 2px solid var(--gray-200); border-radius: var(--radius-md);
+  font-size: 1rem; margin-bottom: 1rem; font-family: inherit;
+  transition: var(--transition); background: var(--gray-50); resize: vertical; min-height: 100px;
 }
 
-#addPhotoFormModal textarea:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  background: var(--white);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-}
+#addPhotoFormModal textarea:focus { outline: none; border-color: var(--primary-blue); background: var(--white); box-shadow: 0 0 0 3px rgba(0,102,204,0.1); }
+#addPhotoFormModal h3 { margin-bottom: 1.5rem; color: var(--primary-blue); font-size: 1.5rem; }
+#addPhotoFormModal button { margin-right: 0.75rem; margin-top: 0.5rem; }
 
-#addPhotoFormModal h3 {
-  margin-bottom: 1.5rem;
-  color: var(--primary-blue);
-  font-size: 1.5rem;
-}
+p[style*="color: #FFC107"] { background: #FFF8E1; padding: 0.75rem; border-radius: var(--radius-md); border-left: 4px solid var(--warning); font-weight: 500; }
 
-#addPhotoFormModal button {
-  margin-right: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-/* Message limite photos */
-p[style*="color: #FFC107"] {
-  background: #FFF8E1;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-  border-left: 4px solid var(--warning);
-  font-weight: 500;
-}
-
-/* Responsive photos */
 @media (max-width: 768px) {
-  .photos-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 0.75rem;
-  }
-
-  .photo-item img {
-    height: 140px;
-  }
-
-  #addPhotoFormModal form {
-    padding: 1.5rem;
-    width: 95%;
-  }
+  .photos-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; }
+  .photo-item img { height: 140px; }
+  #addPhotoFormModal form { padding: 1.5rem; width: 95%; }
 }
