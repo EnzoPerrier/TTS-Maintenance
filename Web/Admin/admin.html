@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — TTSmaintenance</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap');
+
+    :root {
+      --bg: #0a0c10;
+      --surface: #111318;
+      --surface2: #181c24;
+      --border: #232733;
+      --border-bright: #2e3546;
+      --accent: #3b82f6;
+      --accent-dim: rgba(59,130,246,0.15);
+      --accent-glow: rgba(59,130,246,0.4);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.12);
+      --orange: #f97316;
+      --orange-dim: rgba(249,115,22,0.12);
+      --text: #e2e8f0;
+      --text-dim: #64748b;
+      --text-muted: #334155;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid noise texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== LOGIN SCREEN ===== */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      background: var(--bg);
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 500px;
+      box-shadow: 0 0 60px rgba(59,130,246,0.08);
+    }
+
+    .login-card .logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+      color: var(--text);
+    }
+
+    .login-card .logo span { color: var(--accent); }
+
+    .login-card p {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .login-card label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+
+    .login-card input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 1.2rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .login-card input:focus { border-color: var(--accent); }
+
+    .login-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.8rem;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .login-btn:hover { background: #2563eb; box-shadow: 0 0 20px var(--accent-glow); }
+
+    .login-error {
+      margin-top: 1rem;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--red);
+      text-align: center;
+      display: none;
+    }
+
+    /* ===== APP LAYOUT ===== */
+    #app {
+      display: none;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* HEADER */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(10,12,16,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand span { color: var(--accent); }
+
+    .badge-admin {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(59,130,246,0.3);
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    #liveTime {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .btn-logout {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+    /* NAV TABS */
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      padding: 1.5rem 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-tab {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      color: var(--text-dim);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .nav-tab:hover { color: var(--text); }
+    .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* MAIN CONTENT */
+    main { padding: 2rem; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== STAT CARDS ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .stat-card:hover { border-color: var(--border-bright); }
+
+    .stat-card .label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-card .value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-card .sub {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 0.4rem;
+    }
+
+    .stat-card .icon {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 1.4rem;
+      opacity: 0.4;
+    }
+
+    .stat-card.blue .value { color: var(--accent); }
+    .stat-card.green .value { color: var(--green); }
+    .stat-card.red .value { color: var(--red); }
+    .stat-card.orange .value { color: var(--orange); }
+
+    /* PULSE DOT */
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 6px;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ===== TABLES ===== */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .panel-actions { display: flex; gap: 0.5rem; }
+
+    .btn-sm {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    thead th {
+      padding: 0.75rem 1.5rem;
+      text-align: left;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+
+    td {
+      padding: 0.85rem 1.5rem;
+      color: var(--text);
+    }
+
+    /* STATUS BADGES */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge.online { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .badge.offline { background: rgba(100,116,139,0.1); color: var(--text-dim); border: 1px solid rgba(100,116,139,0.2); }
+    .badge.blocked { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+    .badge.warning { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(249,115,22,0.25); }
+    .badge.info { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(59,130,246,0.25); }
+
+    /* LOG COLORS */
+    .log-create { color: var(--green); }
+    .log-update { color: var(--accent); }
+    .log-delete { color: var(--red); }
+    .log-login { color: var(--orange); }
+    .log-block { color: #a855f7; }
+
+    /* ACTION BUTTONS */
+    .action-btn {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 5px;
+      cursor: pointer;
+      border: 1px solid;
+      background: transparent;
+      transition: all 0.2s;
+    }
+
+    .action-btn.block { border-color: var(--red); color: var(--red); }
+    .action-btn.block:hover { background: var(--red-dim); }
+    .action-btn.unblock { border-color: var(--green); color: var(--green); }
+    .action-btn.unblock:hover { background: var(--green-dim); }
+    .action-btn.kick { border-color: var(--orange); color: var(--orange); }
+    .action-btn.kick:hover { background: var(--orange-dim); }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-bar input,
+    .filter-bar select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .filter-bar input:focus,
+    .filter-bar select:focus { border-color: var(--accent); }
+
+    .filter-bar input { flex: 1; min-width: 200px; }
+
+    /* GLOBAL LOCK BANNER */
+    #lockBanner {
+      display: none;
+      background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+      border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #lockBanner.hidden { display: none; }
+
+    .lock-text {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--red);
+    }
+
+    /* EMPTY STATE */
+    .empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    /* GLOBAL LOCK TOGGLE */
+    .lock-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .lock-section-info h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .lock-section-info p {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      transition: 0.3s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      background: var(--text-dim);
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    input:checked + .toggle-slider { background: var(--red); border-color: var(--red); }
+    input:checked + .toggle-slider::before { transform: translateX(24px); background: #fff; }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface2);
+      border: 1px solid var(--border-bright);
+      border-radius: 10px;
+      padding: 0.9rem 1.4rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--text);
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-left: 3px solid var(--green); }
+    #toast.error { border-left: 3px solid var(--red); }
+    #toast.info { border-left: 3px solid var(--accent); }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 14px;
+      padding: 2rem;
+      width: 420px;
+      max-width: 90vw;
+      box-shadow: 0 0 60px rgba(0,0,0,0.5);
+    }
+
+    .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+    .modal p {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+    .btn-cancel {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel:hover { border-color: var(--text-dim); color: var(--text); }
+
+    .btn-confirm {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-confirm.red { background: var(--red); color: #fff; }
+    .btn-confirm.red:hover { background: #dc2626; }
+    .btn-confirm.green { background: var(--green); color: #fff; }
+    .btn-confirm.green:hover { background: #16a34a; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      header { padding: 0 1rem; }
+      main { padding: 1rem; }
+      .nav-tabs { padding: 1rem 1rem 0; overflow-x: auto; }
+      td, th { padding: 0.65rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo">Maintenance<span>App</span></div>
+    <p>Panneau d'administration</p>
+    <label>Identifiant</label>
+    <input type="text" id="loginUser" placeholder="admin" autocomplete="username" />
+    <label>Mot de passe</label>
+    <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">Connexion →</button>
+    <div class="login-error" id="loginError">Identifiants incorrects</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+
+  <header>
+    <div class="header-left">
+      <div class="brand">TTS<span>maintenance</span></div>
+      <span class="badge-admin">⚡ Admin</span>
+    </div>
+    <div class="header-right">
+      <span id="liveTime"></span>
+      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('overview')">Vue d'ensemble</button>
+    <button class="nav-tab" onclick="switchTab('sessions')">Sessions actives</button>
+    <button class="nav-tab" onclick="switchTab('users')">Utilisateurs</button>
+    <button class="nav-tab" onclick="switchTab('logs')">Logs d'activité</button>
+    <button class="nav-tab" onclick="switchTab('access')">Contrôle d'accès</button>
+  </div>
+
+  <main>
+
+    <!-- ===== OVERVIEW ===== -->
+    <div id="tab-overview" class="tab-panel active">
+
+      <div id="lockBanner" class="hidden">
+        <div class="lock-text">🔒 Application verrouillée — Toute connexion est bloquée</div>
+        <button class="btn-sm" onclick="switchTab('access')">Gérer →</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="label">Sessions actives</div>
+          <div class="value" id="stat-sessions">—</div>
+          <div class="sub"><span class="pulse-dot"></span>En ligne maintenant</div>
+          <div class="icon">👥</div>
+        </div>
+        <div class="stat-card green">
+          <div class="label">Utilisateurs totaux</div>
+          <div class="value" id="stat-users">—</div>
+          <div class="sub">Comptes actifs</div>
+          <div class="icon">✅</div>
+        </div>
+        <div class="stat-card red">
+          <div class="label">Comptes bloqués</div>
+          <div class="value" id="stat-blocked">—</div>
+          <div class="sub">Accès refusé</div>
+          <div class="icon">🔒</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="label">Modifications (24h)</div>
+          <div class="value" id="stat-mods">—</div>
+          <div class="sub">CRUD opérations</div>
+          <div class="icon">✏️</div>
+        </div>
+      </div>
+
+      <!-- Recent logs preview -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Activité récente</div>
+          <div class="panel-actions">
+            <button class="btn-sm" onclick="switchTab('logs')">Voir tout →</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Horodatage</th>
+              <th>Utilisateur</th>
+              <th>Action</th>
+              <th>Détail</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody id="recentLogsTable">
+            <tr><td colspan="5" class="empty">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ===== SESSIONS ===== -->
+    <div id="tab-sessions" class="tab-panel">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="pulse-dot"></span>Sessions en cours</div>
+          <div class="panel-actions">
+            <button class="btn-sm" onclick="loadSessions()">↻ Rafraîchir</button>
+            <button class="btn-sm danger" onclick="confirmKickAll()">Déconnecter tout</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>IP</th>
+              <th>Connexion</th>
+              <th>Dernière activité</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="sessionsTable">
+            <tr><td colspan="6" class="empty">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== UTILISATEURS ===== -->
+    <div id="tab-users" class="tab-panel">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Gestion des utilisateurs</div>
+          <div class="panel-actions">
+            <button class="btn-sm" onclick="loadUsers()">↻ Rafraîchir</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Dernière connexion</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTable">
+            <tr><td colspan="6" class="empty">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== LOGS ===== -->
+    <div id="tab-logs" class="tab-panel">
+      <div class="filter-bar">
+        <input type="text" id="logSearch" placeholder="Rechercher…" oninput="filterLogs()" />
+        <select id="logType" onchange="filterLogs()">
+          <option value="">Toutes les actions</option>
+          <option value="CREATE">Créations</option>
+          <option value="UPDATE">Modifications</option>
+          <option value="DELETE">Suppressions</option>
+          <option value="LOGIN">Connexions</option>
+          <option value="BLOCK">Blocages</option>
+        </select>
+        <button class="btn-sm" onclick="loadLogs()">↻ Rafraîchir</button>
+        <button class="btn-sm danger" onclick="confirmClearLogs()">🗑 Vider les logs</button>
+      </div>
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th>Horodatage</th>
+              <th>Utilisateur</th>
+              <th>Action</th>
+              <th>Table</th>
+              <th>Détail</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody id="logsTable">
+            <tr><td colspan="6" class="empty">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== ACCÈS ===== -->
+    <div id="tab-access" class="tab-panel">
+
+      <!-- Global lock -->
+      <div class="lock-section">
+        <div class="lock-section-info">
+          <h3>🔒 Verrouillage global de l'application</h3>
+          <p>Bloquer l'accès complet à la suite logicielle pour tous les utilisateurs (impayé, maintenance, etc.)</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="globalLockToggle" onchange="toggleGlobalLock()" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div id="lockMessageBox" style="display:none; margin-bottom:1.5rem;">
+        <div class="filter-bar">
+          <input type="text" id="lockMessage" placeholder="Message affiché aux utilisateurs bloqués…" style="flex:1" />
+          <button class="btn-sm" onclick="saveLockMessage()">Sauvegarder le message</button>
+        </div>
+      </div>
+
+      <!-- Per-user block -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Blocage par utilisateur</div>
+          <div class="panel-actions">
+            <button class="btn-sm" onclick="loadUsers()">↻ Rafraîchir</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Raison du blocage</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="accessTable">
+            <tr><td colspan="6" class="empty">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h3 id="modalTitle">Confirmer</h3>
+    <p id="modalText">Êtes-vous sûr ?</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-confirm red" id="modalConfirmBtn" onclick="modalAction()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

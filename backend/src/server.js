@@ -53,6 +53,10 @@ app.use("/auth", AuthRoutes);
 const QrCodesRoutes = require("./routes/qrcodes.routes.js");
 app.use("/qrcodes", QrCodesRoutes);
 
+// Admin
+const AdminRoutes = require("./routes/admin.routes.js");
+app.use("/admin", AdminRoutes);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Serveur API lancé sur le port " + PORT);
