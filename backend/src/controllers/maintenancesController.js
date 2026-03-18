@@ -17,6 +17,61 @@ let templateHTML;
   }
 })();
 
+// Instance Puppeteer réutilisée pour éviter le cold-start à chaque requête PDF
+let browserInstance = null;
+async function getBrowser() {
+  if (browserInstance) {
+    try {
+      // Vérifier que le browser est encore vivant
+      await browserInstance.version();
+      return browserInstance;
+    } catch {
+      browserInstance = null;
+    }
+  }
+  browserInstance = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+  return browserInstance;
+}
+
+// Ressources embarquées en base64 (chargées une seule fois au démarrage)
+let fontBase64 = null;
+let logoBase64 = null;
+(async () => {
+  try {
+    fontBase64 = (await fs.readFile(
+      path.join(__dirname, '../pdf/Ressources/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf')
+    )).toString('base64');
+  } catch {
+    console.warn('Police PDF non trouvée, elle sera ignorée dans le rendu.');
+  }
+  try {
+    logoBase64 = (await fs.readFile(
+      path.join(__dirname, '../pdf/Ressources/Images/logoTTS.svg')
+    )).toString('base64');
+  } catch {
+    console.warn('Logo PDF non trouvé, il sera ignoré dans le rendu.');
+  }
+})();
+
+function injectAssetsIntoHTML(html) {
+  if (fontBase64) {
+    html = html.replace(
+      'src: url("/Ressources/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf") format("opentype");',
+      `src: url("data:font/opentype;base64,${fontBase64}") format("opentype");`
+    );
+  }
+  if (logoBase64) {
+    html = html.replace(
+      'src="/Ressources/Images/logoTTS.svg"',
+      `src="data:image/svg+xml;base64,${logoBase64}"`
+    );
+  }
+  return html;
+}
+
 function formatDateForDisplay(dateString) {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -99,7 +154,6 @@ function combineTravauxEffectues(produits) {
 }
 
 function transformDataForTemplate(maintenance, site, produits) {
-  // La colonne `operateurs` est la seule source (operateur_1/2/3 supprimés de la BDD)
   let operateurs = '';
   if (maintenance.operateurs) {
     operateurs = maintenance.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean).join(' & ');
@@ -141,7 +195,6 @@ function transformDataForTemplate(maintenance, site, produits) {
       }
     });
   } else if (maintenance.heure_arrivee_matin || maintenance.heure_arrivee_aprem) {
-    // Fallback : utiliser les heures de la maintenance sur le jour de la date
     const dateObj = new Date(maintenance.date_maintenance);
     const jourActuel = joursSemaine[dateObj.getDay()];
     if (jourActuel && tempsParJour[jourActuel]) {
@@ -232,7 +285,7 @@ function transformDataForTemplate(maintenance, site, produits) {
   };
 }
 
-// GET /maintenances → toutes les maintenances
+// GET /maintenances
 exports.getAllMaintenances = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM maintenances ORDER BY date_maintenance DESC");
@@ -243,7 +296,7 @@ exports.getAllMaintenances = async (req, res) => {
   }
 };
 
-// GET /maintenances/NotFinished → toutes les maintenances non terminées
+// GET /maintenances/NotFinished
 exports.getAllMaintenancesNotFinished = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -340,7 +393,7 @@ exports.generateMaintenanceHTML = async (req, res) => {
 // GET /maintenances/:id/pdf
 exports.generateMaintenancePDF = async (req, res) => {
   const { id } = req.params;
-  let browser;
+  let page;
   try {
     const [maintenance] = await db.query(`
       SELECT m.*,
@@ -364,11 +417,17 @@ exports.generateMaintenancePDF = async (req, res) => {
 
     const data = transformDataForTemplate(maintenance[0], maintenance[0], produits);
     const template = handlebars.compile(templateHTML);
-    const html = template(data);
+    let html = template(data);
 
-    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    // Injection des ressources en base64 (police + logo)
+    html = injectAssetsIntoHTML(html);
+
+    const browser = await getBrowser();
+    page = await browser.newPage();
+
+    // domcontentloaded est suffisant car toutes les ressources sont embarquées en base64
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -381,9 +440,11 @@ exports.generateMaintenancePDF = async (req, res) => {
     res.send(pdf);
   } catch (err) {
     console.error(err);
+    // Si le browser est dans un état corrompu, le reset pour la prochaine requête
+    browserInstance = null;
     res.status(500).json({ error: "Erreur serveur" });
   } finally {
-    if (browser) await browser.close();
+    if (page) await page.close().catch(() => {});
   }
 };
 
@@ -415,7 +476,6 @@ exports.createMaintenance = async (req, res) => {
   } = req.body;
 
   try {
-    // Normalisation du champ types
     let typesStr = null;
     if (Array.isArray(types_intervention) && types_intervention.length > 0)
       typesStr = [...new Set(types_intervention)].join(',');
@@ -424,12 +484,10 @@ exports.createMaintenance = async (req, res) => {
     else if (type)
       typesStr = type;
 
-    // Normalisation des opérateurs
     let operateursStr = null;
     if (Array.isArray(operateurs)) operateursStr = operateurs.join('\n');
     else if (typeof operateurs === 'string') operateursStr = operateurs || null;
 
-    // Normalisation des jours
     let joursJson = null;
     if (Array.isArray(jours) && jours.length > 0) joursJson = JSON.stringify(jours);
 
@@ -509,7 +567,6 @@ exports.updateMaintenance = async (req, res) => {
   } = req.body;
 
   try {
-    // Récupérer id_site si non fourni
     let finalIdSite = id_site || null;
     if (!finalIdSite) {
       const [rows] = await db.query('SELECT id_site FROM maintenances WHERE id_maintenance = ?', [id]);
@@ -517,18 +574,15 @@ exports.updateMaintenance = async (req, res) => {
       finalIdSite = rows[0].id_site;
     }
 
-    // Normalisation des types
     let typesStr = null;
     if (Array.isArray(types) && types.length > 0) typesStr = [...new Set(types)].join(',');
     else if (types_intervention) typesStr = types_intervention;
     else if (type) typesStr = type;
 
-    // Normalisation des opérateurs
     let operateursStr = null;
     if (Array.isArray(operateurs)) operateursStr = operateurs.join('\n');
     else if (typeof operateurs === 'string') operateursStr = operateurs || null;
 
-    // Normalisation des jours
     let joursJson = null;
     if (Array.isArray(jours) && jours.length > 0) joursJson = JSON.stringify(jours);
 

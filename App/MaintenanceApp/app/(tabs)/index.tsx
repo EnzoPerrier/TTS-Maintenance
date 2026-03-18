@@ -4,11 +4,13 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { CardStyles, GlobalStyles } from '../../constants/Styles';
+import { useClients } from '../../hooks/useClients';
 import { useSites } from '../../hooks/useSites';
 
 export default function SitesScreen() {
   const router = useRouter();
   const { sites, refreshing, refresh } = useSites();
+  const { clients } = useClients();
   const [search, setSearch] = useState('');
 
   const filtered = sites.filter(s =>
@@ -36,21 +38,26 @@ export default function SitesScreen() {
           placeholder="Rechercher un site..."
         />
 
-        {filtered.map(site => (
-          <Card
-            key={site.id_site}
-            title={site.nom}
-            badge={`ID: ${site.id_site}`}
-            onPress={() => router.push(`/sites/${site.id_site}`)}
-          >
-            <Text style={CardStyles.cardText}>
-              📍 {site.adresse || 'Adresse non spécifiée'}
-            </Text>
-            <Text style={CardStyles.cardText}>
-              👤 Client: {site.id_client}
-            </Text>
-          </Card>
-        ))}
+        {filtered.map(site => {
+          const client = clients.find(c => c.id_client === site.id_client);
+
+          return (
+            <Card
+              key={site.id_site}
+              title={site.nom}
+              onPress={() => router.push(`/sites/${site.id_site}`)}
+            >
+              {client && (
+                <Text style={CardStyles.cardText}>
+                  👤 {client.nom}
+                </Text>
+              )}
+              <Text style={CardStyles.cardText}>
+                📍 {site.adresse || 'Adresse non spécifiée'}
+              </Text>
+            </Card>
+          );
+        })}
       </ScrollView>
     </View>
   );

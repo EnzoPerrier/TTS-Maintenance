@@ -1,10 +1,12 @@
 import { Config } from '../constants/Config';
-import { Maintenance, MaintenanceProduit, Photo, Produit, Site } from '../types';
+import { Client, Maintenance, MaintenanceProduit, Photo, Produit, Site } from '../types';
 
 const API = Config.API_URL;
 
 export const api = {
-  // Sites
+
+  // ─── SITES ────────────────────────────────────────────────────────────────
+
   getSites: async (): Promise<Site[]> => {
     const res = await fetch(`${API}/sites`);
     return res.json();
@@ -15,7 +17,83 @@ export const api = {
     return res.json();
   },
 
-  // Produits
+  createSite: async (data: {
+    id_client: number;
+    nom: string;
+    adresse?: string | null;
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+  }): Promise<Site> => {
+    const res = await fetch(`${API}/sites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Erreur lors de la création du site');
+    return res.json();
+  },
+
+  updateSite: async (id: number, data: Partial<Site>): Promise<void> => {
+    const res = await fetch(`${API}/sites/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Erreur lors de la mise à jour du site');
+  },
+
+  deleteSite: async (id: number): Promise<void> => {
+    const res = await fetch(`${API}/sites/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Erreur lors de la suppression du site');
+  },
+
+  // ─── CLIENTS ──────────────────────────────────────────────────────────────
+
+  getClients: async (): Promise<Client[]> => {
+    const res = await fetch(`${API}/clients`);
+    return res.json();
+  },
+
+  getClientById: async (id: number): Promise<Client> => {
+    const res = await fetch(`${API}/clients/${id}`);
+    return res.json();
+  },
+
+  createClient: async (data: {
+    nom: string;
+    contact?: string | null;
+    adresse?: string | null;
+    email?: string | null;
+    telephone?: string | null;
+  }): Promise<Client> => {
+    const res = await fetch(`${API}/clients`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Erreur lors de la création du client');
+    return res.json();
+  },
+
+  updateClient: async (id: number, data: Partial<Client>): Promise<void> => {
+    const res = await fetch(`${API}/clients/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Erreur lors de la mise à jour du client');
+  },
+
+  deleteClient: async (id: number): Promise<void> => {
+    const res = await fetch(`${API}/clients/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
+      throw new Error(err.error || 'Erreur lors de la suppression du client');
+    }
+  },
+
+  // ─── PRODUITS ─────────────────────────────────────────────────────────────
+
   getProducts: async (): Promise<Produit[]> => {
     const res = await fetch(`${API}/produits`);
     return res.json();
@@ -43,6 +121,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    if (!res.ok) throw new Error('Erreur lors de la création du produit');
     return res.json();
   },
 
@@ -52,36 +131,27 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    
-    if (!res.ok) {
-      throw new Error('Erreur lors de la mise à jour du produit');
-    }
-    
+    if (!res.ok) throw new Error('Erreur lors de la mise à jour du produit');
     return res.json();
   },
 
-  deleteProduct: async (id: number): Promise<Produit> => {
-    const res = await fetch(`${API}/produits/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!res.ok) {
-      throw new Error('Erreur lors de la suppression du produit');
-    }
-
-    const data: Produit = await res.json();
-    return data;
+  deleteProduct: async (id: number): Promise<void> => {
+    const res = await fetch(`${API}/produits/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Erreur lors de la suppression du produit');
   },
 
-  // Maintenances
+  // ─── MAINTENANCES ─────────────────────────────────────────────────────────
+
   getMaintenances: async (): Promise<Maintenance[]> => {
     const res = await fetch(`${API}/maintenances`);
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
   getMaintenancesNotFinished: async (): Promise<Maintenance[]> => {
     const res = await fetch(`${API}/maintenances/NotFinished`);
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
   getMaintenanceById: async (id: number): Promise<Maintenance> => {
@@ -91,148 +161,218 @@ export const api = {
 
   getMaintenancesBySite: async (siteId: number): Promise<Maintenance[]> => {
     const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${siteId}`);
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
-  createMaintenance: async (data: Partial<Maintenance>): Promise<Maintenance> => {
+  createMaintenance: async (data: {
+    id_site: number;
+    date_maintenance: string;
+    type: string;
+    types_intervention?: string | null;
+    etat?: string | null;
+    commentaire?: string | null;
+    // Chaîne séparée par virgules ex: "JD, ML, AB"
+    operateurs?: string | null;
+    heure_arrivee_matin?: string | null;
+    heure_depart_matin?: string | null;
+    heure_arrivee_aprem?: string | null;
+    heure_depart_aprem?: string | null;
+    jours_intervention?: string | null;
+    garantie?: number | boolean | null;
+    commentaire_interne?: string | null;
+    contact?: string | null;
+    type_produit?: string | null;
+    numero_commande?: string | null;
+    numero_ri?: string | null;
+    designation_produit_site?: string | null;
+    date_demande?: string | null;
+    date_accord_client?: string | null;
+    departement?: string | null;
+  }): Promise<Maintenance> => {
     const res = await fetch(`${API}/maintenances`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    if (!res.ok) throw new Error('Erreur lors de la création de la maintenance');
     return res.json();
   },
 
-  deleteMaintenance: async (id: number): Promise<Maintenance> => {
+  updateMaintenance: async (id: number, data: {
+    id_site?: number;
+    date_maintenance?: string;
+    type?: string;
+    types_intervention?: string | null;
+    etat?: string | null;
+    commentaire?: string | null;
+    operateurs?: string | null;
+    heure_arrivee_matin?: string | null;
+    heure_depart_matin?: string | null;
+    heure_arrivee_aprem?: string | null;
+    heure_depart_aprem?: string | null;
+    jours_intervention?: string | null;
+    garantie?: number | boolean | null;
+    commentaire_interne?: string | null;
+    contact?: string | null;
+    type_produit?: string | null;
+    numero_commande?: string | null;
+    numero_ri?: string | null;
+    designation_produit_site?: string | null;
+    date_demande?: string | null;
+    date_accord_client?: string | null;
+    departement?: string | null;
+  }): Promise<void> => {
     const res = await fetch(`${API}/maintenances/${id}`, {
-      method: 'DELETE',
-    });
-
-    const data: Maintenance = await res.json();
-    return data;
-  },
-
-  // Photos
-  getPhotosByProduct: async (productId: number): Promise<Photo[]> => {
-    const res = await fetch(`${API}/photos/produit/${productId}`);
-    return res.json();
-  },
-
-  getPhotosByMaintenance: async (
-    maintenanceId: number,
-    productId: number
-  ): Promise<Photo[]> => {
-    const res = await fetch(
-      `${API}/photos/maintenance/${maintenanceId}/${productId}`
-    );
-    return res.json();
-  },
-
-  uploadPhotos: async (data: {
-    maintenance_id: number;
-    produit_id: number;
-    photos: string[];
-  }): Promise<any> => {
-    const res = await fetch(`${API}/photos/multiple`, {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    if (!res.ok) throw new Error('Erreur lors de la mise à jour de la maintenance');
+  },
+
+  deleteMaintenance: async (id: number): Promise<void> => {
+    const res = await fetch(`${API}/maintenances/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Erreur lors de la suppression de la maintenance');
+  },
+
+  // Rapports
+  getMaintenanceReportUrl: (id: number): string => `${API}/maintenances/${id}/html`,
+  getMaintenancePdfUrl: (id: number): string => `${API}/maintenances/${id}/pdf`,
+
+  // ─── MAINTENANCE-PRODUITS ─────────────────────────────────────────────────
+
+  getProductsByMaintenance: async (maintenanceId: number): Promise<MaintenanceProduit[]> => {
+    const res = await fetch(`${API}/maintenance-produits/maintenance/${maintenanceId}`);
     return res.json();
   },
 
-  uploadPhoto: async (formData: FormData): Promise<Photo> => {
-    const res = await fetch(`${API}/photos`, {
-      method: 'POST',
-      body: formData,
-    });
-    
-    if (!res.ok) {
-      throw new Error('Erreur lors de l\'upload de la photo');
-    }
-    
-    return res.json();
-  },
-
-  deletePhoto: async (id: number): Promise<any> => {
-    const res = await fetch(`${API}/photos/${id}`, {
-      method: 'DELETE',
-    });
-    
-    if (!res.ok) {
-      throw new Error('Erreur lors de la suppression de la photo');
-    }
-    
-    return res.json();
-  },
-
-  // Maintenance-Produits
-  getProductsByMaintenance: async (
-    maintenanceId: number
-  ): Promise<MaintenanceProduit[]> => {
-    const res = await fetch(
-      `${API}/maintenance-produits/maintenance/${maintenanceId}`
-    );
+  getMaintenancesByProduct: async (productId: number): Promise<MaintenanceProduit[]> => {
+    const res = await fetch(`${API}/maintenance-produits/produit/${productId}`);
     return res.json();
   },
 
   addProductToMaintenance: async (data: {
     id_maintenance: number;
     id_produit: number;
-    etat?: string;
-    commentaire?: string;
-    etat_constate?: string;
-    travaux_effectues?: string;
-    ri_interne?: string;
-    photos?: string[];
+    etat?: string | null;
+    commentaire?: string | null;
+    etat_constate?: string | null;
+    travaux_effectues?: string | null;
+    ri_interne?: string | null;
   }): Promise<any> => {
     const res = await fetch(`${API}/maintenance-produits`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
-      throw new Error(error.error || 'Erreur lors de l association du produit');
+      const err = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
+      throw new Error(err.error || "Erreur lors de l'association du produit");
     }
-
     return res.json();
   },
 
-  removeProductFromMaintenance: async (id_maintenance: number, id_produit: number): Promise<Produit> => {
-    const res = await fetch(`${API}/maintenance-produits/${id_maintenance}/${id_produit}`, {
-      method: 'DELETE',
-    });
-
-    const data: Produit = await res.json();
-    return data;
+  updateProductMaintenance: async (data: {
+    id_maintenance: number;
+    id_produit: number;
+    etat?: string | null;
+    commentaire?: string | null;
+    etat_constate?: string | null;
+    travaux_effectues?: string | null;
+    ri_interne?: string | null;
+  }): Promise<any> => {
+    const res = await fetch(
+      `${API}/maintenance-produits/${data.id_maintenance}/${data.id_produit}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
+      throw new Error(err.error || 'Erreur lors de la mise à jour');
+    }
+    return res.json();
   },
 
-  updateProductMaintenance: async (data: {
-  id_maintenance: number;
-  id_produit: number;
-  etat?: string;
-  commentaire?: string;
-  etat_constate?: string;
-  travaux_effectues?: string;
-  ri_interne?: string;
-}): Promise<any> => {
-  const res = await fetch(`${API}/maintenance-produits/${data.id_maintenance}/${data.id_produit}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  removeProductFromMaintenance: async (id_maintenance: number, id_produit: number): Promise<void> => {
+    const res = await fetch(
+      `${API}/maintenance-produits/${id_maintenance}/${id_produit}`,
+      { method: 'DELETE' }
+    );
+    if (!res.ok) throw new Error('Erreur lors du retrait du produit');
+  },
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
-    throw new Error(error.error || 'Erreur lors de la mise à jour');
-  }
+  // ─── PHOTOS ───────────────────────────────────────────────────────────────
 
-  return res.json();
-},
+  getPhotosByProduct: async (productId: number): Promise<Photo[]> => {
+    const res = await fetch(`${API}/photos/produit/${productId}`);
+    return res.json();
+  },
+
+  getLatestPhotoByProduct: async (productId: number): Promise<Photo> => {
+    const res = await fetch(`${API}/photos/latest/${productId}`);
+    if (!res.ok) throw new Error('Aucune photo trouvée');
+    return res.json();
+  },
+
+  getPhotosByMaintenance: async (maintenanceId: number): Promise<Photo[]> => {
+    const res = await fetch(`${API}/photos/maintenance/${maintenanceId}`);
+    return res.json();
+  },
+
+  getPhotosByMaintenanceProduit: async (maintenanceId: number, productId: number): Promise<Photo[]> => {
+    const res = await fetch(`${API}/photos/maintenance/${maintenanceId}/${productId}`);
+    return res.json();
+  },
+
+  getPhotoById: async (id: number): Promise<Photo> => {
+    const res = await fetch(`${API}/photos/${id}`);
+    if (!res.ok) throw new Error('Photo non trouvée');
+    return res.json();
+  },
+
+  // FormData doit contenir : photo (fichier), id_produit, id_maintenance?, commentaire?
+  uploadPhoto: async (formData: FormData): Promise<Photo> => {
+    const res = await fetch(`${API}/photos`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Erreur lors de l'upload de la photo");
+    return res.json();
+  },
+
+  // FormData doit contenir : photos[] (fichiers), id_produit, id_maintenance?, commentaire?
+  uploadMultiplePhotos: async (formData: FormData): Promise<{
+    message: string;
+    photos: Photo[];
+    id_produit: number;
+    id_maintenance: number | null;
+  }> => {
+    const res = await fetch(`${API}/photos/multiple`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
+      throw new Error(err.error || "Erreur lors de l'upload des photos");
+    }
+    return res.json();
+  },
+
+  updatePhotoComment: async (id: number, commentaire: string | null): Promise<void> => {
+    const res = await fetch(`${API}/photos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentaire }),
+    });
+    if (!res.ok) throw new Error('Erreur lors de la mise à jour de la photo');
+  },
+
+  deletePhoto: async (id: number): Promise<void> => {
+    const res = await fetch(`${API}/photos/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Erreur lors de la suppression de la photo');
+  },
 };
