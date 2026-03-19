@@ -262,23 +262,21 @@ export default function ProductDetailsScreen() {
         </View>
 
         {/* Informations */}
-        // Dans [id_produit].tsx, remplacez la partie du formulaire d'édition pour l'état :
 
 {!isEditing ? (
   <InfoCard
     title="Informations"
     icon="📋"
     rows={[
-      { label: 'ID Produit:', value: String(product.id_produit) },
+      { label: 'Nom :', value: product.nom },
+      { label: 'Département :', value: product.departement || 'N/A' },
       {
-        label: 'État:',
+        label: 'État Actuel :',
         value: product.etat || 'N/A',
         valueColor: getEtatColor(product.etat),
       },
-      { label: 'Département:', value: product.departement || 'N/A' },
-      ...(product.description
-        ? [{ label: 'Description:', value: product.description }]
-        : []),
+      { label: 'Description :', value: product.description || 'N/A' },
+      { label: 'Date de création :', value: product.date_creation || 'N/A' },
     ]}
   />
 ) : (
@@ -359,6 +357,12 @@ export default function ProductDetailsScreen() {
                     source={{ uri: `${Config.API_URL}${photo.chemin_photo}` }}
                     style={styles.photoImage}
                   />
+                  {/* Badge date en bas de la photo */}
+                  <View style={styles.photoBadge}>
+                    <Text style={styles.photoBadgeText}>
+                      {photo.date_creation || ''}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -520,17 +524,39 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   photoThumbnail: {
-    width: 120,
-    height: 120,
+    width: 130,
+    height: 140,
     marginRight: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: Colors.gray200,
+    backgroundColor: Colors.gray100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
   photoImage: {
     width: '100%',
-    height: '100%',
+    height: 110,
+  },
+  photoBadge: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+  },
+  photoBadgeText: {
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   photoModal: {
     flex: 1,

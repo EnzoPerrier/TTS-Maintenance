@@ -7,9 +7,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
-        headerStyle: {
-          backgroundColor: Colors.primary,
-        },
+        headerStyle: { backgroundColor: Colors.primary },
         headerShadowVisible: false,
         headerTintColor: Colors.white,
         tabBarStyle: {
@@ -20,50 +18,47 @@ export default function TabLayout() {
           paddingTop: 8,
           height: 60,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Sites',
-          headerShown:false,
-          tabBarIcon: ({ color, focused }) => {
-            return <Text style={{ fontSize: 24 }}>🏢</Text>;
-          },
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>🏢</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="clients"
+        options={{
+          title: 'Clients',
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>👥</Text>,
         }}
       />
       <Tabs.Screen
         name="products"
         options={{
           title: 'Produits',
-          headerShown:false,
-          tabBarIcon: ({ color, focused }) => {
-            return <Text style={{ fontSize: 24 }}>📦</Text>;
-          },
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>📦</Text>,
         }}
       />
       <Tabs.Screen
         name="maintenances"
         options={{
           title: 'Maintenances',
-          headerShown:false,
-          tabBarIcon: ({ color, focused }) => {
-            return <Text style={{ fontSize: 24 }}>🔧</Text>;
-          },
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>🔧</Text>,
         }}
       />
       <Tabs.Screen
         name="scanner"
         options={{
           title: 'Scanner',
-          headerShown:false,
-          tabBarIcon: ({ color, focused }) => {
-            return <Text style={{ fontSize: 24 }}>📷</Text>;
-          },
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>📷</Text>,
         }}
       />
     </Tabs>
