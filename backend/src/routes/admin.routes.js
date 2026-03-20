@@ -1,35 +1,35 @@
-// =====================================================
-//  admin_routes.js
-//  Routes du panneau d'administration
-// =====================================================
-
 const express = require("express");
-const router = express.Router();
-const adminController = require("../admin/adminController");
+const router  = express.Router();
+const admin   = require("../controllers/adminController.js");
 
-const auth = adminController.requireAdmin;
+// ── Auth admin (public) ───────────────────────────────
+router.post("/login", admin.login);
 
-// Auth
-router.post("/login", adminController.login);
+// ── Toutes les routes suivantes requièrent requireAdmin ─
+router.use(admin.requireAdmin);
 
-// Stats dashboard
-router.get("/stats", auth, adminController.getStats);
+// Stats globales
+router.get("/stats", admin.getStats);
 
 // Sessions
-router.get("/sessions", auth, adminController.getSessions);
-router.delete("/sessions/:sessionId", auth, adminController.deleteSession);
-router.delete("/sessions", auth, adminController.deleteAllSessions);
+router.get   ("/sessions",              admin.getSessions);
+router.delete("/sessions",              admin.deleteAllSessions);
+router.delete("/sessions/:sessionId",   admin.deleteSession);
 
-// Utilisateurs
-router.get("/users", auth, adminController.getUsers);
-router.post("/users/:id/block", auth, adminController.blockUser);
+// Utilisateurs — CRUD + stats
+router.get   ("/users",               admin.getUsers);
+router.post  ("/users",               admin.createUser);
+router.put   ("/users/:id",           admin.updateUser);
+router.delete("/users/:id",           admin.deleteUser);
+router.post  ("/users/:id/block",     admin.blockUser);
+router.get   ("/users/:id/stats",     admin.getUserStats);   // ← stats par utilisateur
 
 // Logs
-router.get("/logs", auth, adminController.getLogs);
-router.delete("/logs", auth, adminController.clearLogs);
+router.get   ("/logs",  admin.getLogs);
+router.delete("/logs",  admin.clearLogs);
 
 // Verrou global
-router.get("/lock", auth, adminController.getLock);
-router.post("/lock", auth, adminController.setLock);
+router.get ("/lock", admin.getLock);
+router.post("/lock", admin.setLock);
 
 module.exports = router;

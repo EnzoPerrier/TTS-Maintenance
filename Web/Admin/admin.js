@@ -1,552 +1,781 @@
 // =====================================================
-//  admin.js  — Frontend du panneau d'administration
+//  admin.js — Panneau d'administration TTSmaintenance
 // =====================================================
 
-const API = "http://192.168.1.127:3000"; // même adresse que script.js
-const ADMIN_TOKEN_KEY = "tts_admin_token";
+const API = "http://192.168.1.127:3000";
+let adminToken    = null;
+let allUsers      = [];
+let allLogs       = [];
+let pendingAction = null;
 
-let allLogs = [];
-let currentModalAction = null;
-let autoRefreshInterval = null;
+// ── Horloge live ──────────────────────────────────────
+setInterval(() => {
+  const el = document.getElementById("liveTime");
+  if (el) el.textContent = new Date().toLocaleTimeString("fr-FR");
+}, 1000);
 
 // =====================================================
-//  AUTHENTIFICATION
+//  LOGIN / LOGOUT
 // =====================================================
-
 async function doLogin() {
   const username = document.getElementById("loginUser").value.trim();
   const password = document.getElementById("loginPass").value;
-  const errEl = document.getElementById("loginError");
-
+  const errEl    = document.getElementById("loginError");
   errEl.style.display = "none";
 
   try {
-    const res = await fetch(`${API}/admin/login`, {
+    const res  = await fetch(`${API}/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
     });
-
     const data = await res.json();
-
     if (!res.ok) {
-      errEl.textContent = data.error || "Identifiants incorrects";
+      errEl.textContent  = data.error || "Identifiants incorrects";
       errEl.style.display = "block";
       return;
     }
-
-    localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+    adminToken = data.token;
+    sessionStorage.setItem("adminToken", adminToken);
     document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
+    document.getElementById("app").style.display         = "block";
     initApp();
-
-  } catch (e) {
-    errEl.textContent = "Serveur inaccessible";
+  } catch {
+    errEl.textContent  = "Impossible de joindre le serveur";
     errEl.style.display = "block";
   }
 }
 
 function logout() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  clearInterval(autoRefreshInterval);
-  document.getElementById("app").style.display = "none";
-  document.getElementById("loginScreen").style.display = "flex";
+  adminToken = null;
+  sessionStorage.removeItem("adminToken");
+  location.reload();
 }
-
-function getToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
-}
-
-function authHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${getToken()}`
-  };
-}
-
-// Auto-login si token présent
-window.addEventListener("DOMContentLoaded", () => {
-  const token = getToken();
-  if (token) {
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    initApp();
-  }
-  startClock();
-});
 
 // =====================================================
 //  INIT
 // =====================================================
-
 function initApp() {
   loadOverview();
   loadSessions();
   loadUsers();
   loadLogs();
-  checkGlobalLock();
-
-  // Auto-refresh toutes les 30s
-  clearInterval(autoRefreshInterval);
-  autoRefreshInterval = setInterval(() => {
-    loadOverview();
-    loadSessions();
-  }, 30000);
+  loadLockStatus();
 }
 
-// =====================================================
-//  HORLOGE
-// =====================================================
-
-function startClock() {
-  function tick() {
-    const now = new Date();
-    document.getElementById("liveTime").textContent =
-      now.toLocaleDateString("fr-FR") + " " + now.toLocaleTimeString("fr-FR");
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = sessionStorage.getItem("adminToken");
+  if (saved) {
+    adminToken = saved;
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display         = "block";
+    initApp();
   }
-  tick();
-  setInterval(tick, 1000);
-}
+  document.getElementById("loginPass")?.addEventListener("keydown", e => {
+    if (e.key === "Enter") doLogin();
+  });
+});
 
 // =====================================================
 //  NAVIGATION
 // =====================================================
-
 function switchTab(name) {
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
-  document.getElementById(`tab-${name}`).classList.add("active");
-  document.querySelectorAll(".nav-tab").forEach(t => {
-    if (t.textContent.toLowerCase().includes(tabLabelMap[name])) t.classList.add("active");
-  });
-  // Reload data on tab switch
+  document.querySelectorAll(".nav-tab").forEach(b   => b.classList.remove("active"));
+  document.getElementById(`tab-${name}`)?.classList.add("active");
+  document.querySelector(`[onclick="switchTab('${name}')"]`)?.classList.add("active");
+
+  if (name === "overview") loadOverview();
   if (name === "sessions") loadSessions();
-  if (name === "logs") loadLogs();
-  if (name === "users" || name === "access") loadUsers();
+  if (name === "users")    loadUsers();
+  if (name === "logs")     loadLogs();
+  if (name === "access")   { loadUsers(); loadLockStatus(); }
 }
 
-const tabLabelMap = {
-  overview: "vue",
-  sessions: "sessions",
-  users: "utilisateurs",
-  logs: "logs",
-  access: "accès"
-};
+// =====================================================
+//  FETCH AUTHENTIFIÉ
+// =====================================================
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${adminToken}`,
+      ...options.headers,
+    },
+  });
+  if (res.status === 401) { logout(); return null; }
+  return res;
+}
 
 // =====================================================
-//  OVERVIEW STATS
+//  TOAST
 // =====================================================
+function showToast(msg, type = "info") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = `show ${type}`;
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
 
+// =====================================================
+//  MODAL CONFIRMATION
+// =====================================================
+function openModal(title, text, color, fn) {
+  pendingAction = fn;
+  document.getElementById("modalTitle").textContent  = title;
+  document.getElementById("modalText").textContent   = text;
+  document.getElementById("modalConfirmBtn").className = `btn-confirm ${color}`;
+  document.getElementById("confirmModal").classList.add("open");
+}
+function closeModal()  { document.getElementById("confirmModal").classList.remove("open"); pendingAction = null; }
+function modalAction() { if (pendingAction) pendingAction(); closeModal(); }
+
+// =====================================================
+//  UTILITAIRES
+// =====================================================
+function formatDate(str) {
+  if (!str) return "—";
+  return new Date(str).toLocaleString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+function formatDateShort(str) {
+  if (!str) return "—";
+  return new Date(str).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+}
+function logClass(action) {
+  return { CREATE:"log-create", UPDATE:"log-update", DELETE:"log-delete", LOGIN:"log-login", BLOCK:"log-block" }[action] || "";
+}
+
+// =====================================================
+//  OVERVIEW
+// =====================================================
 async function loadOverview() {
-  try {
-    const res = await fetch(`${API}/admin/stats`, { headers: authHeaders() });
-    if (res.status === 401) { logout(); return; }
-    const data = await res.json();
+  const res = await apiFetch(`${API}/admin/stats`);
+  if (!res) return;
+  const data = await res.json();
 
-    document.getElementById("stat-sessions").textContent = data.activeSessions ?? "—";
-    document.getElementById("stat-users").textContent = data.totalUsers ?? "—";
-    document.getElementById("stat-blocked").textContent = data.blockedUsers ?? "—";
-    document.getElementById("stat-mods").textContent = data.mods24h ?? "—";
+  document.getElementById("stat-sessions").textContent = data.activeSessions ?? "—";
+  document.getElementById("stat-users").textContent    = data.totalUsers     ?? "—";
+  document.getElementById("stat-blocked").textContent  = data.blockedUsers   ?? "—";
+  document.getElementById("stat-mods").textContent     = data.mods24h        ?? "—";
 
-    // Recent logs
-    renderLogsTable("recentLogsTable", (data.recentLogs || []).slice(0, 8));
-
-  } catch (e) {
-    console.error("loadOverview:", e);
+  const lock = await apiFetch(`${API}/admin/lock`);
+  if (lock) {
+    const d = await lock.json();
+    document.getElementById("lockBanner").classList.toggle("hidden", !d.locked);
   }
+  renderLogsTable(data.recentLogs || [], "recentLogsTable");
 }
 
 // =====================================================
 //  SESSIONS
 // =====================================================
-
 async function loadSessions() {
-  try {
-    const res = await fetch(`${API}/admin/sessions`, { headers: authHeaders() });
-    if (res.status === 401) { logout(); return; }
-    const sessions = await res.json();
-    const tbody = document.getElementById("sessionsTable");
+  const res = await apiFetch(`${API}/admin/sessions`);
+  if (!res) return;
+  const sessions = await res.json();
+  const tbody = document.getElementById("sessionsTable");
 
-    if (!sessions.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucune session active</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = sessions.map(s => `
-      <tr>
-        <td><strong>${esc(s.username)}</strong></td>
-        <td>${esc(s.ip_address || "—")}</td>
-        <td>${formatDate(s.created_at)}</td>
-        <td>${formatDate(s.last_activity)}</td>
-        <td><span class="badge online"><span class="pulse-dot" style="width:6px;height:6px;margin:0"></span> En ligne</span></td>
-        <td>
-          <button class="action-btn kick" onclick="kickSession('${s.session_id}', '${esc(s.username)}')">Déconnecter</button>
-        </td>
-      </tr>
-    `).join("");
-  } catch (e) {
-    console.error("loadSessions:", e);
+  if (!sessions.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucune session active</td></tr>`;
+    return;
   }
+  tbody.innerHTML = sessions.map(s => `
+    <tr>
+      <td><strong>${s.username}</strong></td>
+      <td><code>${s.ip_address || "—"}</code></td>
+      <td>${formatDate(s.created_at)}</td>
+      <td>${formatDate(s.last_activity)}</td>
+      <td><span class="badge online"><span class="pulse-dot"></span>En ligne</span></td>
+      <td><button class="action-btn kick" onclick="kickSession('${s.session_id}','${s.username}')">Kick</button></td>
+    </tr>
+  `).join("");
 }
 
 async function kickSession(sessionId, username) {
-  showModal(
-    `Déconnecter ${username}`,
-    `La session de ${username} sera immédiatement fermée.`,
-    async () => {
-      const res = await fetch(`${API}/admin/sessions/${sessionId}`, {
-        method: "DELETE",
-        headers: authHeaders()
-      });
-      if (res.ok) {
-        toast(`Session de ${username} fermée`, "success");
-        loadSessions();
-      } else {
-        toast("Erreur lors de la déconnexion", "error");
-      }
-    },
-    "red"
-  );
+  openModal("Déconnecter l'utilisateur", `Forcer la déconnexion de "${username}" ?`, "red", async () => {
+    const res = await apiFetch(`${API}/admin/sessions/${sessionId}`, { method: "DELETE" });
+    if (res?.ok) { showToast(`${username} déconnecté`, "success"); loadSessions(); loadOverview(); }
+    else showToast("Erreur lors du kick", "error");
+  });
 }
-
 function confirmKickAll() {
-  showModal(
-    "Déconnecter tout le monde",
-    "Toutes les sessions actives seront fermées immédiatement.",
-    async () => {
-      const res = await fetch(`${API}/admin/sessions`, {
-        method: "DELETE",
-        headers: authHeaders()
-      });
-      if (res.ok) {
-        toast("Toutes les sessions fermées", "success");
-        loadSessions();
-      } else {
-        toast("Erreur", "error");
-      }
-    },
-    "red"
-  );
+  openModal("Déconnecter tout le monde", "Toutes les sessions (hors admin) seront supprimées.", "red", async () => {
+    const res = await apiFetch(`${API}/admin/sessions`, { method: "DELETE" });
+    if (res?.ok) { showToast("Toutes les sessions supprimées", "success"); loadSessions(); loadOverview(); }
+    else showToast("Erreur", "error");
+  });
 }
 
 // =====================================================
-//  UTILISATEURS
+//  UTILISATEURS — liste
 // =====================================================
-
 async function loadUsers() {
-  try {
-    const res = await fetch(`${API}/admin/users`, { headers: authHeaders() });
-    if (res.status === 401) { logout(); return; }
-    const users = await res.json();
-
-    renderUsersTable("usersTable", users);
-    renderAccessTable(users);
-  } catch (e) {
-    console.error("loadUsers:", e);
-  }
+  const res = await apiFetch(`${API}/admin/users`);
+  if (!res) return;
+  allUsers = await res.json();
+  renderUsersTable();
+  renderAccessTable();
 }
 
-function renderUsersTable(tbodyId, users) {
-  const tbody = document.getElementById(tbodyId);
-  if (!users.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucun utilisateur</td></tr>`;
+function renderUsersTable() {
+  const tbody = document.getElementById("usersTable");
+  if (!allUsers.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">Aucun utilisateur</td></tr>`;
     return;
   }
-  tbody.innerHTML = users.map(u => `
+  tbody.innerHTML = allUsers.map(u => `
     <tr>
-      <td><strong>${esc(u.username)}</strong></td>
-      <td>${esc(u.email || "—")}</td>
-      <td><span class="badge info">${esc(u.role || "user")}</span></td>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.email || "<span style='color:var(--text-dim)'>—</span>"}</td>
+      <td><span class="badge ${u.role === 'admin' ? 'warning' : 'info'}">${u.role}</span></td>
       <td>${formatDate(u.last_login)}</td>
-      <td>${u.is_blocked
-        ? `<span class="badge blocked">🔒 Bloqué</span>`
-        : `<span class="badge online">✓ Actif</span>`}
-      </td>
+      <td><span class="badge ${u.is_blocked ? 'blocked' : 'online'}">${u.is_blocked ? '🔒 Bloqué' : '✓ Actif'}</span></td>
       <td>
+        <button class="action-btn unblock" onclick="openUserStats(${u.id_user})" title="Statistiques">📊</button>
+      </td>
+      <td style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <button class="action-btn unblock" onclick="openEditUserModal(${u.id_user})">Modifier</button>
         ${u.is_blocked
-          ? `<button class="action-btn unblock" onclick="toggleBlock(${u.id_user}, false, '${esc(u.username)}')">Débloquer</button>`
-          : `<button class="action-btn block" onclick="promptBlock(${u.id_user}, '${esc(u.username)}')">Bloquer</button>`}
+          ? `<button class="action-btn unblock" onclick="toggleBlock(${u.id_user},false,'')">Débloquer</button>`
+          : `<button class="action-btn kick"    onclick="openBlockModal(${u.id_user},'${u.username}')">Bloquer</button>`
+        }
+        <button class="action-btn block" onclick="confirmDeleteUser(${u.id_user},'${u.username}')">Supprimer</button>
       </td>
     </tr>
   `).join("");
 }
 
-function renderAccessTable(users) {
+// =====================================================
+//  STATS UTILISATEUR — drawer latéral
+// =====================================================
+async function openUserStats(id) {
+  // Afficher le drawer vide d'abord
+  const drawer = document.getElementById("statsDrawer");
+  const content = document.getElementById("statsDrawerContent");
+  content.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">Chargement…</div>`;
+  drawer.classList.add("open");
+  document.getElementById("statsOverlay")?.classList.add("open");
+
+  const res = await apiFetch(`${API}/admin/users/${id}/stats`);
+  if (!res) { content.innerHTML = `<p style="color:var(--red)">Erreur de chargement</p>`; return; }
+  const d = await res.json();
+
+  const u = d.user;
+  const isOnline = d.activeSessions.length > 0;
+
+  // ── Heatmap 90 jours ──────────────────────────────
+  const heatmapHtml = buildHeatmap(d.heatmapRows);
+
+  // ── Bar chart connexions/heure ─────────────────────
+  const hourChartHtml = buildHourBar(d.loginsByHour);
+
+  // ── Sparkline logins 30j ──────────────────────────
+  const sparkHtml = buildSparkline(d.loginsByDay);
+
+  // ── CRUD breakdown ────────────────────────────────
+  const totalActions = Object.values(d.crudStats).reduce((a, b) => a + b, 0);
+  const crudHtml = buildCrudBars(d.crudStats, totalActions);
+
+  content.innerHTML = `
+    <!-- En-tête utilisateur -->
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--surface3);border:2px solid var(--border-bright);
+                  display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:var(--primary-blue);flex-shrink:0;">
+        ${u.username.charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text);display:flex;align-items:center;gap:0.6rem;">
+          ${u.username}
+          <span class="badge ${isOnline ? 'online' : 'offline'}" style="font-size:0.6rem;">
+            ${isOnline ? '<span class="pulse-dot"></span>En ligne' : 'Hors ligne'}
+          </span>
+        </div>
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text-dim);margin-top:0.2rem;">
+          ${u.email || 'Pas d\'email'} &nbsp;·&nbsp;
+          <span class="badge ${u.role === 'admin' ? 'warning' : 'info'}" style="font-size:0.6rem;">${u.role}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs rapides -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.5rem;">
+      ${kpiCard('Connexions', d.totalLogins, '🔑')}
+      ${kpiCard('Jours actifs', d.activeDays, '📅')}
+      ${kpiCard('Actions totales', totalActions, '⚡')}
+      ${kpiCard('Sessions actives', d.activeSessions.length, '🟢')}
+    </div>
+
+    <!-- Heure préférée + première vue -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
+      <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;">
+        <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Heure de prédilection</div>
+        <div style="font-size:1.6rem;font-weight:800;color:var(--primary-blue);text-shadow:0 0 18px var(--glow-blue);">
+          ${d.preferredHour !== null ? `${String(d.preferredHour).padStart(2,'0')}h` : '—'}
+        </div>
+      </div>
+      <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;">
+        <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Première connexion</div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text);font-family:var(--mono);">
+          ${formatDate(d.firstSeen)}
+        </div>
+      </div>
+    </div>
+
+    <!-- Heatmap 90 jours -->
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Activité — 90 derniers jours</div>
+      ${heatmapHtml}
+    </div>
+
+    <!-- Sparkline logins 30j -->
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Connexions — 30 derniers jours</div>
+      ${sparkHtml}
+    </div>
+
+    <!-- Connexions par heure -->
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Répartition par heure</div>
+      ${hourChartHtml}
+    </div>
+
+    <!-- Breakdown CRUD -->
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Répartition des actions</div>
+      ${crudHtml}
+    </div>
+
+    <!-- IP fréquentes -->
+    ${d.topIPs.length ? `
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Adresses IP fréquentes</div>
+      ${d.topIPs.map((ip, i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0;
+                    border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.78rem;">
+          <span style="color:${i === 0 ? 'var(--primary-blue)' : 'var(--text-dim)'}">
+            ${i === 0 ? '⭐' : '▸'} <code>${ip.ip_address}</code>
+          </span>
+          <span style="color:var(--text-dim)">${ip.cnt} fois</span>
+        </div>
+      `).join("")}
+    </div>` : ''}
+
+    <!-- Sessions actives -->
+    ${d.activeSessions.length ? `
+    <div style="background:var(--surface3);border:1px solid var(--border-bright);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);margin-bottom:0.85rem;">
+        <span class="pulse-dot"></span> Sessions actives
+      </div>
+      ${d.activeSessions.map(s => `
+        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.75rem;">
+          <code style="color:var(--secondary-blue)">${s.ip_address || '—'}</code>
+          <span style="color:var(--text-dim)">${formatDate(s.last_activity)}</span>
+        </div>
+      `).join("")}
+    </div>` : ''}
+
+    <!-- Dernières actions -->
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;">
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Dernières actions</div>
+      ${d.recentActions.length ? d.recentActions.map(a => `
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+          <span class="${logClass(a.action)}" style="font-family:var(--mono);font-size:0.68rem;font-weight:700;min-width:55px;">${a.action}</span>
+          <span style="font-size:0.78rem;color:var(--text);flex:1;">${a.detail || a.table_name || '—'}</span>
+          <span style="font-family:var(--mono);font-size:0.68rem;color:var(--text-dim);white-space:nowrap;">${formatDate(a.created_at)}</span>
+        </div>
+      `).join("") : `<div style="color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">Aucune action enregistrée</div>`}
+    </div>
+  `;
+}
+
+function kpiCard(label, value, icon) {
+  return `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--primary-blue),var(--secondary-blue));"></div>
+      <div style="font-size:1.4rem;margin-bottom:0.25rem;">${icon}</div>
+      <div style="font-size:1.5rem;font-weight:800;color:var(--primary-blue);line-height:1;letter-spacing:-0.03em;text-shadow:0 0 16px var(--glow-blue);">${value ?? '—'}</div>
+      <div style="font-family:var(--mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-top:0.35rem;">${label}</div>
+    </div>
+  `;
+}
+
+// ── Heatmap SVG ──────────────────────────────────────
+function buildHeatmap(rows) {
+  // Construire un dict date → count
+  const map = {};
+  rows.forEach(r => { map[r.day?.slice(0,10) || r.day] = r.cnt; });
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const DAYS  = 91;
+  const COLS  = 13; // 13 semaines
+  const W     = 14; // cellule
+  const GAP   = 2;
+  const cells = [];
+
+  for (let i = DAYS - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const cnt = map[key] || 0;
+    const col = Math.floor((DAYS - 1 - i) / 7);
+    const row = d.getDay(); // 0=dim
+    cells.push({ key, cnt, col, row });
+  }
+
+  const maxCnt = Math.max(1, ...cells.map(c => c.cnt));
+
+  const svgW = COLS * (W + GAP);
+  const svgH = 7 * (W + GAP);
+
+  const rects = cells.map(c => {
+    const x = c.col * (W + GAP);
+    const y = c.row * (W + GAP);
+    const intensity = c.cnt === 0 ? 0 : 0.15 + 0.85 * (c.cnt / maxCnt);
+    const alpha     = c.cnt === 0 ? 0.08 : intensity;
+    const color     = c.cnt === 0 ? `rgba(79,142,247,${alpha})` : `rgba(79,142,247,${alpha})`;
+    return `<rect x="${x}" y="${y}" width="${W}" height="${W}" rx="2"
+      fill="${color}"
+      stroke="rgba(79,142,247,0.06)" stroke-width="0.5">
+      <title>${c.key} : ${c.cnt} action(s)</title>
+    </rect>`;
+  }).join("");
+
+  return `<svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;">
+    ${rects}
+  </svg>
+  <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.5rem;font-family:var(--mono);font-size:0.62rem;color:var(--text-muted);">
+    <span>Moins</span>
+    ${[0.08, 0.25, 0.5, 0.75, 1].map(a =>
+      `<span style="width:10px;height:10px;border-radius:2px;background:rgba(79,142,247,${a});display:inline-block;"></span>`
+    ).join("")}
+    <span>Plus</span>
+  </div>`;
+}
+
+// ── Sparkline SVG logins 30j ─────────────────────────
+function buildSparkline(loginsByDay) {
+  if (!loginsByDay.length) return `<div style="color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;">Aucune connexion</div>`;
+
+  // Remplir les 30 derniers jours
+  const today = new Date(); today.setHours(0,0,0,0);
+  const map   = {};
+  loginsByDay.forEach(r => { map[r.day?.slice(0,10) || r.day] = r.cnt; });
+
+  const points = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    points.push({ label: formatDateShort(d), cnt: map[d.toISOString().slice(0,10)] || 0 });
+  }
+
+  const maxY  = Math.max(1, ...points.map(p => p.cnt));
+  const W     = 540, H = 60, padL = 0, padR = 0;
+  const xStep = (W - padL - padR) / (points.length - 1);
+
+  const pts = points.map((p, i) => {
+    const x = padL + i * xStep;
+    const y = H - (p.cnt / maxY) * H;
+    return `${x},${y}`;
+  }).join(" ");
+
+  // Ligne de fill
+  const fillPts = `${padL},${H} ${pts} ${padL + (points.length-1)*xStep},${H}`;
+
+  return `<svg width="100%" viewBox="0 0 ${W} ${H+10}" style="overflow:visible;">
+    <defs>
+      <linearGradient id="spfill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="rgba(79,142,247,0.3)"/>
+        <stop offset="100%" stop-color="rgba(79,142,247,0)"/>
+      </linearGradient>
+    </defs>
+    <polygon points="${fillPts}" fill="url(#spfill)"/>
+    <polyline points="${pts}" fill="none" stroke="var(--primary-blue)" stroke-width="1.5" stroke-linejoin="round"/>
+    ${points.map((p, i) => p.cnt > 0 ? `<circle cx="${padL + i * xStep}" cy="${H - (p.cnt/maxY)*H}" r="3" fill="var(--primary-blue)" opacity="0.8"><title>${p.label} : ${p.cnt}</title></circle>` : '').join("")}
+  </svg>
+  <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);margin-top:0.25rem;">
+    <span>${points[0].label}</span><span>Aujourd'hui</span>
+  </div>`;
+}
+
+// ── Bar chart par heure ───────────────────────────────
+function buildHourBar(loginsByHour) {
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const map   = {};
+  loginsByHour.forEach(r => { map[r.hour] = r.cnt; });
+  const maxCnt = Math.max(1, ...Object.values(map));
+
+  const W = 540, H = 48, barW = Math.floor(W / 24) - 1;
+
+  const bars = hours.map(h => {
+    const cnt = map[h] || 0;
+    const bh  = cnt === 0 ? 2 : Math.max(3, (cnt / maxCnt) * H);
+    const x   = h * (W / 24);
+    const isMax = cnt === maxCnt && cnt > 0;
+    return `<rect x="${x}" y="${H - bh}" width="${barW}" height="${bh}"
+      rx="2" fill="${isMax ? 'var(--accent-orange)' : 'rgba(79,142,247,0.55)'}">
+      <title>${String(h).padStart(2,'0')}h : ${cnt} connexion(s)</title>
+    </rect>`;
+  }).join("");
+
+  const labels = [0,6,12,18,23].map(h => {
+    const x = h * (W / 24) + barW/2;
+    return `<text x="${x}" y="${H+14}" text-anchor="middle" font-size="9"
+      font-family="JetBrains Mono, monospace" fill="rgba(122,138,176,0.8)">${String(h).padStart(2,'0')}h</text>`;
+  }).join("");
+
+  return `<svg width="100%" viewBox="0 0 ${W} ${H+20}" style="overflow:visible;">
+    ${bars}${labels}
+  </svg>`;
+}
+
+// ── CRUD breakdown barres ─────────────────────────────
+function buildCrudBars(stats, total) {
+  const items = [
+    { key: 'LOGIN',  label: 'Connexions', color: 'var(--accent-orange)' },
+    { key: 'CREATE', label: 'Créations',  color: 'var(--success)' },
+    { key: 'UPDATE', label: 'Modifications', color: 'var(--primary-blue)' },
+    { key: 'DELETE', label: 'Suppressions',  color: 'var(--danger)' },
+    { key: 'BLOCK',  label: 'Blocages',      color: '#a855f7' },
+  ];
+
+  if (total === 0) return `<div style="color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;">Aucune action</div>`;
+
+  return items.map(item => {
+    const cnt  = stats[item.key] || 0;
+    const pct  = total > 0 ? ((cnt / total) * 100).toFixed(1) : 0;
+    const fill = total > 0 ? (cnt / total) * 100 : 0;
+    return `
+      <div style="margin-bottom:0.6rem;">
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.72rem;margin-bottom:0.2rem;">
+          <span style="color:var(--text-dim)">${item.label}</span>
+          <span style="color:var(--text)">${cnt} <span style="color:var(--text-muted)">(${pct}%)</span></span>
+        </div>
+        <div style="height:5px;background:var(--surface);border-radius:100px;overflow:hidden;">
+          <div style="height:100%;width:${fill}%;background:${item.color};border-radius:100px;transition:width 0.4s;"></div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function closeStatsDrawer() {
+  document.getElementById("statsDrawer").classList.remove("open");
+}
+
+// =====================================================
+//  MODAL CRÉER / MODIFIER UN UTILISATEUR
+// =====================================================
+function openCreateUserModal() {
+  document.getElementById("userModalTitle").textContent          = "Créer un utilisateur";
+  document.getElementById("userModalId").value                   = "";
+  document.getElementById("userModalName").value                 = "";
+  document.getElementById("userModalEmail").value                = "";
+  document.getElementById("userModalRole").value                 = "user";
+  document.getElementById("userModalPass").value                 = "";
+  document.getElementById("userModalPassRow").style.display      = "block";
+  document.getElementById("userModalPassHint").style.display     = "none";
+  document.getElementById("userModal").style.display             = "flex";
+}
+function openEditUserModal(id) {
+  const u = allUsers.find(u => u.id_user === id);
+  if (!u) return;
+  document.getElementById("userModalTitle").textContent          = `Modifier "${u.username}"`;
+  document.getElementById("userModalId").value                   = u.id_user;
+  document.getElementById("userModalName").value                 = u.username;
+  document.getElementById("userModalEmail").value                = u.email || "";
+  document.getElementById("userModalRole").value                 = u.role;
+  document.getElementById("userModalPass").value                 = "";
+  document.getElementById("userModalPassRow").style.display      = "block";
+  document.getElementById("userModalPassHint").style.display     = "block";
+  document.getElementById("userModal").style.display             = "flex";
+}
+function closeUserModal() { document.getElementById("userModal").style.display = "none"; }
+
+async function submitUserModal() {
+  const id       = document.getElementById("userModalId").value;
+  const username = document.getElementById("userModalName").value.trim();
+  const email    = document.getElementById("userModalEmail").value.trim();
+  const role     = document.getElementById("userModalRole").value;
+  const password = document.getElementById("userModalPass").value;
+
+  if (!username) { showToast("Le nom d'utilisateur est requis", "error"); return; }
+  if (!id && !password) { showToast("Le mot de passe est requis pour la création", "error"); return; }
+
+  const body = { username, email, role };
+  if (password) body.password = password;
+
+  const res = await apiFetch(
+    id ? `${API}/admin/users/${id}` : `${API}/admin/users`,
+    { method: id ? "PUT" : "POST", body: JSON.stringify(body) }
+  );
+  if (!res) return;
+  const data = await res.json();
+  if (!res.ok) { showToast(data.error || "Erreur", "error"); return; }
+
+  showToast(id ? `"${username}" mis à jour` : `Utilisateur "${username}" créé`, "success");
+  closeUserModal();
+  loadUsers();
+  loadOverview();
+}
+
+// =====================================================
+//  BLOQUER AVEC RAISON
+// =====================================================
+function openBlockModal(id, username) {
+  document.getElementById("blockUserId").value         = id;
+  document.getElementById("blockUserName").textContent = username;
+  document.getElementById("blockReason").value         = "";
+  document.getElementById("blockModal").style.display  = "flex";
+}
+function closeBlockModal() { document.getElementById("blockModal").style.display = "none"; }
+async function submitBlock() {
+  const id     = document.getElementById("blockUserId").value;
+  const reason = document.getElementById("blockReason").value.trim();
+  await toggleBlock(id, true, reason);
+  closeBlockModal();
+}
+async function toggleBlock(id, block, reason) {
+  const res = await apiFetch(`${API}/admin/users/${id}/block`, {
+    method: "POST",
+    body: JSON.stringify({ block, reason }),
+  });
+  if (!res) return;
+  const data = await res.json();
+  if (!res.ok) { showToast(data.error || "Erreur", "error"); return; }
+  showToast(block ? "Utilisateur bloqué" : "Utilisateur débloqué", "success");
+  loadUsers();
+  loadOverview();
+}
+
+// =====================================================
+//  SUPPRIMER UN UTILISATEUR
+// =====================================================
+function confirmDeleteUser(id, username) {
+  openModal("Supprimer l'utilisateur",
+    `Supprimer le compte "${username}" ? Cette action est irréversible.`, "red", async () => {
+    const res = await apiFetch(`${API}/admin/users/${id}`, { method: "DELETE" });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || "Erreur", "error"); return; }
+    showToast(`"${username}" supprimé`, "success");
+    loadUsers();
+    loadOverview();
+  });
+}
+
+// =====================================================
+//  TAB ACCESS
+// =====================================================
+function renderAccessTable() {
   const tbody = document.getElementById("accessTable");
-  if (!users.length) {
+  if (!allUsers.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucun utilisateur</td></tr>`;
     return;
   }
-  tbody.innerHTML = users.map(u => `
+  tbody.innerHTML = allUsers.map(u => `
     <tr>
-      <td><strong>${esc(u.username)}</strong></td>
-      <td>${esc(u.email || "—")}</td>
-      <td><span class="badge info">${esc(u.role || "user")}</span></td>
-      <td>${u.is_blocked
-        ? `<span class="badge blocked">🔒 Bloqué</span>`
-        : `<span class="badge online">✓ Actif</span>`}
-      </td>
-      <td class="log-delete">${esc(u.block_reason || "—")}</td>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.email || "—"}</td>
+      <td><span class="badge ${u.role === 'admin' ? 'warning' : 'info'}">${u.role}</span></td>
+      <td><span class="badge ${u.is_blocked ? 'blocked' : 'online'}">${u.is_blocked ? '🔒 Bloqué' : '✓ Actif'}</span></td>
+      <td style="color:var(--text-dim);font-size:0.78rem;">${u.block_reason || "—"}</td>
       <td>
         ${u.is_blocked
-          ? `<button class="action-btn unblock" onclick="toggleBlock(${u.id_user}, false, '${esc(u.username)}')">Débloquer</button>`
-          : `<button class="action-btn block" onclick="promptBlock(${u.id_user}, '${esc(u.username)}')">Bloquer</button>`}
+          ? `<button class="action-btn unblock" onclick="toggleBlock(${u.id_user},false,'')">Débloquer</button>`
+          : `<button class="action-btn block"   onclick="openBlockModal(${u.id_user},'${u.username}')">Bloquer</button>`
+        }
       </td>
     </tr>
   `).join("");
-}
-
-function promptBlock(userId, username) {
-  const reason = prompt(`Raison du blocage pour "${username}" (optionnel) :`);
-  if (reason === null) return; // Annulé
-  toggleBlock(userId, true, username, reason);
-}
-
-async function toggleBlock(userId, block, username, reason = "") {
-  try {
-    const res = await fetch(`${API}/admin/users/${userId}/block`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ block, reason })
-    });
-
-    if (res.ok) {
-      toast(`${username} ${block ? "bloqué" : "débloqué"}`, block ? "error" : "success");
-      loadUsers();
-      loadOverview();
-    } else {
-      toast("Erreur lors du changement de statut", "error");
-    }
-  } catch (e) {
-    toast("Erreur réseau", "error");
-  }
 }
 
 // =====================================================
 //  LOGS
 // =====================================================
-
 async function loadLogs() {
-  try {
-    const res = await fetch(`${API}/admin/logs?limit=200`, { headers: authHeaders() });
-    if (res.status === 401) { logout(); return; }
-    allLogs = await res.json();
-    filterLogs();
-  } catch (e) {
-    console.error("loadLogs:", e);
-  }
+  const action = document.getElementById("logType")?.value || "";
+  const res    = await apiFetch(`${API}/admin/logs?limit=200${action ? `&action=${action}` : ""}`);
+  if (!res) return;
+  allLogs = await res.json();
+  filterLogs();
 }
-
 function filterLogs() {
-  const search = document.getElementById("logSearch").value.toLowerCase();
-  const type = document.getElementById("logType").value;
-
+  const search   = (document.getElementById("logSearch")?.value || "").toLowerCase();
+  const type     = document.getElementById("logType")?.value || "";
   const filtered = allLogs.filter(l => {
-    const matchType = !type || l.action === type;
+    const matchType   = !type   || l.action === type;
     const matchSearch = !search ||
       (l.username || "").toLowerCase().includes(search) ||
-      (l.detail || "").toLowerCase().includes(search) ||
-      (l.table_name || "").toLowerCase().includes(search);
+      (l.detail   || "").toLowerCase().includes(search) ||
+      (l.action   || "").toLowerCase().includes(search);
     return matchType && matchSearch;
   });
-
-  renderLogsTable("logsTable", filtered);
+  renderLogsTable(filtered, "logsTable");
 }
-
-function renderLogsTable(tbodyId, logs) {
+function renderLogsTable(logs, tbodyId) {
   const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
   if (!logs.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucun log</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${tbodyId === 'logsTable' ? 6 : 5}" class="empty">Aucun log</td></tr>`;
     return;
   }
-
-  tbody.innerHTML = logs.map(l => {
-    const cls = {
-      CREATE: "log-create",
-      UPDATE: "log-update",
-      DELETE: "log-delete",
-      LOGIN: "log-login",
-      BLOCK: "log-block"
-    }[l.action] || "";
-
-    return `
-      <tr>
-        <td>${formatDate(l.created_at)}</td>
-        <td><strong>${esc(l.username || "—")}</strong></td>
-        <td><span class="${cls}" style="font-weight:600">${esc(l.action || "—")}</span></td>
-        <td>${esc(l.table_name || "—")}</td>
-        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.detail || "")}">${esc(l.detail || "—")}</td>
-        <td>${esc(l.ip_address || "—")}</td>
-      </tr>
-    `;
-  }).join("");
+  tbody.innerHTML = logs.map(l => `
+    <tr>
+      <td style="font-size:0.75rem;color:var(--text-dim)">${formatDate(l.created_at)}</td>
+      <td><strong>${l.username || "—"}</strong></td>
+      <td><span class="${logClass(l.action)}">${l.action}</span></td>
+      ${tbodyId === "logsTable" ? `<td style="color:var(--text-dim)">${l.table_name || "—"}</td>` : ""}
+      <td style="font-size:0.8rem;">${l.detail || "—"}</td>
+      <td style="font-size:0.75rem;color:var(--text-dim)">${l.ip_address || "—"}</td>
+    </tr>
+  `).join("");
 }
-
 function confirmClearLogs() {
-  showModal(
-    "Vider les logs",
-    "Tous les logs d'activité seront supprimés définitivement. Cette action est irréversible.",
-    async () => {
-      const res = await fetch(`${API}/admin/logs`, {
-        method: "DELETE",
-        headers: authHeaders()
-      });
-      if (res.ok) {
-        allLogs = [];
-        filterLogs();
-        toast("Logs vidés", "success");
-      } else {
-        toast("Erreur", "error");
-      }
-    },
-    "red"
-  );
+  openModal("Vider les logs", "Tous les logs seront supprimés. Action irréversible.", "red", async () => {
+    const res = await apiFetch(`${API}/admin/logs`, { method: "DELETE" });
+    if (res?.ok) { showToast("Logs supprimés", "success"); loadLogs(); }
+    else showToast("Erreur", "error");
+  });
 }
 
 // =====================================================
 //  VERROU GLOBAL
 // =====================================================
-
-async function checkGlobalLock() {
-  try {
-    const res = await fetch(`${API}/admin/lock`, { headers: authHeaders() });
-    const data = await res.json();
-    const locked = data.locked;
-
-    document.getElementById("globalLockToggle").checked = locked;
-    document.getElementById("lockMessageBox").style.display = locked ? "block" : "none";
-    if (data.message) document.getElementById("lockMessage").value = data.message;
-
-    const banner = document.getElementById("lockBanner");
-    if (locked) {
-      banner.classList.remove("hidden");
-      banner.style.display = "flex";
-    } else {
-      banner.classList.add("hidden");
-      banner.style.display = "none";
-    }
-  } catch (e) {
-    console.error("checkGlobalLock:", e);
-  }
+async function loadLockStatus() {
+  const res = await apiFetch(`${API}/admin/lock`);
+  if (!res) return;
+  const data = await res.json();
+  document.getElementById("globalLockToggle").checked        = data.locked;
+  document.getElementById("lockMessage").value               = data.message || "";
+  document.getElementById("lockMessageBox").style.display    = data.locked ? "block" : "none";
+  document.getElementById("lockBanner").classList.toggle("hidden", !data.locked);
 }
-
 async function toggleGlobalLock() {
-  const locked = document.getElementById("globalLockToggle").checked;
-
-  if (locked) {
-    showModal(
-      "Verrouiller l'application",
-      "Tous les utilisateurs (sauf admin) seront bloqués immédiatement. Confirmez-vous ?",
-      async () => {
-        await applyGlobalLock(true);
-      },
-      "red",
-      () => {
-        // Annulé : on remet le toggle
-        document.getElementById("globalLockToggle").checked = false;
-      }
-    );
-  } else {
-    await applyGlobalLock(false);
-  }
-}
-
-async function applyGlobalLock(locked) {
-  try {
-    const message = document.getElementById("lockMessage").value;
-    const res = await fetch(`${API}/admin/lock`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ locked, message })
-    });
-
-    if (res.ok) {
-      toast(locked ? "🔒 Application verrouillée" : "🔓 Application déverrouillée", locked ? "error" : "success");
-      checkGlobalLock();
-      loadOverview();
-    } else {
-      toast("Erreur", "error");
-      document.getElementById("globalLockToggle").checked = !locked;
-    }
-  } catch (e) {
-    toast("Erreur réseau", "error");
-  }
-}
-
-async function saveLockMessage() {
-  const locked = document.getElementById("globalLockToggle").checked;
+  const locked  = document.getElementById("globalLockToggle").checked;
   const message = document.getElementById("lockMessage").value;
-  await applyGlobalLock(locked);
-  toast("Message sauvegardé", "info");
-}
-
-// =====================================================
-//  MODAL
-// =====================================================
-
-let cancelCallback = null;
-
-function showModal(title, text, onConfirm, type = "red", onCancel = null) {
-  document.getElementById("modalTitle").textContent = title;
-  document.getElementById("modalText").textContent = text;
-  const btn = document.getElementById("modalConfirmBtn");
-  btn.className = `btn-confirm ${type}`;
-  currentModalAction = onConfirm;
-  cancelCallback = onCancel;
-  document.getElementById("confirmModal").classList.add("open");
-}
-
-function closeModal() {
-  document.getElementById("confirmModal").classList.remove("open");
-  if (cancelCallback) cancelCallback();
-  cancelCallback = null;
-}
-
-async function modalAction() {
-  closeModal();
-  if (currentModalAction) await currentModalAction();
-}
-
-// Close modal on overlay click
-document.getElementById("confirmModal").addEventListener("click", function(e) {
-  if (e.target === this) closeModal();
-});
-
-// =====================================================
-//  TOAST
-// =====================================================
-
-let toastTimer = null;
-
-function toast(msg, type = "info") {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.className = `show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    el.classList.remove("show");
-  }, 3000);
-}
-
-// =====================================================
-//  UTILS
-// =====================================================
-
-function esc(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
-  return d.toLocaleString("fr-FR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit"
+  document.getElementById("lockMessageBox").style.display = locked ? "block" : "none";
+  const res = await apiFetch(`${API}/admin/lock`, {
+    method: "POST",
+    body: JSON.stringify({ locked, message }),
   });
+  if (res?.ok) {
+    showToast(locked ? "Application verrouillée" : "Application déverrouillée", locked ? "error" : "success");
+    loadOverview();
+  } else {
+    document.getElementById("globalLockToggle").checked = !locked;
+    showToast("Erreur lors du verrouillage", "error");
+  }
+}
+async function saveLockMessage() {
+  const locked  = document.getElementById("globalLockToggle").checked;
+  const message = document.getElementById("lockMessage").value;
+  const res = await apiFetch(`${API}/admin/lock`, {
+    method: "POST", body: JSON.stringify({ locked, message }),
+  });
+  if (res?.ok) showToast("Message sauvegardé", "success");
+  else showToast("Erreur", "error");
 }
