@@ -1,8 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const authController = require('../auth/authController');
+const express    = require("express");
+const router     = express.Router();
+const authCtrl   = require("../controllers/AuthController.js");
+const { verifyToken } = require("../middleware/auth.middleware.js");
 
-router.post('/register', authController.register); // Seulement admin plus tard
-router.post('/login', authController.login);
+// Public
+router.post("/register", authCtrl.register);   // POST /auth/register
+router.post("/login",    authCtrl.login);       // POST /auth/login
+
+// Protégées
+router.post("/logout", verifyToken, authCtrl.logout); // POST /auth/logout
+router.get("/me",      verifyToken, authCtrl.me);     // GET  /auth/me
 
 module.exports = router;

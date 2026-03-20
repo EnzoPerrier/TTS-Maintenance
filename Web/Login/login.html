@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connexion — TTSmaintenance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --surface: #111318;
+      --surface2: #181c24;
+      --border: #232733;
+      --border-bright: #2e3546;
+      --accent: #3b82f6;
+      --accent-dim: rgba(59,130,246,0.15);
+      --accent-glow: rgba(59,130,246,0.4);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.12);
+      --text: #e2e8f0;
+      --text-dim: #64748b;
+      --text-muted: #334155;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+      animation: orb-pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes orb-pulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+      50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: min(900px, 96vw);
+      min-height: 520px;
+      background: var(--surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.05);
+      animation: card-in 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(24px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+
+    /* ── Brand panel ── */
+    .brand-panel {
+      background: linear-gradient(155deg, #0f1520 0%, #0a0c10 60%);
+      border-right: 1px solid var(--border);
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .brand-panel::after {
+      content: 'TTS';
+      position: absolute;
+      bottom: -20px;
+      right: -10px;
+      font-family: var(--sans);
+      font-size: 9rem;
+      font-weight: 800;
+      color: rgba(59,130,246,0.04);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .brand-top { position: relative; z-index: 1; }
+
+    .logo {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .logo-sub {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+    }
+
+    .brand-stats {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .brand-stat { display: flex; align-items: center; gap: 0.9rem; }
+
+    .brand-stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(59,130,246,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .brand-stat-text .num {
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-stat-text .desc {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 0.1rem;
+    }
+
+    .brand-footer {
+      position: relative;
+      z-index: 1;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Form panel ── */
+    .form-panel {
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .form-header { margin-bottom: 2.5rem; }
+
+    .form-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.3rem;
+    }
+
+    .form-header p {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .field { margin-bottom: 1.25rem; }
+
+    .field label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.45rem;
+    }
+
+    .field-wrap { position: relative; }
+
+    .field-wrap:focus-within { opacity: 0.8; }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.75rem 0.9rem 0.75rem 2.4rem;
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input::placeholder { color: var(--text-muted); }
+
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+
+    .field input.error {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+    }
+
+    .toggle-pw {
+      position: absolute;
+      right: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .toggle-pw:hover { color: var(--accent); }
+
+    .options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border: 1px solid var(--border-bright);
+      border-radius: 4px;
+      background: var(--bg);
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .checkbox-label input[type="checkbox"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .checkbox-label input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 4px;
+      width: 4px; height: 7px;
+      border: 2px solid #fff;
+      border-top: none; border-left: none;
+      transform: rotate(45deg);
+    }
+
+    .btn-login {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 0.85rem;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .btn-login:hover  { background: #2563eb; box-shadow: 0 0 28px var(--accent-glow); }
+    .btn-login:active { transform: scale(0.99); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-login .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-login.loading .btn-text  { display: none; }
+    .btn-login.loading .spinner   { display: block; }
+
+    .error-msg {
+      margin-top: 1rem;
+      padding: 0.65rem 0.9rem;
+      background: var(--red-dim);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--red);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .error-msg.visible { display: flex; animation: shake 0.35s ease; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60%  { transform: translateX(-6px); }
+      40%, 80%  { transform: translateX(6px); }
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.5rem 0 1.25rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider span {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+      );
+    }
+
+    .corner {
+      position: absolute;
+      width: 14px; height: 14px;
+      border-color: rgba(59,130,246,0.5);
+      border-style: solid;
+    }
+
+    .corner.tl { top: -1px; left: -1px;   border-width: 2px 0 0 2px; border-radius: 2px 0 0 0; }
+    .corner.tr { top: -1px; right: -1px;  border-width: 2px 2px 0 0; border-radius: 0 2px 0 0; }
+    .corner.bl { bottom: -1px; left: -1px;  border-width: 0 0 2px 2px; border-radius: 0 0 0 2px; }
+    .corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; border-radius: 0 0 2px 0; }
+
+    @media (max-width: 640px) {
+      .wrapper { grid-template-columns: 1fr; }
+      .brand-panel { display: none; }
+      .form-panel { padding: 2rem 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<div class="wrapper">
+  <span class="corner tl"></span>
+  <span class="corner tr"></span>
+  <span class="corner bl"></span>
+  <span class="corner br"></span>
+
+  <!-- ── Brand panel ── -->
+  <div class="brand-panel">
+    <div class="brand-top">
+      <div class="logo">TTS<span>maintenance</span></div>
+      <div class="logo-sub">Système de gestion v2.0</div>
+    </div>
+
+    <div class="brand-stats">
+      <div class="brand-stat">
+        <div class="brand-stat-icon">🏢</div>
+        <div class="brand-stat-text">
+          <div class="num" id="bs-sites">—</div>
+          <div class="desc">Sites enregistrés</div>
+        </div>
+      </div>
+      <div class="brand-stat">
+        <div class="brand-stat-icon">🔧</div>
+        <div class="brand-stat-text">
+          <div class="num" id="bs-maintenances">—</div>
+          <div class="desc">Maintenances actives</div>
+        </div>
+      </div>
+      <div class="brand-stat">
+        <div class="brand-stat-icon">📦</div>
+        <div class="brand-stat-text">
+          <div class="num" id="bs-produits">—</div>
+          <div class="desc">Équipements suivis</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand-footer">© 2026 - Enzo Perrier</div>
+  </div>
+
+  <!-- ── Form panel ── -->
+  <div class="form-panel">
+    <div class="form-header">
+      <h1>Connexion</h1>
+      <p>Accès sécurisé — Identifiez-vous</p>
+    </div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)" autocomplete="off" novalidate>
+
+      <div class="field">
+        <label for="username"><span>Identifiant</span></label>
+        <div class="field-wrap">
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="nom d'utilisateur"
+            autocomplete="username"
+            spellcheck="false"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password"><span>Mot de passe</span></label>
+        <div class="field-wrap">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••••"
+            autocomplete="current-password"
+            required
+          />
+          <button type="button" class="toggle-pw" id="togglePw" onclick="togglePassword()">VOIR</button>
+        </div>
+      </div>
+
+      <div class="options-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="rememberMe" />
+          <span>Rester connecté</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-login" id="submitBtn">
+        <span class="btn-text">Connexion →</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="error-msg" id="errorMsg">
+        <span>⚠</span>
+        <span id="errorText">Identifiants incorrects</span>
+      </div>
+
+    </form>
+
+    <div class="divider"><span>Statut</span></div>
+
+    <div class="status-row">
+      <span class="status-dot"></span>
+      <span id="statusText">Vérification…</span>
+    </div>
+  </div>
+</div>
+
+<script src="login.js"></script>
+</body>
+</html>
