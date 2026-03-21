@@ -124,9 +124,9 @@ async function handleLogin(event) {
 
     // Redirection selon le rôle
     if (data.user?.role === "admin") {
-      window.location.href = "./admin.html";
+      window.location.href = "../Admin/admin.html";
     } else {
-      window.location.href = "./index.html";
+      window.location.href = "../index.html";
     }
 
   } catch {

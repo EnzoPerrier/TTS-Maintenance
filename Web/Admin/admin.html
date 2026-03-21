@@ -28,7 +28,6 @@
       --text-muted: #334155;
       --mono: 'JetBrains Mono', monospace;
       --sans: 'Syne', sans-serif;
-      /* alias pour admin.js */
       --primary-blue: #3b82f6;
       --secondary-blue: #93c5fd;
       --danger: #ef4444;
@@ -63,31 +62,7 @@
       pointer-events: none; z-index: 0;
     }
 
-    /* ===== LOGIN ===== */
-    #loginScreen {
-      position: fixed; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100; background: var(--bg);
-    }
-
-    .login-card {
-      background: var(--surface);
-      border: 1px solid var(--border-bright);
-      border-radius: 16px; padding: 2.5rem; width: 500px;
-      box-shadow: 0 0 60px rgba(59,130,246,0.08);
-    }
-    .login-card .logo { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.25rem; color: var(--text); }
-    .login-card .logo span { color: var(--accent); }
-    .login-card p { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 0.1em; }
-    .login-card label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
-    .login-card input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 1rem; font-family: var(--mono); font-size: 0.9rem; color: var(--text); margin-bottom: 1.2rem; outline: none; transition: border-color 0.2s; }
-    .login-card input:focus { border-color: var(--accent); }
-    .login-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0.8rem; font-family: var(--sans); font-size: 0.95rem; font-weight: 700; cursor: pointer; letter-spacing: 0.02em; transition: background 0.2s, box-shadow 0.2s; }
-    .login-btn:hover { background: #2563eb; box-shadow: 0 0 20px var(--accent-glow); }
-    .login-error { margin-top: 1rem; font-family: var(--mono); font-size: 0.78rem; color: var(--red); text-align: center; display: none; }
-
-    /* ===== APP ===== */
-    #app { display: none; min-height: 100vh; position: relative; z-index: 1; }
+    #app { min-height: 100vh; position: relative; z-index: 1; }
 
     header {
       position: sticky; top: 0; z-index: 50;
@@ -115,7 +90,6 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* ===== STAT CARDS ===== */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; position: relative; overflow: hidden; transition: border-color 0.2s; }
     .stat-card:hover { border-color: var(--border-bright); }
@@ -131,7 +105,6 @@
     .pulse-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 1.8s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
 
-    /* ===== TABLES ===== */
     .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
     .panel-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     .panel-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -176,7 +149,7 @@
     .filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
     .filter-bar input { flex: 1; min-width: 200px; }
 
-    #lockBanner { display: none; background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); border: 1px solid rgba(239,68,68,0.4); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    #lockBanner { background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); border: 1px solid rgba(239,68,68,0.4); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
     #lockBanner.hidden { display: none; }
     .lock-text { display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; font-weight: 600; color: var(--red); }
 
@@ -212,33 +185,17 @@
     .btn-confirm.green { background: var(--green); color: #fff; }
     .btn-confirm.green:hover { background: #16a34a; }
 
-    /* ===== DRAWER STATS UTILISATEUR ===== */
-    #statsDrawer {
-      position: fixed;
-      top: 0; right: -480px;
-      width: 460px; height: 100vh;
-      background: var(--surface);
-      border-left: 1px solid var(--border-bright);
-      box-shadow: -8px 0 40px rgba(0,0,0,0.5);
-      z-index: 15000;
-      transition: right 0.35s cubic-bezier(0.16,1,0.3,1);
-      overflow: hidden;
-      display: flex; flex-direction: column;
-    }
+    #statsDrawer { position: fixed; top: 0; right: -480px; width: 460px; height: 100vh; background: var(--surface); border-left: 1px solid var(--border-bright); box-shadow: -8px 0 40px rgba(0,0,0,0.5); z-index: 15000; transition: right 0.35s cubic-bezier(0.16,1,0.3,1); overflow: hidden; display: flex; flex-direction: column; }
     #statsDrawer.open { right: 0; }
-
     .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .drawer-header h3 { font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin: 0; }
-    .drawer-close { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer; font-family: var(--mono); font-size: 0.72rem; transition: all 0.2s; text-transform: none; letter-spacing: 0; }
-    .drawer-close:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); transform: none; box-shadow: none; }
+    .drawer-close { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer; font-family: var(--mono); font-size: 0.72rem; transition: all 0.2s; }
+    .drawer-close:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
     #statsDrawerContent { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
-
     #statsOverlay { display: none; position: fixed; inset: 0; background: rgba(5,8,15,0.55); backdrop-filter: blur(2px); z-index: 14000; }
     #statsOverlay.open { display: block; }
 
     @media (max-width: 520px) { #statsDrawer { width: 100vw; right: -100vw; } }
-
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
       header { padding: 0 1rem; }
       main { padding: 1rem; }
@@ -249,23 +206,7 @@
 </head>
 <body>
 
-<!-- ===== LOGIN ===== -->
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="logo">Maintenance<span>App</span></div>
-    <p>Panneau d'administration</p>
-    <label>Identifiant</label>
-    <input type="text" id="loginUser" placeholder="admin" autocomplete="username" />
-    <label>Mot de passe</label>
-    <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
-    <button class="login-btn" onclick="doLogin()">Connexion →</button>
-    <div class="login-error" id="loginError">Identifiants incorrects</div>
-  </div>
-</div>
-
-<!-- ===== APP ===== -->
 <div id="app">
-
   <header>
     <div class="header-left">
       <div class="brand">TTS<span>maintenance</span></div>
@@ -287,14 +228,11 @@
 
   <main>
 
-    <!-- ===== OVERVIEW ===== -->
     <div id="tab-overview" class="tab-panel active">
-
       <div id="lockBanner" class="hidden">
         <div class="lock-text">🔒 Application verrouillée — Toute connexion est bloquée</div>
         <button class="btn-sm" onclick="switchTab('access')">Gérer →</button>
       </div>
-
       <div class="stats-grid">
         <div class="stat-card blue">
           <div class="label">Sessions actives</div>
@@ -321,7 +259,6 @@
           <div class="icon">✏️</div>
         </div>
       </div>
-
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">Activité récente</div>
@@ -330,24 +267,12 @@
           </div>
         </div>
         <table>
-          <thead>
-            <tr>
-              <th>Horodatage</th>
-              <th>Utilisateur</th>
-              <th>Action</th>
-              <th>Détail</th>
-              <th>IP</th>
-            </tr>
-          </thead>
-          <tbody id="recentLogsTable">
-            <tr><td colspan="5" class="empty">Chargement…</td></tr>
-          </tbody>
+          <thead><tr><th>Horodatage</th><th>Utilisateur</th><th>Action</th><th>Détail</th><th>IP</th></tr></thead>
+          <tbody id="recentLogsTable"><tr><td colspan="5" class="empty">Chargement…</td></tr></tbody>
         </table>
       </div>
-
     </div>
 
-    <!-- ===== SESSIONS ===== -->
     <div id="tab-sessions" class="tab-panel">
       <div class="panel">
         <div class="panel-header">
@@ -358,24 +283,12 @@
           </div>
         </div>
         <table>
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>IP</th>
-              <th>Connexion</th>
-              <th>Dernière activité</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="sessionsTable">
-            <tr><td colspan="6" class="empty">Chargement…</td></tr>
-          </tbody>
+          <thead><tr><th>Utilisateur</th><th>IP</th><th>Connexion</th><th>Dernière activité</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody id="sessionsTable"><tr><td colspan="6" class="empty">Chargement…</td></tr></tbody>
         </table>
       </div>
     </div>
 
-    <!-- ===== UTILISATEURS ===== -->
     <div id="tab-users" class="tab-panel">
       <div class="panel">
         <div class="panel-header">
@@ -386,25 +299,12 @@
           </div>
         </div>
         <table>
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Email</th>
-              <th>Rôle</th>
-              <th>Dernière connexion</th>
-              <th>Statut</th>
-              <th>Stats</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="usersTable">
-            <tr><td colspan="7" class="empty">Chargement…</td></tr>
-          </tbody>
+          <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Dernière connexion</th><th>Statut</th><th>Stats</th><th>Actions</th></tr></thead>
+          <tbody id="usersTable"><tr><td colspan="7" class="empty">Chargement…</td></tr></tbody>
         </table>
       </div>
     </div>
 
-    <!-- ===== LOGS ===== -->
     <div id="tab-logs" class="tab-panel">
       <div class="filter-bar">
         <input type="text" id="logSearch" placeholder="Rechercher…" oninput="filterLogs()" />
@@ -421,26 +321,13 @@
       </div>
       <div class="panel">
         <table>
-          <thead>
-            <tr>
-              <th>Horodatage</th>
-              <th>Utilisateur</th>
-              <th>Action</th>
-              <th>Table</th>
-              <th>Détail</th>
-              <th>IP</th>
-            </tr>
-          </thead>
-          <tbody id="logsTable">
-            <tr><td colspan="6" class="empty">Chargement…</td></tr>
-          </tbody>
+          <thead><tr><th>Horodatage</th><th>Utilisateur</th><th>Action</th><th>Table</th><th>Détail</th><th>IP</th></tr></thead>
+          <tbody id="logsTable"><tr><td colspan="6" class="empty">Chargement…</td></tr></tbody>
         </table>
       </div>
     </div>
 
-    <!-- ===== ACCÈS ===== -->
     <div id="tab-access" class="tab-panel">
-
       <div class="lock-section">
         <div class="lock-section-info">
           <h3>🔒 Verrouillage global de l'application</h3>
@@ -451,44 +338,28 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
-
       <div id="lockMessageBox" style="display:none; margin-bottom:1.5rem;">
         <div class="filter-bar">
           <input type="text" id="lockMessage" placeholder="Message affiché aux utilisateurs bloqués…" style="flex:1" />
           <button class="btn-sm" onclick="saveLockMessage()">Sauvegarder le message</button>
         </div>
       </div>
-
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">Blocage par utilisateur</div>
-          <div class="panel-actions">
-            <button class="btn-sm" onclick="loadUsers()">↻ Rafraîchir</button>
-          </div>
+          <div class="panel-actions"><button class="btn-sm" onclick="loadUsers()">↻ Rafraîchir</button></div>
         </div>
         <table>
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Email</th>
-              <th>Rôle</th>
-              <th>Statut</th>
-              <th>Raison du blocage</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="accessTable">
-            <tr><td colspan="6" class="empty">Chargement…</td></tr>
-          </tbody>
+          <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Raison du blocage</th><th>Actions</th></tr></thead>
+          <tbody id="accessTable"><tr><td colspan="6" class="empty">Chargement…</td></tr></tbody>
         </table>
       </div>
-
     </div>
 
   </main>
 </div>
 
-<!-- ===== MODAL CONFIRMATION ===== -->
+<!-- MODAL CONFIRMATION -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <h3 id="modalTitle">Confirmer</h3>
@@ -500,60 +371,32 @@
   </div>
 </div>
 
-<!-- ===== MODAL CRÉER / MODIFIER UN UTILISATEUR ===== -->
+<!-- MODAL CRÉER / MODIFIER UTILISATEUR -->
 <div id="userModal" class="modal-overlay" style="display:none;">
   <div class="modal" style="width:480px;">
     <h3 id="userModalTitle">Créer un utilisateur</h3>
     <p>Les champs marqués * sont obligatoires.</p>
-
     <input type="hidden" id="userModalId" />
-
     <div style="margin-bottom:1rem;">
-      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">
-        Nom d'utilisateur *
-      </label>
-      <input type="text" id="userModalName" placeholder="ex: jean.dupont"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'" />
+      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Nom d'utilisateur *</label>
+      <input type="text" id="userModalName" placeholder="ex: jean.dupont" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
     </div>
-
     <div style="margin-bottom:1rem;">
-      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">
-        Email
-      </label>
-      <input type="email" id="userModalEmail" placeholder="email@example.com"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'" />
+      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Email</label>
+      <input type="email" id="userModalEmail" placeholder="email@example.com" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
     </div>
-
     <div style="margin-bottom:1rem;">
-      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">
-        Rôle
-      </label>
-      <select id="userModalRole"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;">
+      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Rôle</label>
+      <select id="userModalRole" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;">
         <option value="user">user</option>
         <option value="admin">admin</option>
       </select>
     </div>
-
     <div id="userModalPassRow" style="margin-bottom:0.5rem;">
-      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">
-        Mot de passe *
-      </label>
-      <input type="password" id="userModalPass" placeholder="••••••••••"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'"
-        onkeydown="if(event.key==='Enter') submitUserModal()" />
+      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Mot de passe *</label>
+      <input type="password" id="userModalPass" placeholder="••••••••••" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter') submitUserModal()" />
     </div>
-    <p id="userModalPassHint"
-       style="display:none;font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);margin-bottom:1rem;">
-      Laisser vide pour conserver le mot de passe actuel
-    </p>
-
+    <p id="userModalPassHint" style="display:none;font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);margin-bottom:1rem;">Laisser vide pour conserver le mot de passe actuel</p>
     <div class="modal-actions" style="margin-top:1.5rem;">
       <button class="btn-cancel" onclick="closeUserModal()">Annuler</button>
       <button class="btn-confirm green" onclick="submitUserModal()">✓ Valider</button>
@@ -561,29 +404,16 @@
   </div>
 </div>
 
-<!-- ===== MODAL BLOQUER AVEC RAISON ===== -->
+<!-- MODAL BLOQUER -->
 <div id="blockModal" class="modal-overlay" style="display:none;">
   <div class="modal">
     <h3>🔒 Bloquer l'utilisateur</h3>
-    <p>
-      Vous allez bloquer <strong id="blockUserName" style="color:var(--text);"></strong>.<br>
-      La raison sera affichée lors de sa prochaine tentative de connexion.
-    </p>
-
+    <p>Vous allez bloquer <strong id="blockUserName" style="color:var(--text);"></strong>.<br>La raison sera affichée lors de sa prochaine tentative de connexion.</p>
     <input type="hidden" id="blockUserId" />
-
     <div style="margin-top:0.25rem;">
-      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">
-        Raison du blocage
-      </label>
-      <input type="text" id="blockReason"
-        placeholder="ex: Abonnement expiré, comportement abusif…"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'"
-        onkeydown="if(event.key==='Enter') submitBlock()" />
+      <label style="display:block;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Raison du blocage</label>
+      <input type="text" id="blockReason" placeholder="ex: Abonnement expiré, comportement abusif…" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;font-family:var(--mono);font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter') submitBlock()" />
     </div>
-
     <div class="modal-actions" style="margin-top:1.5rem;">
       <button class="btn-cancel" onclick="closeBlockModal()">Annuler</button>
       <button class="btn-confirm red" onclick="submitBlock()">🔒 Bloquer</button>
@@ -591,9 +421,8 @@
   </div>
 </div>
 
-<!-- ===== OVERLAY + DRAWER STATS ===== -->
+<!-- DRAWER STATS -->
 <div id="statsOverlay" onclick="closeStatsDrawer();this.classList.remove('open');"></div>
-
 <div id="statsDrawer">
   <div class="drawer-header">
     <h3>📊 Statistiques utilisateur</h3>
@@ -602,7 +431,6 @@
   <div id="statsDrawerContent"></div>
 </div>
 
-<!-- ===== TOAST ===== -->
 <div id="toast"></div>
 
 <script src="admin.js"></script>

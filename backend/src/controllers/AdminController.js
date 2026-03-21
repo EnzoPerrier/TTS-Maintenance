@@ -1,5 +1,5 @@
 // =====================================================
-//  adminController.js
+//  AdminController.js
 //  Contrôleur pour le panneau d'administration
 // =====================================================
 

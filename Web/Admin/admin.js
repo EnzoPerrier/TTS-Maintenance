@@ -15,46 +15,45 @@ setInterval(() => {
 }, 1000);
 
 // =====================================================
-//  LOGIN / LOGOUT
+//  LOGOUT
 // =====================================================
-async function doLogin() {
-  const username = document.getElementById("loginUser").value.trim();
-  const password = document.getElementById("loginPass").value;
-  const errEl    = document.getElementById("loginError");
-  errEl.style.display = "none";
-
-  try {
-    const res  = await fetch(`${API}/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      errEl.textContent  = data.error || "Identifiants incorrects";
-      errEl.style.display = "block";
-      return;
-    }
-    adminToken = data.token;
-    sessionStorage.setItem("adminToken", adminToken);
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display         = "block";
-    initApp();
-  } catch {
-    errEl.textContent  = "Impossible de joindre le serveur";
-    errEl.style.display = "block";
-  }
-}
-
 function logout() {
   adminToken = null;
   sessionStorage.removeItem("adminToken");
-  location.reload();
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "../Login/login.html";
 }
 
 // =====================================================
-//  INIT
+//  INIT — vérifie le token au chargement
 // =====================================================
+window.addEventListener("DOMContentLoaded", () => {
+  // Récupérer le token stocké par login.js (sessionStorage ou localStorage)
+  const token = sessionStorage.getItem("token")
+             || localStorage.getItem("token")
+             || sessionStorage.getItem("adminToken");
+
+  const user = JSON.parse(
+    sessionStorage.getItem("user") ||
+    localStorage.getItem("user") || "null"
+  );
+
+  // Si pas de token ou pas admin → rediriger vers login
+  if (!token || !user || user.role !== "admin") {
+    window.location.href = "../Login/login.html";
+    return;
+  }
+
+  adminToken = token;
+  // Synchroniser sous adminToken pour les appels suivants
+  sessionStorage.setItem("adminToken", adminToken);
+
+  initApp();
+});
+
 function initApp() {
   loadOverview();
   loadSessions();
@@ -62,19 +61,6 @@ function initApp() {
   loadLogs();
   loadLockStatus();
 }
-
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = sessionStorage.getItem("adminToken");
-  if (saved) {
-    adminToken = saved;
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display         = "block";
-    initApp();
-  }
-  document.getElementById("loginPass")?.addEventListener("keydown", e => {
-    if (e.key === "Enter") doLogin();
-  });
-});
 
 // =====================================================
 //  NAVIGATION
@@ -104,7 +90,11 @@ async function apiFetch(url, options = {}) {
       ...options.headers,
     },
   });
-  if (res.status === 401) { logout(); return null; }
+  // Token expiré ou invalide → retour au login
+  if (res.status === 401 || res.status === 403) {
+    logout();
+    return null;
+  }
   return res;
 }
 
@@ -123,8 +113,8 @@ function showToast(msg, type = "info") {
 // =====================================================
 function openModal(title, text, color, fn) {
   pendingAction = fn;
-  document.getElementById("modalTitle").textContent  = title;
-  document.getElementById("modalText").textContent   = text;
+  document.getElementById("modalTitle").textContent    = title;
+  document.getElementById("modalText").textContent     = text;
   document.getElementById("modalConfirmBtn").className = `btn-confirm ${color}`;
   document.getElementById("confirmModal").classList.add("open");
 }
@@ -211,7 +201,7 @@ function confirmKickAll() {
 }
 
 // =====================================================
-//  UTILISATEURS — liste
+//  UTILISATEURS
 // =====================================================
 async function loadUsers() {
   const res = await apiFetch(`${API}/admin/users`);
@@ -253,8 +243,7 @@ function renderUsersTable() {
 //  STATS UTILISATEUR — drawer latéral
 // =====================================================
 async function openUserStats(id) {
-  // Afficher le drawer vide d'abord
-  const drawer = document.getElementById("statsDrawer");
+  const drawer  = document.getElementById("statsDrawer");
   const content = document.getElementById("statsDrawerContent");
   content.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">Chargement…</div>`;
   drawer.classList.add("open");
@@ -264,27 +253,17 @@ async function openUserStats(id) {
   if (!res) { content.innerHTML = `<p style="color:var(--red)">Erreur de chargement</p>`; return; }
   const d = await res.json();
 
-  const u = d.user;
+  const u        = d.user;
   const isOnline = d.activeSessions.length > 0;
-
-  // ── Heatmap 90 jours ──────────────────────────────
-  const heatmapHtml = buildHeatmap(d.heatmapRows);
-
-  // ── Bar chart connexions/heure ─────────────────────
+  const heatmapHtml  = buildHeatmap(d.heatmapRows);
   const hourChartHtml = buildHourBar(d.loginsByHour);
-
-  // ── Sparkline logins 30j ──────────────────────────
-  const sparkHtml = buildSparkline(d.loginsByDay);
-
-  // ── CRUD breakdown ────────────────────────────────
+  const sparkHtml    = buildSparkline(d.loginsByDay);
   const totalActions = Object.values(d.crudStats).reduce((a, b) => a + b, 0);
-  const crudHtml = buildCrudBars(d.crudStats, totalActions);
+  const crudHtml     = buildCrudBars(d.crudStats, totalActions);
 
   content.innerHTML = `
-    <!-- En-tête utilisateur -->
     <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);">
-      <div style="width:52px;height:52px;border-radius:50%;background:var(--surface3);border:2px solid var(--border-bright);
-                  display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:var(--primary-blue);flex-shrink:0;">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--surface3);border:2px solid var(--border-bright);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:var(--primary-blue);flex-shrink:0;">
         ${u.username.charAt(0).toUpperCase()}
       </div>
       <div>
@@ -301,7 +280,6 @@ async function openUserStats(id) {
       </div>
     </div>
 
-    <!-- KPIs rapides -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.5rem;">
       ${kpiCard('Connexions', d.totalLogins, '🔑')}
       ${kpiCard('Jours actifs', d.activeDays, '📅')}
@@ -309,7 +287,6 @@ async function openUserStats(id) {
       ${kpiCard('Sessions actives', d.activeSessions.length, '🟢')}
     </div>
 
-    <!-- Heure préférée + première vue -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
       <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;">
         <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Heure de prédilection</div>
@@ -319,57 +296,44 @@ async function openUserStats(id) {
       </div>
       <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;">
         <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.4rem;">Première connexion</div>
-        <div style="font-size:0.85rem;font-weight:700;color:var(--text);font-family:var(--mono);">
-          ${formatDate(d.firstSeen)}
-        </div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text);font-family:var(--mono);">${formatDate(d.firstSeen)}</div>
       </div>
     </div>
 
-    <!-- Heatmap 90 jours -->
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
       <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Activité — 90 derniers jours</div>
       ${heatmapHtml}
     </div>
 
-    <!-- Sparkline logins 30j -->
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
       <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Connexions — 30 derniers jours</div>
       ${sparkHtml}
     </div>
 
-    <!-- Connexions par heure -->
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
       <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Répartition par heure</div>
       ${hourChartHtml}
     </div>
 
-    <!-- Breakdown CRUD -->
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
       <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Répartition des actions</div>
       ${crudHtml}
     </div>
 
-    <!-- IP fréquentes -->
     ${d.topIPs.length ? `
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
       <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Adresses IP fréquentes</div>
       ${d.topIPs.map((ip, i) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0;
-                    border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.78rem;">
-          <span style="color:${i === 0 ? 'var(--primary-blue)' : 'var(--text-dim)'}">
-            ${i === 0 ? '⭐' : '▸'} <code>${ip.ip_address}</code>
-          </span>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.78rem;">
+          <span style="color:${i === 0 ? 'var(--primary-blue)' : 'var(--text-dim)'}">${i === 0 ? '⭐' : '▸'} <code>${ip.ip_address}</code></span>
           <span style="color:var(--text-dim)">${ip.cnt} fois</span>
         </div>
       `).join("")}
     </div>` : ''}
 
-    <!-- Sessions actives -->
     ${d.activeSessions.length ? `
     <div style="background:var(--surface3);border:1px solid var(--border-bright);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;">
-      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);margin-bottom:0.85rem;">
-        <span class="pulse-dot"></span> Sessions actives
-      </div>
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);margin-bottom:0.85rem;"><span class="pulse-dot"></span> Sessions actives</div>
       ${d.activeSessions.map(s => `
         <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.75rem;">
           <code style="color:var(--secondary-blue)">${s.ip_address || '—'}</code>
@@ -378,7 +342,6 @@ async function openUserStats(id) {
       `).join("")}
     </div>` : ''}
 
-    <!-- Dernières actions -->
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem;">
       <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.85rem;">Dernières actions</div>
       ${d.recentActions.length ? d.recentActions.map(a => `
@@ -403,162 +366,84 @@ function kpiCard(label, value, icon) {
   `;
 }
 
-// ── Heatmap SVG ──────────────────────────────────────
 function buildHeatmap(rows) {
-  // Construire un dict date → count
   const map = {};
   rows.forEach(r => { map[r.day?.slice(0,10) || r.day] = r.cnt; });
-
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const DAYS  = 91;
-  const COLS  = 13; // 13 semaines
-  const W     = 14; // cellule
-  const GAP   = 2;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const DAYS=91, W=14, GAP=2, COLS=13;
   const cells = [];
-
-  for (let i = DAYS - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+  for (let i = DAYS-1; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate()-i);
     const key = d.toISOString().slice(0,10);
     const cnt = map[key] || 0;
-    const col = Math.floor((DAYS - 1 - i) / 7);
-    const row = d.getDay(); // 0=dim
-    cells.push({ key, cnt, col, row });
+    cells.push({ key, cnt, col: Math.floor((DAYS-1-i)/7), row: d.getDay() });
   }
-
   const maxCnt = Math.max(1, ...cells.map(c => c.cnt));
-
-  const svgW = COLS * (W + GAP);
-  const svgH = 7 * (W + GAP);
-
+  const svgW = COLS*(W+GAP), svgH = 7*(W+GAP);
   const rects = cells.map(c => {
-    const x = c.col * (W + GAP);
-    const y = c.row * (W + GAP);
-    const intensity = c.cnt === 0 ? 0 : 0.15 + 0.85 * (c.cnt / maxCnt);
-    const alpha     = c.cnt === 0 ? 0.08 : intensity;
-    const color     = c.cnt === 0 ? `rgba(79,142,247,${alpha})` : `rgba(79,142,247,${alpha})`;
-    return `<rect x="${x}" y="${y}" width="${W}" height="${W}" rx="2"
-      fill="${color}"
-      stroke="rgba(79,142,247,0.06)" stroke-width="0.5">
-      <title>${c.key} : ${c.cnt} action(s)</title>
-    </rect>`;
+    const alpha = c.cnt===0 ? 0.08 : 0.15+0.85*(c.cnt/maxCnt);
+    return `<rect x="${c.col*(W+GAP)}" y="${c.row*(W+GAP)}" width="${W}" height="${W}" rx="2" fill="rgba(79,142,247,${alpha})" stroke="rgba(79,142,247,0.06)" stroke-width="0.5"><title>${c.key} : ${c.cnt} action(s)</title></rect>`;
   }).join("");
-
-  return `<svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;">
-    ${rects}
-  </svg>
+  return `<svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;">${rects}</svg>
   <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.5rem;font-family:var(--mono);font-size:0.62rem;color:var(--text-muted);">
-    <span>Moins</span>
-    ${[0.08, 0.25, 0.5, 0.75, 1].map(a =>
-      `<span style="width:10px;height:10px;border-radius:2px;background:rgba(79,142,247,${a});display:inline-block;"></span>`
-    ).join("")}
-    <span>Plus</span>
+    <span>Moins</span>${[0.08,0.25,0.5,0.75,1].map(a=>`<span style="width:10px;height:10px;border-radius:2px;background:rgba(79,142,247,${a});display:inline-block;"></span>`).join("")}<span>Plus</span>
   </div>`;
 }
 
-// ── Sparkline SVG logins 30j ─────────────────────────
 function buildSparkline(loginsByDay) {
   if (!loginsByDay.length) return `<div style="color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;">Aucune connexion</div>`;
-
-  // Remplir les 30 derniers jours
   const today = new Date(); today.setHours(0,0,0,0);
-  const map   = {};
-  loginsByDay.forEach(r => { map[r.day?.slice(0,10) || r.day] = r.cnt; });
-
+  const map = {};
+  loginsByDay.forEach(r => { map[r.day?.slice(0,10)||r.day] = r.cnt; });
   const points = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    points.push({ label: formatDateShort(d), cnt: map[d.toISOString().slice(0,10)] || 0 });
+  for (let i=29;i>=0;i--) {
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    points.push({ label: formatDateShort(d), cnt: map[d.toISOString().slice(0,10)]||0 });
   }
-
-  const maxY  = Math.max(1, ...points.map(p => p.cnt));
-  const W     = 540, H = 60, padL = 0, padR = 0;
-  const xStep = (W - padL - padR) / (points.length - 1);
-
-  const pts = points.map((p, i) => {
-    const x = padL + i * xStep;
-    const y = H - (p.cnt / maxY) * H;
-    return `${x},${y}`;
-  }).join(" ");
-
-  // Ligne de fill
-  const fillPts = `${padL},${H} ${pts} ${padL + (points.length-1)*xStep},${H}`;
-
+  const maxY=Math.max(1,...points.map(p=>p.cnt)), W=540, H=60, xStep=W/(points.length-1);
+  const pts = points.map((p,i)=>`${i*xStep},${H-(p.cnt/maxY)*H}`).join(" ");
+  const fillPts = `0,${H} ${pts} ${(points.length-1)*xStep},${H}`;
   return `<svg width="100%" viewBox="0 0 ${W} ${H+10}" style="overflow:visible;">
-    <defs>
-      <linearGradient id="spfill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"   stop-color="rgba(79,142,247,0.3)"/>
-        <stop offset="100%" stop-color="rgba(79,142,247,0)"/>
-      </linearGradient>
-    </defs>
+    <defs><linearGradient id="spfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(79,142,247,0.3)"/><stop offset="100%" stop-color="rgba(79,142,247,0)"/></linearGradient></defs>
     <polygon points="${fillPts}" fill="url(#spfill)"/>
     <polyline points="${pts}" fill="none" stroke="var(--primary-blue)" stroke-width="1.5" stroke-linejoin="round"/>
-    ${points.map((p, i) => p.cnt > 0 ? `<circle cx="${padL + i * xStep}" cy="${H - (p.cnt/maxY)*H}" r="3" fill="var(--primary-blue)" opacity="0.8"><title>${p.label} : ${p.cnt}</title></circle>` : '').join("")}
+    ${points.map((p,i)=>p.cnt>0?`<circle cx="${i*xStep}" cy="${H-(p.cnt/maxY)*H}" r="3" fill="var(--primary-blue)" opacity="0.8"><title>${p.label} : ${p.cnt}</title></circle>`:'').join("")}
   </svg>
-  <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);margin-top:0.25rem;">
-    <span>${points[0].label}</span><span>Aujourd'hui</span>
-  </div>`;
+  <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);margin-top:0.25rem;"><span>${points[0].label}</span><span>Aujourd'hui</span></div>`;
 }
 
-// ── Bar chart par heure ───────────────────────────────
 function buildHourBar(loginsByHour) {
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const map   = {};
-  loginsByHour.forEach(r => { map[r.hour] = r.cnt; });
-  const maxCnt = Math.max(1, ...Object.values(map));
-
-  const W = 540, H = 48, barW = Math.floor(W / 24) - 1;
-
-  const bars = hours.map(h => {
-    const cnt = map[h] || 0;
-    const bh  = cnt === 0 ? 2 : Math.max(3, (cnt / maxCnt) * H);
-    const x   = h * (W / 24);
-    const isMax = cnt === maxCnt && cnt > 0;
-    return `<rect x="${x}" y="${H - bh}" width="${barW}" height="${bh}"
-      rx="2" fill="${isMax ? 'var(--accent-orange)' : 'rgba(79,142,247,0.55)'}">
-      <title>${String(h).padStart(2,'0')}h : ${cnt} connexion(s)</title>
-    </rect>`;
+  const map={};
+  loginsByHour.forEach(r=>{map[r.hour]=r.cnt;});
+  const maxCnt=Math.max(1,...Object.values(map)), W=540, H=48, barW=Math.floor(W/24)-1;
+  const bars = Array.from({length:24},(_,h)=>{
+    const cnt=map[h]||0, bh=cnt===0?2:Math.max(3,(cnt/maxCnt)*H);
+    return `<rect x="${h*(W/24)}" y="${H-bh}" width="${barW}" height="${bh}" rx="2" fill="${cnt===maxCnt&&cnt>0?'var(--accent-orange)':'rgba(79,142,247,0.55)'}"><title>${String(h).padStart(2,'0')}h : ${cnt} connexion(s)</title></rect>`;
   }).join("");
-
-  const labels = [0,6,12,18,23].map(h => {
-    const x = h * (W / 24) + barW/2;
-    return `<text x="${x}" y="${H+14}" text-anchor="middle" font-size="9"
-      font-family="JetBrains Mono, monospace" fill="rgba(122,138,176,0.8)">${String(h).padStart(2,'0')}h</text>`;
-  }).join("");
-
-  return `<svg width="100%" viewBox="0 0 ${W} ${H+20}" style="overflow:visible;">
-    ${bars}${labels}
-  </svg>`;
+  const labels = [0,6,12,18,23].map(h=>`<text x="${h*(W/24)+barW/2}" y="${H+14}" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="rgba(122,138,176,0.8)">${String(h).padStart(2,'0')}h</text>`).join("");
+  return `<svg width="100%" viewBox="0 0 ${W} ${H+20}" style="overflow:visible;">${bars}${labels}</svg>`;
 }
 
-// ── CRUD breakdown barres ─────────────────────────────
 function buildCrudBars(stats, total) {
   const items = [
-    { key: 'LOGIN',  label: 'Connexions', color: 'var(--accent-orange)' },
-    { key: 'CREATE', label: 'Créations',  color: 'var(--success)' },
-    { key: 'UPDATE', label: 'Modifications', color: 'var(--primary-blue)' },
-    { key: 'DELETE', label: 'Suppressions',  color: 'var(--danger)' },
-    { key: 'BLOCK',  label: 'Blocages',      color: '#a855f7' },
+    {key:'LOGIN',label:'Connexions',color:'var(--accent-orange)'},
+    {key:'CREATE',label:'Créations',color:'var(--success)'},
+    {key:'UPDATE',label:'Modifications',color:'var(--primary-blue)'},
+    {key:'DELETE',label:'Suppressions',color:'var(--danger)'},
+    {key:'BLOCK',label:'Blocages',color:'#a855f7'},
   ];
-
-  if (total === 0) return `<div style="color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;">Aucune action</div>`;
-
-  return items.map(item => {
-    const cnt  = stats[item.key] || 0;
-    const pct  = total > 0 ? ((cnt / total) * 100).toFixed(1) : 0;
-    const fill = total > 0 ? (cnt / total) * 100 : 0;
-    return `
-      <div style="margin-bottom:0.6rem;">
-        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.72rem;margin-bottom:0.2rem;">
-          <span style="color:var(--text-dim)">${item.label}</span>
-          <span style="color:var(--text)">${cnt} <span style="color:var(--text-muted)">(${pct}%)</span></span>
-        </div>
-        <div style="height:5px;background:var(--surface);border-radius:100px;overflow:hidden;">
-          <div style="height:100%;width:${fill}%;background:${item.color};border-radius:100px;transition:width 0.4s;"></div>
-        </div>
-      </div>`;
+  if (total===0) return `<div style="color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;">Aucune action</div>`;
+  return items.map(item=>{
+    const cnt=stats[item.key]||0, pct=total>0?((cnt/total)*100).toFixed(1):0, fill=total>0?(cnt/total)*100:0;
+    return `<div style="margin-bottom:0.6rem;">
+      <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.72rem;margin-bottom:0.2rem;">
+        <span style="color:var(--text-dim)">${item.label}</span>
+        <span style="color:var(--text)">${cnt} <span style="color:var(--text-muted)">(${pct}%)</span></span>
+      </div>
+      <div style="height:5px;background:var(--surface);border-radius:100px;overflow:hidden;">
+        <div style="height:100%;width:${fill}%;background:${item.color};border-radius:100px;transition:width 0.4s;"></div>
+      </div>
+    </div>`;
   }).join("");
 }
 
@@ -570,28 +455,28 @@ function closeStatsDrawer() {
 //  MODAL CRÉER / MODIFIER UN UTILISATEUR
 // =====================================================
 function openCreateUserModal() {
-  document.getElementById("userModalTitle").textContent          = "Créer un utilisateur";
-  document.getElementById("userModalId").value                   = "";
-  document.getElementById("userModalName").value                 = "";
-  document.getElementById("userModalEmail").value                = "";
-  document.getElementById("userModalRole").value                 = "user";
-  document.getElementById("userModalPass").value                 = "";
-  document.getElementById("userModalPassRow").style.display      = "block";
-  document.getElementById("userModalPassHint").style.display     = "none";
-  document.getElementById("userModal").style.display             = "flex";
+  document.getElementById("userModalTitle").textContent      = "Créer un utilisateur";
+  document.getElementById("userModalId").value               = "";
+  document.getElementById("userModalName").value             = "";
+  document.getElementById("userModalEmail").value            = "";
+  document.getElementById("userModalRole").value             = "user";
+  document.getElementById("userModalPass").value             = "";
+  document.getElementById("userModalPassRow").style.display  = "block";
+  document.getElementById("userModalPassHint").style.display = "none";
+  document.getElementById("userModal").style.display         = "flex";
 }
 function openEditUserModal(id) {
   const u = allUsers.find(u => u.id_user === id);
   if (!u) return;
-  document.getElementById("userModalTitle").textContent          = `Modifier "${u.username}"`;
-  document.getElementById("userModalId").value                   = u.id_user;
-  document.getElementById("userModalName").value                 = u.username;
-  document.getElementById("userModalEmail").value                = u.email || "";
-  document.getElementById("userModalRole").value                 = u.role;
-  document.getElementById("userModalPass").value                 = "";
-  document.getElementById("userModalPassRow").style.display      = "block";
-  document.getElementById("userModalPassHint").style.display     = "block";
-  document.getElementById("userModal").style.display             = "flex";
+  document.getElementById("userModalTitle").textContent      = `Modifier "${u.username}"`;
+  document.getElementById("userModalId").value               = u.id_user;
+  document.getElementById("userModalName").value             = u.username;
+  document.getElementById("userModalEmail").value            = u.email || "";
+  document.getElementById("userModalRole").value             = u.role;
+  document.getElementById("userModalPass").value             = "";
+  document.getElementById("userModalPassRow").style.display  = "block";
+  document.getElementById("userModalPassHint").style.display = "block";
+  document.getElementById("userModal").style.display         = "flex";
 }
 function closeUserModal() { document.getElementById("userModal").style.display = "none"; }
 
@@ -623,7 +508,7 @@ async function submitUserModal() {
 }
 
 // =====================================================
-//  BLOQUER AVEC RAISON
+//  BLOQUER
 // =====================================================
 function openBlockModal(id, username) {
   document.getElementById("blockUserId").value         = id;
@@ -655,8 +540,7 @@ async function toggleBlock(id, block, reason) {
 //  SUPPRIMER UN UTILISATEUR
 // =====================================================
 function confirmDeleteUser(id, username) {
-  openModal("Supprimer l'utilisateur",
-    `Supprimer le compte "${username}" ? Cette action est irréversible.`, "red", async () => {
+  openModal("Supprimer l'utilisateur", `Supprimer le compte "${username}" ? Cette action est irréversible.`, "red", async () => {
     const res = await apiFetch(`${API}/admin/users/${id}`, { method: "DELETE" });
     if (!res) return;
     const data = await res.json();
@@ -749,9 +633,9 @@ async function loadLockStatus() {
   const res = await apiFetch(`${API}/admin/lock`);
   if (!res) return;
   const data = await res.json();
-  document.getElementById("globalLockToggle").checked        = data.locked;
-  document.getElementById("lockMessage").value               = data.message || "";
-  document.getElementById("lockMessageBox").style.display    = data.locked ? "block" : "none";
+  document.getElementById("globalLockToggle").checked     = data.locked;
+  document.getElementById("lockMessage").value            = data.message || "";
+  document.getElementById("lockMessageBox").style.display = data.locked ? "block" : "none";
   document.getElementById("lockBanner").classList.toggle("hidden", !data.locked);
 }
 async function toggleGlobalLock() {

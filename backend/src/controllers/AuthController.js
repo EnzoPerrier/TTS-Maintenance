@@ -129,7 +129,7 @@ exports.login = async (req, res) => {
 
     // Log d'activité (réutilise logAction de adminController)
     try {
-      const { logAction } = require("./adminController.js");
+      const { logAction } = require("./AdminController.js");
       await logAction(db, user.id_user, user.username, "LOGIN", "users", "Connexion utilisateur", req.ip);
     } catch (logErr) {
       console.warn("logAction skipped:", logErr.message);

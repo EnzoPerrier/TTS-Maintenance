@@ -1,13 +1,8 @@
 const express = require("express");
 const router  = express.Router();
-const admin   = require("../controllers/adminController.js");
-
-// ── Auth admin (public) ───────────────────────────────
-router.post("/login", admin.login);
+const admin   = require("../controllers/AdminController.js")
 
 // ── Toutes les routes suivantes requièrent requireAdmin ─
-router.use(admin.requireAdmin);
-
 // Stats globales
 router.get("/stats", admin.getStats);
 
