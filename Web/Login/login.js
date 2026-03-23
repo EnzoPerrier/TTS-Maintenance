@@ -9,7 +9,7 @@ if (existingToken) {
 // ── Ping server status ───────────────────────────────────────────────────────
 async function checkServerStatus() {
   try {
-    const res = await fetch(`${API}/`, { signal: AbortSignal.timeout(3000) });
+    const res = await apiapiFetch(`${API}/`, { signal: AbortSignal.timeout(3000) });
     if (res.ok) {
       document.getElementById("statusText").textContent = "Serveur opérationnel";
       document.querySelector(".status-dot").style.background = "var(--green)";
@@ -27,9 +27,9 @@ async function checkServerStatus() {
 async function loadStats() {
   try {
     const [sites, maintenances, produits] = await Promise.allSettled([
-      fetch(`${API}/sites`).then(r => r.json()),
-      fetch(`${API}/maintenances/NotFinished`).then(r => r.json()),
-      fetch(`${API}/produits`).then(r => r.json()),
+      apiapiFetch(`${API}/sites`).then(r => r.json()),
+      apiapiFetch(`${API}/maintenances/NotFinished`).then(r => r.json()),
+      apiFetch(`${API}/produits`).then(r => r.json()),
     ]);
 
     if (sites.status === "fulfilled" && Array.isArray(sites.value))
@@ -98,7 +98,7 @@ async function handleLogin(event) {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${API}/auth/login`, {
+    const res = await apiFetch(`${API}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),

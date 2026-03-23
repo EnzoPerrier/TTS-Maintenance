@@ -68,7 +68,7 @@ async function loadMaintenanceDetails() {
     return;
   }
   try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`);
+    const res = await apiapiFetch(`${API}/maintenances/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement de la maintenance");
     maintenance = await res.json();
     renderMaintenanceDetails();
@@ -179,7 +179,7 @@ function renderMaintenanceDetails() {
 
 async function loadProduits() {
   try {
-    const res = await fetch(`${API}/produits/ProduitsBySiteID/${maintenance.id_site}`);
+    const res = await apiFetch(`${API}/produits/ProduitsBySiteID/${maintenance.id_site}`);
     if (!res.ok) throw new Error();
     allProduits = await res.json();
   } catch { console.error("Erreur chargement produits"); }
@@ -187,7 +187,7 @@ async function loadProduits() {
 
 async function loadProduitsAssocies() {
   try {
-    const res = await fetch(`${API}/maintenance-produits/maintenance/${id_maintenance}`);
+    const res = await apiFetch(`${API}/maintenance-produits/maintenance/${id_maintenance}`);
     if (!res.ok) throw new Error();
     produitsAssocies = await res.json();
 
@@ -200,7 +200,7 @@ async function loadProduitsAssocies() {
     }
 
     for (const p of produitsAssocies) {
-      const photosRes = await fetch(`${API}/photos/maintenance/${id_maintenance}/${p.id_produit}`);
+      const photosRes = await apiFetch(`${API}/photos/maintenance/${id_maintenance}/${p.id_produit}`);
       const photos = photosRes.ok ? await photosRes.json() : [];
 
       const details = document.createElement("details");
@@ -330,7 +330,7 @@ async function addPhoto(event) {
   if (commentaire) formData.append("commentaire", commentaire);
 
   try {
-    const res = await fetch(`${API}/photos/multiple`, { method: "POST", body: formData });
+    const res = await apiFetch(`${API}/photos/multiple`, { method: "POST", body: formData });
     if (!res.ok) { const err = await res.json(); alert(err.error || "Erreur"); return; }
     const result = await res.json();
     alert(result.message || "Photos ajoutées !");
@@ -342,7 +342,7 @@ async function addPhoto(event) {
 async function deletePhoto(id_photo) {
   if (!confirm("Voulez-vous vraiment supprimer cette photo ?")) return;
   try {
-    const res = await fetch(`${API}/photos/${id_photo}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/photos/${id_photo}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression"); return; }
     loadProduitsAssocies();
   } catch (err) { console.error(err); alert("Erreur serveur"); }
@@ -403,7 +403,7 @@ async function addProduitToMaintenance(event) {
   if (photoFiles && photoFiles.length > 5) { alert("Maximum 5 photos autorisées"); return; }
 
   try {
-    const resAssoc = await fetch(`${API}/maintenance-produits`, {
+    const resAssoc = await apiFetch(`${API}/maintenance-produits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -425,7 +425,7 @@ async function addProduitToMaintenance(event) {
       formData.append("id_produit", id_produit);
       const commentairePhotos = document.getElementById("photoDescriptionAddProduit").value;
       if (commentairePhotos) formData.append("commentaire", commentairePhotos);
-      const resPhotos = await fetch(`${API}/photos/multiple`, { method: "POST", body: formData });
+      const resPhotos = await apiFetch(`${API}/photos/multiple`, { method: "POST", body: formData });
       if (!resPhotos.ok) { const e = await resPhotos.json(); alert(`Produit associé mais erreur photos: ${e.error}`); }
     }
 
@@ -459,7 +459,7 @@ async function updateProduitMaintenance(event) {
   if (!confirm("Êtes-vous sûr de vouloir modifier ces informations ?")) return;
   const id_produit = document.getElementById("editProduitId").value;
   try {
-    const res = await fetch(`${API}/maintenance-produits/${id_maintenance}/${id_produit}`, {
+    const res = await apiFetch(`${API}/maintenance-produits/${id_maintenance}/${id_produit}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -480,7 +480,7 @@ async function updateProduitMaintenance(event) {
 async function removeProduit(id_produit) {
   if (!confirm("Voulez-vous vraiment retirer ce produit de la maintenance ?")) return;
   try {
-    const res = await fetch(`${API}/maintenance-produits/${id_maintenance}/${id_produit}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/maintenance-produits/${id_maintenance}/${id_produit}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression"); return; }
     await loadProduitsAssocies();
   } catch (err) { console.error(err); alert("Erreur serveur"); }

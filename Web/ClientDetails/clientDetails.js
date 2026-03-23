@@ -46,7 +46,7 @@ function editMaintenanceById(id) {
 async function deleteMaintenance(id_maintenance) {
   if (!confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression de la maintenance"); return; }
     await loadAllMaintenances();
     alert("✓ Maintenance supprimée avec succès !");
@@ -84,7 +84,7 @@ async function loadClientDetails() {
 
 async function loadSites() {
   try {
-    const res = await fetch(`${API}/sites`);
+    const res = await apiFetch(`${API}/sites`);
     if (!res.ok) throw new Error("Erreur lors du chargement des sites");
     const allSitesData = await res.json();
     allSites = allSitesData.filter(site => site.id_client == id_client);
@@ -130,7 +130,7 @@ async function loadAllEquipements() {
   try {
     allEquipements = [];
     for (const site of allSites) {
-      const res = await fetch(`${API}/produits/ProduitsBySiteID/${site.id_site}`);
+      const res = await apiFetch(`${API}/produits/ProduitsBySiteID/${site.id_site}`);
       if (res.ok) allEquipements = allEquipements.concat(await res.json());
     }
 
@@ -206,7 +206,7 @@ async function loadAllMaintenances() {
   try {
     allMaintenances = [];
     for (const site of allSites) {
-      const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${site.id_site}`);
+      const res = await apiFetch(`${API}/maintenances/AllMaintenancesBySiteID/${site.id_site}`);
       if (res.ok) {
         const maintenances = await res.json();
         maintenances.forEach(m => m.site_nom = site.nom);
@@ -306,7 +306,7 @@ async function loadAllMaintenances() {
 async function deleteProduit(id_produit) {
   if (!confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression de l'équipement"); return; }
     loadAllEquipements();
     alert("✓ Équipement supprimé avec succès !");

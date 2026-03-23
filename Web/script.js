@@ -6,6 +6,7 @@ let allMaintenances  = [];
 
 const API = "http://192.168.1.127:3000";
 
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
 function showSection(id) {
   document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -20,7 +21,6 @@ function showSection(id) {
 }
 
 // ─── CALLBACKS PARTIAL maintenanceForm.js ────────────────────────────────────
-
 window.onMaintenanceCreated = async () => { await loadMaintenances(); };
 window.onMaintenanceUpdated = async () => { await loadMaintenances(); };
 
@@ -33,7 +33,7 @@ function editMaintenanceById(id) {
 async function deleteMaintenance(id_maintenance) {
   if (!confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression"); return; }
     await loadMaintenances();
     alert("✓ Maintenance supprimée avec succès !");
@@ -41,10 +41,9 @@ async function deleteMaintenance(id_maintenance) {
 }
 
 // ─── CARTE ────────────────────────────────────────────────────────────────────
-
 async function initAllSitesMap() {
   try {
-    const res = await fetch(`${API}/sites`);
+    const res = await apiFetch(`${API}/sites`);
     const sites = await res.json();
     const sitesWithCoords = sites.filter(s => s.gps_lat && s.gps_lng);
 
@@ -103,12 +102,11 @@ function goToSiteDetails(id_site) {
 }
 
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
-
 let allClientsData = [];
 
 async function loadClients() {
   try {
-    const res = await fetch(`${API}/clients`);
+    const res = await apiFetch(`${API}/clients`);
     allClientsData = await res.json();
     renderClients(allClientsData);
     loadClientsSelect();
@@ -177,7 +175,10 @@ async function addClient(event) {
   };
   if (editingClientId !== null) { await updateClient(editingClientId, data); return; }
   try {
-    const res = await fetch(`${API}/clients`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const res = await apiFetch(`${API}/clients`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
     if (!res.ok) { alert("Erreur lors de l'ajout du client"); return; }
     hideAddClientForm();
     loadClients();
@@ -202,7 +203,10 @@ function editClient(id_client) {
 async function updateClient(id_client, data) {
   if (!confirm("Êtes-vous sûr de vouloir modifier ce client ?")) return;
   try {
-    const res = await fetch(`${API}/clients/${id_client}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const res = await apiFetch(`${API}/clients/${id_client}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
     if (!res.ok) { alert("Erreur lors de la modification du client"); return; }
     hideAddClientForm();
     loadClients();
@@ -212,7 +216,7 @@ async function updateClient(id_client, data) {
 
 async function deleteClient(id_client) {
   try {
-    const resSites = await fetch(`${API}/sites`);
+    const resSites = await apiFetch(`${API}/sites`);
     const sitesData = await resSites.json();
     const clientSites = sitesData.filter(site => site.id_client == id_client);
     if (clientSites.length > 0) {
@@ -220,7 +224,7 @@ async function deleteClient(id_client) {
       return;
     }
     if (!confirm("Voulez-vous vraiment supprimer ce client ? (CETTE ACTION EST IRREVERSIBLE)")) return;
-    const res = await fetch(`${API}/clients/${id_client}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/clients/${id_client}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression du client"); return; }
     loadClients();
     alert("✓ Client supprimé avec succès !");
@@ -228,13 +232,12 @@ async function deleteClient(id_client) {
 }
 
 // ─── SITES ────────────────────────────────────────────────────────────────────
-
 let allSites = [];
 let editingSiteId = null;
 
 async function loadClientsSelect() {
   try {
-    const res = await fetch(`${API}/clients`);
+    const res = await apiFetch(`${API}/clients`);
     allClients = await res.json();
     const select = document.getElementById("siteClientId");
     select.innerHTML = '<option value="">-- Sélectionner un client --</option>';
@@ -248,7 +251,7 @@ async function loadClientsSelect() {
 }
 
 async function loadSites() {
-  const res = await fetch(`${API}/sites`);
+  const res = await apiFetch(`${API}/sites`);
   allSites = await res.json();
   renderSites(allSites);
 }
@@ -295,7 +298,10 @@ async function addSite(event) {
     gps_lng:   document.getElementById("siteLng").value || null
   };
   if (editingSiteId !== null) { await updateSite(editingSiteId, data); return; }
-  const res = await fetch(`${API}/sites`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const res = await apiFetch(`${API}/sites`, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
   if (res.ok) {
     hideAddSiteForm();
     loadSites();
@@ -338,7 +344,10 @@ function editSite(id_site) {
 async function updateSite(id_site, data) {
   if (!confirm("Êtes-vous sûr de vouloir modifier ce site ?")) return;
   try {
-    const res = await fetch(`${API}/sites/${id_site}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const res = await apiFetch(`${API}/sites/${id_site}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
     if (!res.ok) { alert("Erreur lors de la modification du site"); return; }
     hideAddSiteForm();
     loadSites();
@@ -349,20 +358,20 @@ async function updateSite(id_site, data) {
 
 async function deleteSite(id_site) {
   try {
-    const resProduits = await fetch(`${API}/produits/ProduitsBySiteID/${id_site}`);
+    const resProduits = await apiFetch(`${API}/produits/ProduitsBySiteID/${id_site}`);
     const produits = await resProduits.json();
     if (produits.length > 0) {
       alert(`❌ Impossible de supprimer ce site.\n\nIl a ${produits.length} équipement(s) associé(s) :\n${produits.slice(0,5).map(p => '— ' + p.nom).join('\n')}${produits.length > 5 ? '\n...' : ''}\n\nVeuillez d'abord supprimer ces équipements.`);
       return;
     }
-    const resMaintenances = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${id_site}`);
+    const resMaintenances = await apiFetch(`${API}/maintenances/AllMaintenancesBySiteID/${id_site}`);
     const maintenances = await resMaintenances.json();
     if (maintenances.length > 0) {
       alert(`❌ Impossible de supprimer ce site.\n\nIl a ${maintenances.length} maintenance(s) associée(s).`);
       return;
     }
     if (!confirm("Voulez-vous vraiment supprimer ce site ? (CETTE ACTION EST IRREVERSIBLE)")) return;
-    const res = await fetch(`${API}/sites/${id_site}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/sites/${id_site}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression du site"); return; }
     loadSites();
     if (document.getElementById("carte").classList.contains("active")) initAllSitesMap();
@@ -371,11 +380,10 @@ async function deleteSite(id_site) {
 }
 
 // ─── PRODUITS ─────────────────────────────────────────────────────────────────
-
 let allProduits = [];
 
 async function loadProduits() {
-  const res = await fetch(`${API}/produits`);
+  const res = await apiFetch(`${API}/produits`);
   allProduits = await res.json();
   renderProduits(allProduits);
 }
@@ -433,7 +441,7 @@ function initSiteSearch() {
   const hiddenIdInput = document.getElementById("produitSiteId");
   if (!searchInput) return;
 
-  searchInput.addEventListener("input", async (e) => {
+  searchInput.addEventListener("input", (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
     if (searchTerm === "") { resultsDiv.style.display = "none"; resultsDiv.innerHTML = ""; hiddenIdInput.value = ""; return; }
     const filtered = allSites.filter(site =>
@@ -479,10 +487,16 @@ async function addProduit(e) {
     description: document.getElementById("produitDescription").value || null
   };
   if (editingProduitId !== null) { await updateProduit(editingProduitId, data); return; }
-  const res = await fetch(`${API}/produits`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const res = await apiFetch(`${API}/produits`, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
   if (!res.ok) { alert("Erreur lors de l'ajout du produit"); return; }
   const createdProduit = await res.json();
-  const resQr = await fetch(`${API}/qrcodes/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: 1, prefill: { id_produit: createdProduit.id_produit } }) });
+  const resQr = await apiFetch(`${API}/qrcodes/generate`, {
+    method: "POST",
+    body: JSON.stringify({ count: 1, prefill: { id_produit: createdProduit.id_produit } })
+  });
   if (!resQr.ok) alert("Produit créé, mais erreur lors de la génération du QR code");
   hideAddProduitForm();
   loadProduits();
@@ -491,8 +505,8 @@ async function addProduit(e) {
 function showAddProduitForm() {
   editingProduitId = null;
   document.getElementById("produitForm").reset();
-  document.getElementById("produitSiteSearch").value        = "";
-  document.getElementById("produitSiteId").value            = "";
+  document.getElementById("produitSiteSearch").value         = "";
+  document.getElementById("produitSiteId").value             = "";
   document.getElementById("siteSearchResults").style.display = "none";
   document.getElementById("siteSearchResults").innerHTML     = "";
   const formTitle = document.querySelector("#addProduitForm h3");
@@ -511,7 +525,7 @@ function hideAddProduitForm() {
 async function deleteProduit(id_produit) {
   if (!confirm("Voulez-vous vraiment supprimer ce produit ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression du produit"); return; }
     loadProduits();
   } catch (err) { alert("Erreur serveur lors de la suppression"); }
@@ -540,7 +554,10 @@ function editProduit(id_produit) {
 async function updateProduit(id_produit, data) {
   if (!confirm("Êtes-vous sûr de vouloir modifier ce produit ?")) return;
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const res = await apiFetch(`${API}/produits/${id_produit}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
     if (!res.ok) { alert("Erreur lors de la modification du produit"); return; }
     hideAddProduitForm();
     loadProduits();
@@ -551,10 +568,9 @@ async function updateProduit(id_produit, data) {
 function printQR(id) { window.open(`${API}/qrcodes/showqr/${id}`, "_blank"); }
 
 // ─── MAINTENANCES ─────────────────────────────────────────────────────────────
-
 async function loadMaintenances() {
   try {
-    const res = await fetch(`${API}/maintenances/NotFinished`);
+    const res = await apiFetch(`${API}/maintenances/NotFinished`);
     if (!res.ok) throw new Error("Erreur lors du chargement des maintenances");
     allMaintenances = await res.json();
 
@@ -580,9 +596,9 @@ async function loadMaintenances() {
       if (etat.includes("termin"))      icone = "✅";
       else if (etat.includes("cours"))  icone = "⚙️";
       else if (etat.includes("planif")) icone = "📅";
-      const dateDisplay    = m.date_maintenance ? new Date(m.date_maintenance).toLocaleDateString('fr-FR') : 'N/A';
-      const clientDisplay  = m.client_nom || '';
-      const siteDisplay    = m.site_nom   || '';
+      const dateDisplay   = m.date_maintenance ? new Date(m.date_maintenance).toLocaleDateString('fr-FR') : 'N/A';
+      const clientDisplay = m.client_nom || '';
+      const siteDisplay   = m.site_nom   || '';
       summary.innerHTML = `${icone} ${[clientDisplay, siteDisplay, dateDisplay].filter(Boolean).join(' — ')}`;
       details.appendChild(summary);
 
@@ -606,7 +622,7 @@ async function loadMaintenances() {
         ${operateursList.length ? `<div><strong>Personnes affectées :</strong> ${operateursList.join(' / ')}</div>` : ''}
         <div><strong>Garantie :</strong> ${m.garantie ? '✅ Oui' : '❌ Non'}</div>
         ${m.commentaire ? `<div><strong>Commentaire :</strong> ${m.commentaire}</div>` : ''}
-        <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
           <button class="btn-danger" onclick="deleteMaintenance(${m.id_maintenance})">Supprimer</button>
           <button class="btn-edit"   onclick="editMaintenanceById(${m.id_maintenance})">Modifier</button>
           <a href="./MaintenanceDetails/MaintenanceDetails.html?id_maintenance=${m.id_maintenance}"
@@ -636,7 +652,6 @@ function showAddMaintenanceForm() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-
 loadMaintenanceForm("maintenance-form-container");
 loadProduits();
 loadSites();

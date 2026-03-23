@@ -17,9 +17,14 @@ async function apiFetch(url, options = {}) {
 
   // Si le token est expiré, rediriger vers la page de login
   if (res.status === 401 || res.status === 403) {
+    if (res.status === 401 || res.status === 403) {
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     localStorage.removeItem("token");
-    window.location.href = "/login.html";
+    localStorage.removeItem("user");
+    window.location.href = "../Login/login.html"; 
     return;
+}
   }
 
   return res;

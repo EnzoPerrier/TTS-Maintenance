@@ -22,7 +22,7 @@ async function loadProduitDetails() {
   }
 
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`);
+    const res = await apiFetch(`${API}/produits/${id_produit}`);
     if (!res.ok) throw new Error("Erreur lors du chargement du produit");
 
     currentProduit = await res.json();
@@ -119,7 +119,7 @@ async function saveProduit(event) {
   };
   
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`, {
+    const res = await apiFetch(`${API}/produits/${id_produit}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -177,7 +177,7 @@ function formatDate(dateStr) {
 // ========== PHOTOS ==========
 async function loadPhotos() {
   try {
-    const res = await fetch(`${API}/photos/produit/${id_produit}`);
+    const res = await apiFetch(`${API}/photos/produit/${id_produit}`);
     
     if (res.status === 404) {
       allPhotos = [];
@@ -307,7 +307,7 @@ async function uploadPhoto(event) {
   }
 
   try {
-    const res = await fetch(`${API}/photos/multiple`, {
+    const res = await apiFetch(`${API}/photos/multiple`, {
       method: "POST",
       body: formData
     });
@@ -402,7 +402,7 @@ async function deletePhoto(id_photo) {
   if (!confirmDelete) return;
 
   try {
-    const res = await fetch(`${API}/photos/${id_photo}`, {
+    const res = await apiFetch(`${API}/photos/${id_photo}`, {
       method: "DELETE"
     });
 
@@ -438,13 +438,13 @@ document.getElementById("photoModal").addEventListener("click", closePhotoModal)
 async function loadMaintenances() {
   try {
     // Récupérer d'abord les infos du produit pour avoir id_site
-    const resProduit = await fetch(`${API}/produits/${id_produit}`);
+    const resProduit = await apiFetch(`${API}/produits/${id_produit}`);
     if (!resProduit.ok) return;
     
     const produit = await resProduit.json();
     
     // Récupérer les maintenances du site
-    const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${produit.id_site}`);
+    const res = await apiFetch(`${API}/maintenances/AllMaintenancesBySiteID/${produit.id_site}`);
     if (!res.ok) throw new Error("Erreur maintenances");
 
     allMaintenances = await res.json();
@@ -499,7 +499,7 @@ function renderMaintenanceHistory() {
     
     // Récupérer les informations spécifiques de maintenance_produits
     try {
-      const mpRes = await fetch(`${API}/maintenance-produits/produit/${id_produit}`);
+      const mpRes = await apiFetch(`${API}/maintenance-produits/produit/${id_produit}`);
       if (mpRes.ok) {
         const mpData = await mpRes.json();
         const produitMaintenance = mpData.find(pm => pm.id_maintenance === m.id_maintenance);

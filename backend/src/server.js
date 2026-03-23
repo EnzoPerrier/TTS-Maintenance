@@ -21,14 +21,14 @@ app.use(cors({
 // ── Rate limiting global (100 req / 15min par IP)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: { error: "Trop de requêtes, réessaie plus tard" },
 });
 app.use(limiter);
 
 // ── Rate limiting spécifique sur le login (anti brute-force)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 10 req / 15 min
   max: 10,
   message: { error: "Trop de tentatives de connexion" },
 });

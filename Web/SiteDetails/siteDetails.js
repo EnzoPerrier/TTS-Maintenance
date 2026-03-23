@@ -61,7 +61,7 @@ function editMaintenanceById(id) {
 async function deleteMaintenance(id_maintenance) {
   if (!confirm("Voulez-vous vraiment supprimer cette maintenance ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
+    const res = await apiapiFetch(`${API}/maintenances/${id_maintenance}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression"); return; }
     await loadMaintenances();
     updateStats();
@@ -81,11 +81,11 @@ async function loadSiteDetails() {
   if (!id_site) { document.getElementById("siteDetails").textContent = "ID du site manquant."; return; }
 
   try {
-    const res = await fetch(`${API}/sites/${id_site}`);
+    const res = await apiFetch(`${API}/sites/${id_site}`);
     if (!res.ok) throw new Error("Erreur lors du chargement du site");
     const site = await res.json();
 
-    const res1 = await fetch(`${API}/clients/${site.id_client}`);
+    const res1 = await apiFetch(`${API}/clients/${site.id_client}`);
     if (!res1.ok) throw new Error("Erreur lors du chargement des infos client");
     const client = await res1.json();
 
@@ -152,7 +152,7 @@ function initMap(lat, lng, nom, adresse) {
 
 async function loadMaintenances() {
   try {
-    const res = await fetch(`${API}/maintenances/AllMaintenancesBySiteID/${id_site}`);
+    const res = await apiFetch(`${API}/maintenances/AllMaintenancesBySiteID/${id_site}`);
     if (!res.ok) throw new Error("Erreur lors du chargement des maintenances");
     allMaintenances = await res.json();
 
@@ -240,7 +240,7 @@ async function loadMaintenances() {
 
 async function loadEquipements() {
   try {
-    const res = await fetch(`${API}/produits/ProduitsBySiteID/${id_site}`);
+    const res = await apiFetch(`${API}/produits/ProduitsBySiteID/${id_site}`);
     if (!res.ok) throw new Error("Erreur lors du chargement des produits");
     allEquipements = await res.json();
 
@@ -315,7 +315,7 @@ async function addEquipement(event) {
   if (editingEquipementId !== null) { await updateEquipement(editingEquipementId, data); return; }
 
   try {
-    const res = await fetch(`${API}/produits`, {
+    const res = await apiFetch(`${API}/produits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -323,7 +323,7 @@ async function addEquipement(event) {
     if (!res.ok) { alert("Erreur lors de l'ajout de l'équipement"); return; }
     const created = await res.json();
 
-    const resQr = await fetch(`${API}/qrcodes/generate`, {
+    const resQr = await apiFetch(`${API}/qrcodes/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ count: 1, prefill: { id_produit: created.id_produit } })
@@ -353,7 +353,7 @@ function editEquipement(id_produit) { return editProduit(id_produit); }
 async function updateEquipement(id_produit, data) {
   if (!confirm("Êtes-vous sûr de vouloir modifier cet équipement ?")) return;
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`, {
+    const res = await apiFetch(`${API}/produits/${id_produit}`, {
       method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data)
     });
     if (!res.ok) { alert("Erreur lors de la modification"); return; }
@@ -366,7 +366,7 @@ async function updateEquipement(id_produit, data) {
 async function deleteProduit(id_produit) {
   if (!confirm("Voulez-vous vraiment supprimer cet équipement ? (CETTE ACTION EST IRREVERSIBLE)")) return;
   try {
-    const res = await fetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
+    const res = await apiFetch(`${API}/produits/${id_produit}`, { method: "DELETE" });
     if (!res.ok) { alert("Erreur lors de la suppression"); return; }
     loadEquipements();
     alert("\u2713 Équipement supprimé avec succès !");
