@@ -1,18 +1,24 @@
 const API = "http://192.168.1.127:3000";
 
-// ── Redirection immédiate si déjà connecté ──────────────────────────────────
+// ── Redirection immédiate si déjà connecté ───────────────────────────────────
 const existingToken = localStorage.getItem("token") || sessionStorage.getItem("token");
+const existingUser  = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user") || "null");
 if (existingToken) {
-  window.location.href = "./index.html";
+  if (existingUser?.role === "admin") {
+    window.location.href = "../Admin/admin.html";
+  } else {
+    window.location.href = "../index.html";
+  }
 }
 
-// ── Ping server status ───────────────────────────────────────────────────────
+// ── Ping server status (route publique /) ────────────────────────────────────
 async function checkServerStatus() {
   try {
-    const res = await apiapiFetch(`${API}/`, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(`${API}/`, { signal: AbortSignal.timeout(3000) });
     if (res.ok) {
       document.getElementById("statusText").textContent = "Serveur opérationnel";
       document.querySelector(".status-dot").style.background = "var(--green)";
+      document.querySelector(".status-dot").style.animation = "";
     } else {
       throw new Error();
     }
@@ -23,24 +29,18 @@ async function checkServerStatus() {
   }
 }
 
-// ── Load brand stats (sans auth — endpoints publics) ─────────────────────────
+// ── Load brand stats via endpoint public /stats/public ───────────────────────
 async function loadStats() {
   try {
-    const [sites, maintenances, produits] = await Promise.allSettled([
-      apiapiFetch(`${API}/sites`).then(r => r.json()),
-      apiapiFetch(`${API}/maintenances/NotFinished`).then(r => r.json()),
-      apiFetch(`${API}/produits`).then(r => r.json()),
-    ]);
-
-    if (sites.status === "fulfilled" && Array.isArray(sites.value))
-      document.getElementById("bs-sites").textContent = sites.value.length;
-
-    if (maintenances.status === "fulfilled" && Array.isArray(maintenances.value))
-      document.getElementById("bs-maintenances").textContent = maintenances.value.length;
-
-    if (produits.status === "fulfilled" && Array.isArray(produits.value))
-      document.getElementById("bs-produits").textContent = produits.value.length;
-
+    const res = await fetch(`${API}/stats/public`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.sites !== undefined)
+      document.getElementById("bs-sites").textContent = data.sites;
+    if (data.maintenances !== undefined)
+      document.getElementById("bs-maintenances").textContent = data.maintenances;
+    if (data.produits !== undefined)
+      document.getElementById("bs-produits").textContent = data.produits;
   } catch { /* silently ignore */ }
 }
 
@@ -49,29 +49,28 @@ function togglePassword() {
   const input = document.getElementById("password");
   const btn   = document.getElementById("togglePw");
   if (input.type === "password") {
-    input.type    = "text";
+    input.type      = "text";
     btn.textContent = "MASQUER";
   } else {
-    input.type    = "password";
+    input.type      = "password";
     btn.textContent = "VOIR";
   }
 }
 
-// ── Afficher une erreur ──────────────────────────────────────────────────────
+// ── Afficher une erreur ───────────────────────────────────────────────────────
 function showError(msg) {
   const el  = document.getElementById("errorMsg");
   const txt = document.getElementById("errorText");
   txt.textContent = msg;
   el.classList.remove("visible");
-  void el.offsetWidth; // reflow pour relancer l'animation shake
+  void el.offsetWidth;
   el.classList.add("visible");
-
   ["username", "password"].forEach(id => {
     document.getElementById(id).classList.add("error");
   });
 }
 
-// ── Effacer l'erreur ─────────────────────────────────────────────────────────
+// ── Effacer l'erreur ──────────────────────────────────────────────────────────
 function clearError() {
   document.getElementById("errorMsg").classList.remove("visible");
   ["username", "password"].forEach(id => {
@@ -79,7 +78,7 @@ function clearError() {
   });
 }
 
-// ── Soumission du formulaire ─────────────────────────────────────────────────
+// ── Soumission du formulaire ──────────────────────────────────────────────────
 async function handleLogin(event) {
   event.preventDefault();
   clearError();
@@ -98,7 +97,8 @@ async function handleLogin(event) {
   btn.disabled = true;
 
   try {
-    const res = await apiFetch(`${API}/auth/login`, {
+    // fetch natif — pas de token pour le login
+    const res = await fetch(`${API}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -107,19 +107,18 @@ async function handleLogin(event) {
     const data = await res.json();
 
     if (!res.ok) {
-      showError(data.message || "Identifiants incorrects");
+      showError(data.message || data.error || "Identifiants incorrects");
       return;
     }
 
-    // Stocker le token selon la préférence de l'utilisateur
+    // Stocker token + user selon la préférence
     const storage = remember ? localStorage : sessionStorage;
     storage.setItem("token", data.token);
     storage.setItem("user", JSON.stringify(data.user || {}));
 
-    // Animation de succès avant redirection
+    // Animation succès
     btn.style.background = "var(--green)";
     btn.innerHTML = '<span class="btn-text">✓ Connecté</span>';
-
     await new Promise(r => setTimeout(r, 700));
 
     // Redirection selon le rôle
@@ -137,11 +136,11 @@ async function handleLogin(event) {
   }
 }
 
-// ── Clear erreur au fil de la saisie ─────────────────────────────────────────
+// ── Clear erreur à la saisie ──────────────────────────────────────────────────
 ["username", "password"].forEach(id => {
   document.getElementById(id).addEventListener("input", clearError);
 });
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 checkServerStatus();
 loadStats();

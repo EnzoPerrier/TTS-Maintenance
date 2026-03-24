@@ -58,6 +58,19 @@ app.use("/auth", authLimiter, AuthRoutes);
 const QrCodesRoutes = require("./routes/qrcodes.routes.js");
 app.use("/qrcodes/scan", QrCodesRoutes);
 
+// ── Stats publiques pour la page de login ──
+app.get("/stats/public", async (req, res) => {
+  try {
+    const db = require("./config/db.js");
+    const [[{ sites }]]        = await db.query("SELECT COUNT(*) as sites FROM sites");
+    const [[{ maintenances }]] = await db.query("SELECT COUNT(*) as maintenances FROM maintenances WHERE etat != 'Terminée'");
+    const [[{ produits }]]     = await db.query("SELECT COUNT(*) as produits FROM produits");
+    res.json({ sites, maintenances, produits });
+  } catch {
+    res.json({ sites: 0, maintenances: 0, produits: 0 });
+  }
+});
+
 // ─────────────────────────────────────────────
 //  ROUTES PROTÉGÉES (token JWT obligatoire)
 // ─────────────────────────────────────────────

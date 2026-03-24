@@ -102,7 +102,7 @@ exports.login = async (req, res) => {
         id:       user.id_user,
         username: user.username,
         role:     user.role,
-        // id_client optionnel si ton système lie un user à un client
+        // id_client optionnel si système lie un user à un client
         ...(user.id_client ? { id_client: user.id_client } : {}),
       },
       JWT_SECRET,
@@ -115,7 +115,7 @@ exports.login = async (req, res) => {
       [user.id_user]
     );
 
-    // Enregistrer la session (optionnel — pour le panel admin)
+    // Enregistrer la session (optionnel - pour le panel admin)
     try {
       await db.query(
         `INSERT INTO user_sessions (id_user, ip_address, expires_at)
