@@ -68,7 +68,7 @@ async function loadMaintenanceDetails() {
     return;
   }
   try {
-    const res = await apiapiFetch(`${API}/maintenances/${id_maintenance}`);
+    const res = await apiFetch(`${API}/maintenances/${id_maintenance}`);
     if (!res.ok) throw new Error("Erreur lors du chargement de la maintenance");
     maintenance = await res.json();
     renderMaintenanceDetails();

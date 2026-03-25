@@ -3,29 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>Maintenance Suite</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="DarkModernStyle.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    #sitesList li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem;
-      margin-bottom: 0.75rem;
-      background: var(--white);
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius-md);
-      transition: var(--transition);
-    }
-    #sitesList li:hover {
-      border-color: var(--primary-blue);
-      box-shadow: var(--shadow-sm);
-      transform: translateX(4px);
-    }
-    #sitesList li > div:first-child { flex: 1; }
-    #sitesList li strong { font-size: 1.1rem; color: var(--gray-800); }
-    #sitesList li small  { display: block; margin-top: 0.25rem; }
-  </style>
 </head>
 <body>
 
@@ -47,7 +26,7 @@
 
   <!-- CARTE -->
   <section id="carte" class="active">
-    <h2>🗺️ Carte des sites</h2>
+    <h2>Carte des sites</h2>
     <div id="allSitesMapContainer" style="width:100%;height:600px;margin-top:1.5rem;border-radius:8px;overflow:hidden;border:2px solid #DEE2E6;">
       <div id="allSitesMap" style="width:100%;height:100%;"></div>
     </div>
@@ -55,7 +34,7 @@
 
   <!-- CLIENTS -->
   <section id="clients">
-    <h2>👥 Clients</h2>
+    <h2>Clients</h2>
     <input type="text" id="searchClients" placeholder="Rechercher un client..." />
     <ul id="clientsList"></ul>
     <button title="Ajouter un nouveau client" id="addClientBtn" class="fab" onclick="showAddClientForm()">+</button>
@@ -75,7 +54,7 @@
 
   <!-- SITES -->
   <section id="sites">
-    <h2>🏢 Sites</h2>
+    <h2>Sites</h2>
     <input type="text" id="searchSites" placeholder="Rechercher par nom ou ville..." />
     <ul id="sitesList"></ul>
     <button title="Ajouter un nouveau site" id="addSiteBtn" class="fab" onclick="showAddSiteForm()">+</button>
@@ -97,7 +76,7 @@
 
   <!-- PRODUITS -->
   <section id="produits">
-    <h2>📦 Produits</h2>
+    <h2>Produits</h2>
     <input type="text" id="searchProduits" placeholder="Rechercher un produit..." />
     <ul id="produitsList"></ul>
     <button title="Ajouter un nouveau produit" id="addProductBtn" class="fab" onclick="showAddProduitForm()">+</button>
@@ -126,7 +105,7 @@
 
   <!-- MAINTENANCES -->
   <section id="maintenances">
-    <h2>🔧 Maintenances en cours</h2>
+    <h2>Maintenances en cours</h2>
     <ul id="maintenancesList"></ul>
     <!-- Conteneur du formulaire maintenance (injecté par maintenanceForm.js) -->
     <div id="maintenance-form-container"></div>

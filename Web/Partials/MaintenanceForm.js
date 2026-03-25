@@ -91,8 +91,8 @@ const _MAINTENANCE_FORM_HTML = `
           </select>
         </div>
         <div class="form-group">
-          <label for="mf_departement">Départements</label>
-          <input type="text" id="mf_departement" placeholder="Ex: 06, 13..." />
+          <label for="mf_departement">Département</label>
+          <input type="text" id="mf_departement" placeholder="Ex: STEP, SDRT..." />
         </div>
         <div class="form-group">
           <label for="mf_numero_commande">N° D'affaire / CDE</label>
@@ -387,7 +387,7 @@ async function handleMaintenanceSubmit(event) {
   if (_editingMaintenanceId) {
     if (!confirm("Êtes-vous sûr de vouloir modifier cette maintenance ?")) return;
     try {
-      const res = await fetch(`${API}/maintenances/${_editingMaintenanceId}`, {
+      const res = await apiFetch(`${API}/maintenances/${_editingMaintenanceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -402,7 +402,7 @@ async function handleMaintenanceSubmit(event) {
 
   } else {
     try {
-      const res = await fetch(`${API}/maintenances`, {
+      const res = await apiFetch(`${API}/maintenances`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, id_site: _contextIdSite || undefined })
