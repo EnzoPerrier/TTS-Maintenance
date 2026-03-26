@@ -68,7 +68,7 @@ export const api = {
   // s'il existe, ce qui est inoffensif)
 
   login: async (data: {
-    email: string;
+    username: string;
     password: string;
   }): Promise<{ token: string; user: any }> => {
     const res = await fetch(`${API}/auth/login`, {
