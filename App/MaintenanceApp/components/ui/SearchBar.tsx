@@ -19,7 +19,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <TextInput
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor={Colors.textSecondary}
+        placeholderTextColor={Colors.textMuted}
         value={value}
         onChangeText={onChangeText}
       />
@@ -31,21 +31,22 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: Colors.gray200,
+    backgroundColor: Colors.surface2,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   icon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: 16,
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: Colors.textPrimary,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: Colors.text,
+    fontFamily: 'monospace',
   },
 });

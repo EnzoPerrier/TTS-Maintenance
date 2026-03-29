@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from 'expo-secure-store';
 import { Config } from "../constants/Config";
 import {
   Client,
@@ -12,11 +12,12 @@ import {
 const API = Config.API_URL;
 
 // ─── Token helpers ─────────────────────────────────────────────────────────
+const TOKEN_KEY = 'auth_token';
 
 export const tokenStorage = {
-  get: () => AsyncStorage.getItem("token"),
-  set: (token: string) => AsyncStorage.setItem("token", token),
-  remove: () => AsyncStorage.removeItem("token"),
+  get: () => SecureStore.getItemAsync(TOKEN_KEY),
+  set: (token: string) => SecureStore.setItemAsync(TOKEN_KEY, token),
+  remove: () => SecureStore.deleteItemAsync(TOKEN_KEY),
 };
 
 // Callback appelé quand le token est expiré/invalide → à brancher dans ton _layout.tsx

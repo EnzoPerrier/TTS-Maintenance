@@ -34,12 +34,12 @@ export const InfoCard: React.FC<InfoCardProps> = ({ title, icon, rows }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface2,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: Colors.gray200,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   title: {
     fontSize: 16,
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray50,
+    borderBottomColor: Colors.border,
   },
   label: {
     fontSize: 14,
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   value: {
     flex: 1,
     fontSize: 14,
-    color: Colors.textPrimary,
+    color: Colors.text,
   },
 });

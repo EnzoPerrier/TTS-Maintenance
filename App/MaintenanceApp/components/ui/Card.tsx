@@ -1,36 +1,28 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
-import { CardStyles } from '../../constants/Styles';
 
 interface CardProps {
   title: string;
-  onPress?: () => void;
+  children?: React.ReactNode;
+  borderLeftColor?: string;
   badge?: string;
   badgeColor?: string;
-  borderLeftColor?: string;
-  children?: React.ReactNode;
 }
 
 export const Card: React.FC<CardProps> = ({
   title,
-  onPress,
-  badge,
-  badgeColor,
-  borderLeftColor,
   children,
+  borderLeftColor,
+  badge,
+  badgeColor = Colors.primary,
 }) => {
-  const cardStyle = [
-    CardStyles.card,
-    borderLeftColor && { borderLeftWidth: 4, borderLeftColor },
-  ];
-
-  const content = (
-    <View style={cardStyle}>
-      <View style={CardStyles.cardHeader}>
-        <Text style={CardStyles.cardTitle}>{title}</Text>
+  return (
+    <View style={[styles.card, borderLeftColor && { borderLeftColor, borderLeftWidth: 4 }]}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{title}</Text>
         {badge && (
-          <View style={[styles.badge, { backgroundColor: badgeColor || Colors.gray600 }]}>
+          <View style={[styles.badge, { backgroundColor: badgeColor }]}>
             <Text style={styles.badgeText}>{badge}</Text>
           </View>
         )}
@@ -38,19 +30,40 @@ export const Card: React.FC<CardProps> = ({
       {children}
     </View>
   );
-
-  if (onPress) {
-    return <TouchableOpacity onPress={onPress}>{content}</TouchableOpacity>;
-  }
-
-  return content;
 };
 
 const styles = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.surface2,
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+    flex: 1,
+    letterSpacing: -0.2,
+  },
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    marginLeft: 8,
   },
   badgeText: {
     color: Colors.white,

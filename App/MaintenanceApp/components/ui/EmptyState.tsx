@@ -20,27 +20,30 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle })
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface2,
     borderRadius: 12,
     padding: 40,
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: Colors.gray200,
+    borderColor: Colors.borderBright,
   },
   icon: {
-    fontSize: 48,
+    fontSize: 44,
     marginBottom: 12,
   },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 13,
+    color: Colors.textMuted,
     textAlign: 'center',
+    marginTop: 4,
   },
 });

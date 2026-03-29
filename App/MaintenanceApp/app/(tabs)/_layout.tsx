@@ -7,18 +7,24 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
-        headerStyle: { backgroundColor: Colors.primary },
+        tabBarInactiveTintColor: Colors.textSecondary,
+        headerStyle: { backgroundColor: Colors.surface },
         headerShadowVisible: false,
-        headerTintColor: Colors.white,
+        headerTintColor: Colors.text,
         tabBarStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.surface,
           borderTopWidth: 1,
-          borderTopColor: Colors.gray200,
+          borderTopColor: Colors.border,
           paddingBottom: 8,
           paddingTop: 8,
-          height: 60,
+          height: 62,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: 0.4,
+        },
       }}
     >
       <Tabs.Screen
@@ -27,14 +33,6 @@ export default function TabLayout() {
           title: 'Sites',
           headerShown: false,
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>🏢</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="clients"
-        options={{
-          title: 'Clients',
-          headerShown: false,
-          tabBarIcon: () => <Text style={{ fontSize: 22 }}>👥</Text>,
         }}
       />
       <Tabs.Screen
@@ -59,6 +57,14 @@ export default function TabLayout() {
           title: 'Scanner',
           headerShown: false,
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>📷</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Paramètres',
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>⚙️</Text>,
         }}
       />
     </Tabs>

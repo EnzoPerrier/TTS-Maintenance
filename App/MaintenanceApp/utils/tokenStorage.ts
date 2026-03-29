@@ -1,6 +1,7 @@
-// utils/tokenStorage.ts
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from 'expo-secure-store';
 
-export const getToken = () => AsyncStorage.getItem("token");
-export const setToken = (t: string) => AsyncStorage.setItem("token", t);
-export const removeToken = () => AsyncStorage.removeItem("token");
+const TOKEN_KEY = 'auth_token';
+
+export const getToken = () => SecureStore.getItemAsync(TOKEN_KEY);
+export const setToken = (t: string) => SecureStore.setItemAsync(TOKEN_KEY, t);
+export const removeToken = () => SecureStore.deleteItemAsync(TOKEN_KEY);
