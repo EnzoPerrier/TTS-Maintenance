@@ -27,6 +27,16 @@ export default function TabLayout() {
         },
       }}
     >
+
+      <Tabs.Screen
+        name="clients"
+        options={{
+          title: 'Clients',
+          headerShown: false,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>👤</Text>,
+        }}
+      />
+
       <Tabs.Screen
         name="index"
         options={{
