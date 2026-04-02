@@ -27,8 +27,7 @@ export default function ProductDetailsScreen() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  
-  // États pour l'édition
+
   const [editedNom, setEditedNom] = useState('');
   const [editedEtat, setEditedEtat] = useState('');
   const [editedDepartement, setEditedDepartement] = useState('');
@@ -40,11 +39,8 @@ export default function ProductDetailsScreen() {
         api.getProductById(Number(id_produit)),
         api.getPhotosByProduct(Number(id_produit)),
       ]);
-
       setProduct(productData);
       setPhotos(photosData);
-      
-      // Initialiser les champs d'édition
       setEditedNom(productData.nom || '');
       setEditedEtat(productData.etat || '');
       setEditedDepartement(productData.departement || '');
@@ -60,49 +56,23 @@ export default function ProductDetailsScreen() {
   }, [id_produit]);
 
   const handleSave = async () => {
-  try {
-    // Préparer les données exactement comme la version web
-    const dataToSend = {
-      nom: editedNom,
-      etat: editedEtat || null,
-      departement: editedDepartement || null,
-      description: editedDescription || null,
-    };
-
-    console.log('Données envoyées:', dataToSend);
-    console.log('URL:', `${Config.API_URL}/produits/${id_produit}`);
-
-    const response = await fetch(`${Config.API_URL}/produits/${id_produit}`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dataToSend),
-    });
-
-    console.log('Status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erreur response:', errorText);
+    try {
+      await api.updateProduct(Number(id_produit), {
+        nom: editedNom,
+        etat: editedEtat || null,
+        departement: editedDepartement || null,
+        description: editedDescription || null,
+      });
+      Alert.alert('Succès', 'Produit mis à jour');
+      setIsEditing(false);
+      loadData();
+    } catch (err) {
+      console.error('Erreur handleSave:', err);
       Alert.alert('Erreur', 'Impossible de mettre à jour le produit');
-      return;
     }
-
-    const result = await response.json();
-    console.log('Résultat:', result);
-
-    Alert.alert('Succès', 'Produit mis à jour');
-    setIsEditing(false);
-    loadData();
-  } catch (err) {
-    console.error('Erreur catch:', err);
-    Alert.alert('Erreur', 'Impossible de mettre à jour le produit');
-  }
-};
+  };
 
   const handleCancelEdit = () => {
-    // Réinitialiser les valeurs
     if (product) {
       setEditedNom(product.nom || '');
       setEditedEtat(product.etat || '');
@@ -114,69 +84,53 @@ export default function ProductDetailsScreen() {
 
   const handleAddPhoto = async () => {
     try {
-      // Demander les permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
       if (status !== 'granted') {
         Alert.alert('Permission refusée', 'Nous avons besoin de votre permission pour accéder aux photos');
         return;
       }
-
-      // Ouvrir le sélecteur d'images
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ['images'],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         const formData = new FormData();
-        
         // @ts-ignore
         formData.append('photo', {
           uri: result.assets[0].uri,
           type: 'image/jpeg',
           name: `photo_${Date.now()}.jpg`,
         });
-        
         formData.append('id_produit', String(id_produit));
-
         await api.uploadPhoto(formData);
         Alert.alert('Succès', 'Photo ajoutée');
         loadData();
       }
     } catch (err) {
       console.error(err);
-      Alert.alert('Erreur', 'Impossible d\'ajouter la photo');
+      Alert.alert('Erreur', "Impossible d'ajouter la photo");
     }
   };
 
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
       if (status !== 'granted') {
         Alert.alert('Permission refusée', 'Nous avons besoin de votre permission pour accéder à la caméra');
         return;
       }
-
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         const formData = new FormData();
-        
         // @ts-ignore
         formData.append('photo', {
           uri: result.assets[0].uri,
           type: 'image/jpeg',
           name: `photo_${Date.now()}.jpg`,
         });
-        
         formData.append('id_produit', String(id_produit));
-
         await api.uploadPhoto(formData);
         Alert.alert('Succès', 'Photo ajoutée');
         loadData();
@@ -227,7 +181,7 @@ export default function ProductDetailsScreen() {
   if (!product) {
     return (
       <View style={GlobalStyles.container}>
-        <Text>Chargement...</Text>
+        <Text style={{ color: Colors.text }}>Chargement...</Text>
       </View>
     );
   }
@@ -261,82 +215,83 @@ export default function ProductDetailsScreen() {
           )}
         </View>
 
-        {/* Informations */}
+        {!isEditing ? (
+          // Dans [id_produit].tsx — remplacer le bloc InfoCard dans le return
 
-{!isEditing ? (
-  <InfoCard
-    title="Informations"
-    icon="📋"
-    rows={[
-      { label: 'Nom :', value: product.nom },
-      { label: 'Département :', value: product.departement || 'N/A' },
-      {
-        label: 'État Actuel :',
-        value: product.etat || 'N/A',
-        valueColor: getEtatColor(product.etat),
-      },
-      { label: 'Description :', value: product.description || 'N/A' },
-      { label: 'Date de création :', value: product.date_creation || 'N/A' },
-    ]}
-  />
-) : (
-  <View style={styles.editForm}>
-    <Text style={styles.editFormTitle}>📋 Modifier les informations</Text>
-    
-    <Text style={styles.label}>Nom du produit</Text>
-    <TextInput
-      style={styles.input}
-      value={editedNom}
-      onChangeText={setEditedNom}
-      placeholder="Nom du produit"
-    />
+          <InfoCard
+            title="Informations"
+            icon="📋"
+            rows={[
+              { label: 'Nom :', value: product.nom },
+              { label: 'Client :', value: (product as any).client_nom || 'N/A' },
+              { label: 'Site :', value: (product as any).site_nom || 'N/A' },
+              { label: 'Département :', value: product.departement || 'N/A' },
+              {
+                label: 'État Actuel :',
+                value: product.etat || 'N/A',
+                valueColor: getEtatColor(product.etat),
+              },
+              { label: 'Description :', value: product.description || 'N/A' },
+              { label: 'Date de création :', value: product.date_creation || 'N/A' },
+            ]}
+          />
+        ) : (
+          <View style={styles.editForm}>
+            <Text style={styles.editFormTitle}>📋 Modifier les informations</Text>
 
-    <Text style={styles.label}>État</Text>
-    <View style={styles.pickerContainer}>
-      <TouchableOpacity 
-        style={styles.pickerButton}
-        onPress={() => {
-          Alert.alert(
-            'Choisir l\'état',
-            '',
-            [
-              { text: 'OK', onPress: () => setEditedEtat('OK') },
-              { text: 'NOK', onPress: () => setEditedEtat('NOK') },
-              { text: 'Passable', onPress: () => setEditedEtat('Passable') },
-              { text: 'Non défini', onPress: () => setEditedEtat('') },
-              { text: 'Annuler', style: 'cancel' },
-            ]
-          );
-        }}
-      >
-        <Text style={styles.pickerButtonText}>
-          {editedEtat || 'Sélectionner un état'}
-        </Text>
-        <Text style={styles.pickerArrow}>▼</Text>
-      </TouchableOpacity>
-    </View>
+            <Text style={styles.label}>Nom du produit</Text>
+            <TextInput
+              style={styles.input}
+              value={editedNom}
+              onChangeText={setEditedNom}
+              placeholder="Nom du produit"
+              placeholderTextColor={Colors.textMuted}
+            />
 
-    <Text style={styles.label}>Département</Text>
-    <TextInput
-      style={styles.input}
-      value={editedDepartement}
-      onChangeText={setEditedDepartement}
-      placeholder="Département"
-    />
+            <Text style={styles.label}>État</Text>
+            <View style={styles.pickerContainer}>
+              <TouchableOpacity
+                style={styles.pickerButton}
+                onPress={() => {
+                  Alert.alert("Choisir l'état", '', [
+                    { text: 'OK', onPress: () => setEditedEtat('OK') },
+                    { text: 'NOK', onPress: () => setEditedEtat('NOK') },
+                    { text: 'Passable', onPress: () => setEditedEtat('Passable') },
+                    { text: 'Non défini', onPress: () => setEditedEtat('') },
+                    { text: 'Annuler', style: 'cancel' },
+                  ]);
+                }}
+              >
+                <Text style={styles.pickerButtonText}>
+                  {editedEtat || 'Sélectionner un état'}
+                </Text>
+                <Text style={styles.pickerArrow}>▼</Text>
+              </TouchableOpacity>
+            </View>
 
-    <Text style={styles.label}>Description</Text>
-    <TextInput
-      style={[styles.input, styles.textArea]}
-      value={editedDescription}
-      onChangeText={setEditedDescription}
-      placeholder="Description"
-      multiline
-      numberOfLines={4}
-    />
-  </View>
-)}
+            <Text style={styles.label}>Département</Text>
+            <TextInput
+              style={styles.input}
+              value={editedDepartement}
+              onChangeText={setEditedDepartement}
+              placeholder="Département"
+              placeholderTextColor={Colors.textMuted}
+            />
 
-        {/* Photos récentes */}
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={editedDescription}
+              onChangeText={setEditedDescription}
+              placeholder="Description"
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+        )}
+
+        {/* Photos */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>📸 Photos ({photos.length})</Text>
@@ -344,7 +299,7 @@ export default function ProductDetailsScreen() {
               <Text style={styles.addPhotoButtonText}>+ Ajouter</Text>
             </TouchableOpacity>
           </View>
-          
+
           {photos.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {photos.map(photo => (
@@ -357,11 +312,8 @@ export default function ProductDetailsScreen() {
                     source={{ uri: `${Config.API_URL}${photo.chemin_photo}` }}
                     style={styles.photoImage}
                   />
-                  {/* Badge date en bas de la photo */}
                   <View style={styles.photoBadge}>
-                    <Text style={styles.photoBadgeText}>
-                      {photo.date_creation || ''}
-                    </Text>
+                    <Text style={styles.photoBadgeText}>{photo.date_creation || ''}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -372,7 +324,7 @@ export default function ProductDetailsScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal photo */}
+      {/* Modal photo plein écran */}
       <Modal
         visible={!!selectedPhoto}
         transparent={true}
@@ -543,7 +495,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     paddingVertical: 4,
     paddingHorizontal: 6,
     alignItems: 'center',
@@ -556,7 +508,7 @@ const styles = StyleSheet.create({
   },
   photoModal: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: 'rgba(0,0,0,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -574,7 +526,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     width: 44,
     height: 44,
     borderRadius: 22,

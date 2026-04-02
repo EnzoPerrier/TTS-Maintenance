@@ -388,6 +388,7 @@ async function loadProduits() {
   renderProduits(allProduits);
 }
 
+
 function renderProduits(produits) {
   const ul = document.getElementById("produitsList");
   ul.innerHTML = "";
@@ -410,7 +411,13 @@ function renderProduits(produits) {
         <strong>${p.nom}</strong>
         ${p.departement ? " — " + p.departement : ""}
         ${p.etat ? ` — <span style="color:${etatColor};font-weight:600;">${p.etat}</span>` : ""}
-        <br/><small style="color:#6C757D;">${p.description || ""}</small>
+        <br/>
+        <small style="color:var(--text-dim, #6C757D);">
+          ${p.client_nom ? "👤 " + p.client_nom : ""}
+          ${p.client_nom && p.site_nom ? " · " : ""}
+          ${p.site_nom ? "🏢 " + p.site_nom : ""}
+        </small>
+        ${p.description ? `<br/><small style="color:var(--text-dim, #6C757D);">${p.description}</small>` : ""}
       </div>
       <div>
         <button class="btn-danger" onclick="deleteProduit(${p.id_produit})">Supprimer</button>

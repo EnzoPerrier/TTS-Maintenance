@@ -34,15 +34,18 @@ async function loadProduitDetails() {
 
 function renderProduitDetails() {
   const viewDiv = document.getElementById("produitDetailsView");
-  
+
   viewDiv.innerHTML = `
     <div style="background: var(--gray-50); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--gray-200);">
       <div class="site-detail"><strong>Nom :</strong> ${currentProduit.nom}</div>
+      <div class="site-detail"><strong>Client :</strong> ${currentProduit.client_nom || "N/A"}</div>
+      <div class="site-detail"><strong>Site :</strong> ${currentProduit.site_nom || "N/A"}</div>
+      <div class="site-detail"><strong>Adresse site :</strong> ${currentProduit.site_adresse || "N/A"}</div>
       <div class="site-detail"><strong>Département :</strong> ${currentProduit.departement || "N/A"}</div>
       <div class="site-detail"><strong>État Actuel:</strong> <span style="color: ${getEtatColor(currentProduit.etat)}; font-weight: 600;">${currentProduit.etat || "N/A"}</span></div>
       <div class="site-detail"><strong>Description :</strong> ${currentProduit.description || "N/A"}</div>
       <div class="site-detail"><strong>Date de création :</strong> ${formatDate(currentProduit.date_creation)}</div>
-      
+
       <button class="btn-edit" onclick="showEditForm()">✏️ Modifier les informations</button>
     </div>
   `;

@@ -60,6 +60,12 @@ export default function ProductsScreen() {
             <Text style={CardStyles.cardText}>
               État : <Text style={{ color: getEtatColor(p.etat), fontWeight: '600' }}>{p.etat || 'N/A'}</Text>
             </Text>
+            {(p as any).client_nom && (
+              <Text style={CardStyles.cardText}>👤 {(p as any).client_nom}</Text>
+            )}
+            {(p as any).site_nom && (
+              <Text style={CardStyles.cardText}>🏢 {(p as any).site_nom}</Text>
+            )}
             {p.departement && <Text style={CardStyles.cardText}>📂 {p.departement}</Text>}
             {p.description && <Text style={CardStyles.cardText}>📝 {p.description}</Text>}
 
