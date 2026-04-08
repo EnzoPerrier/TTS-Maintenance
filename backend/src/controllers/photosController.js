@@ -230,21 +230,6 @@ exports.addPhoto = async (req, res) => {
   }
 
   try {
-    // Vérifier la limite de 5 photos si maintenance
-    if (id_maintenance) {
-      const [existingPhotos] = await db.query(
-        `SELECT COUNT(*) as count FROM produit_photos 
-         WHERE id_maintenance = ? AND id_produit = ?`,
-        [id_maintenance, id_produit]
-      );
-
-      if (existingPhotos[0].count >= 5) {
-        fs.unlinkSync(req.file.path);
-        return res.status(400).json({ 
-          error: "Limite de 5 photos atteinte pour ce produit dans cette maintenance" 
-        });
-      }
-    }
 
     // Déplacer le fichier vers sa destination finale
     const chemin_photo = await moveToFinalDestination(
@@ -291,24 +276,6 @@ exports.addMultiplePhotos = async (req, res) => {
   }
 
   try {
-    // Vérifier la limite de 5 photos si maintenance
-    if (id_maintenance) {
-      const [existingPhotos] = await db.query(
-        `SELECT COUNT(*) as count FROM produit_photos 
-         WHERE id_maintenance = ? AND id_produit = ?`,
-        [id_maintenance, id_produit]
-      );
-
-      const currentCount = existingPhotos[0].count;
-      const newCount = currentCount + req.files.length;
-
-      if (newCount > 5) {
-        req.files.forEach(file => fs.unlinkSync(file.path));
-        return res.status(400).json({ 
-          error: `Limite de 5 photos dépassée. Vous avez ${currentCount} photo(s), vous tentez d'en ajouter ${req.files.length}. Maximum autorisé: ${5 - currentCount} photo(s) supplémentaire(s).`
-        });
-      }
-    }
 
     const photosAdded = [];
 

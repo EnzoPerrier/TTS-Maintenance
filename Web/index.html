@@ -11,7 +11,22 @@
 <header>
   <div class="header-top">
     <h1>Maintenance App</h1>
-    <img src="./Ressources/logoTTS.svg" class="logo" />
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <img src="./Ressources/logoTTS.svg" class="logo" />
+      <span id="headerUsername" style="font-family:var(--font-mono,monospace);font-size:0.75rem;color:var(--text-dim,rgba(255,255,255,0.6));"></span>
+      <button onclick="logout()" id="logoutBtn" style="
+        font-family:var(--font-mono,'JetBrains Mono',monospace);
+        font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;
+        background:transparent;color:var(--danger,#f87171);
+        border:1px solid var(--danger,#f87171);
+        padding:0.38rem 0.85rem;border-radius:6px;cursor:pointer;
+        transition:all 0.2s;white-space:nowrap;
+      "
+      onmouseover="this.style.background='rgba(248,113,113,0.12)'"
+      onmouseout="this.style.background='transparent'">
+        Déconnexion
+      </button>
+    </div>
   </div>
   <nav>
     <button onclick="showSection('carte')">Carte</button>

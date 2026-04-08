@@ -1,7 +1,6 @@
 export const Config = {
   API_URL: 'http://192.168.1.127:3000',
   
-  MAX_PHOTOS: 5,
   MAX_PHOTO_SIZE: 10 * 1024 * 1024, // 10MB
   
   DATE_FORMAT: 'fr-FR',

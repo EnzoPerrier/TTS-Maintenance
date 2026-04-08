@@ -287,11 +287,6 @@ async function uploadPhoto(event) {
     return;
   }
 
-  if (files.length > 5) {
-    alert("Maximum 5 photos à la fois");
-    return;
-  }
-
   const formData = new FormData();
   
   // Ajouter tous les fichiers
@@ -354,14 +349,6 @@ document.getElementById("photoInput").addEventListener("change", (e) => {
   const preview = document.getElementById("photoPreviewUpload");
   
   if (files.length > 0) {
-    if (files.length > 5) {
-      alert("Maximum 5 photos autorisées");
-      e.target.value = "";
-      label.classList.remove("has-file");
-      fileCount.textContent = "";
-      preview.innerHTML = "";
-      return;
-    }
     
     label.classList.add("has-file");
     

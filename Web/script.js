@@ -6,6 +6,24 @@ let allMaintenances  = [];
 
 const API = "http://192.168.1.127:3000";
 
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+function logout() {
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "./Login/login.html";
+}
+
+// Affiche le nom d'utilisateur dans le header
+(function initUserDisplay() {
+  const user = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user") || "null");
+  if (user && user.username) {
+    const el = document.getElementById("headerUsername");
+    if (el) el.textContent = "|👤 " + user.username;
+  }
+})();
+
 // ─── NAVIGATION ───────────────────────────────────────────────────────────────
 function showSection(id) {
   document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
@@ -388,7 +406,6 @@ async function loadProduits() {
   renderProduits(allProduits);
 }
 
-
 function renderProduits(produits) {
   const ul = document.getElementById("produitsList");
   ul.innerHTML = "";
@@ -411,13 +428,7 @@ function renderProduits(produits) {
         <strong>${p.nom}</strong>
         ${p.departement ? " — " + p.departement : ""}
         ${p.etat ? ` — <span style="color:${etatColor};font-weight:600;">${p.etat}</span>` : ""}
-        <br/>
-        <small style="color:var(--text-dim, #6C757D);">
-          ${p.client_nom ? "👤 " + p.client_nom : ""}
-          ${p.client_nom && p.site_nom ? " · " : ""}
-          ${p.site_nom ? "🏢 " + p.site_nom : ""}
-        </small>
-        ${p.description ? `<br/><small style="color:var(--text-dim, #6C757D);">${p.description}</small>` : ""}
+        <br/><small style="color:#6C757D;">${p.description || ""}</small>
       </div>
       <div>
         <button class="btn-danger" onclick="deleteProduit(${p.id_produit})">Supprimer</button>

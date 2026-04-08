@@ -34,7 +34,7 @@ function formatDateDisplay(dateString) {
   if (!dateString) return "N/A";
   const d = new Date(dateString);
   if (isNaN(d)) return dateString;
-  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
 function formatTimeDisplay(t) {
@@ -88,7 +88,7 @@ function renderMaintenanceDetails() {
     operateursList = m.operateursList;
   } else if (m.operateurs) {
     operateursList = parseOperateurs(m.operateurs);
-  } 
+  }
   const operateursDisplay = operateursList.length ? operateursList.join(' / ') : 'N/A';
 
   // Types
@@ -205,10 +205,10 @@ async function loadProduitsAssocies() {
 
       const details = document.createElement("details");
       const etat = (p.etat || "").toLowerCase();
-      if (etat === "ok")           details.classList.add("equipement-ok");
-      else if (etat === "nok")     details.classList.add("equipement-nok");
-      else if (etat === "passable")details.classList.add("equipement-passable");
-      else                         details.classList.add("equipement-autre");
+      if (etat === "ok") details.classList.add("equipement-ok");
+      else if (etat === "nok") details.classList.add("equipement-nok");
+      else if (etat === "passable") details.classList.add("equipement-passable");
+      else details.classList.add("equipement-autre");
 
       const summary = document.createElement("summary");
       summary.textContent = `${p.nom} — ${p.etat || "N/A"}`;
@@ -233,7 +233,7 @@ async function loadProduitsAssocies() {
             <strong>RI interne :</strong><span>${p.ri_interne || "Non renseigné"}</span>
           </div>
         </div>
-        <h4 style="margin-top:1.5rem; margin-bottom:1rem; color:#0066CC;">📸 Photos (${photos.length}/5)</h4>
+        <h4 style="margin-top:1.5rem; margin-bottom:1rem; color:#0066CC;">📸 Photos (${photos.length})</h4>
         <div class="photos-grid">
           ${photos.map(photo => `
             <div class="photo-item">
@@ -247,12 +247,9 @@ async function loadProduitsAssocies() {
             </div>
           `).join('')}
         </div>
-        ${photos.length < 5
-          ? `<button onclick="showAddPhotoForm(${p.id_produit})" class="primary" style="margin-top:1rem;">
-               📷 Ajouter des photos (${photos.length}/5)
-             </button>`
-          : '<p style="color:#FFC107; margin-top:1rem;">⚠️ Limite de 5 photos atteinte</p>'
-        }
+          <button onclick="showAddPhotoForm(${p.id_produit})" class="primary" style="margin-top:1rem;">
+               📷 Ajouter des photos (${photos.length})
+          </button>
         <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
           <button onclick="editProduitMaintenance(${p.id_produit})" class="btn-edit-produit">
             Modifier les informations
@@ -281,7 +278,6 @@ function showAddPhotoForm(id_produit) {
   formModal.innerHTML = `
     <form id="photoForm" onsubmit="addPhoto(event)" style="max-width:600px;">
       <h3>📷 Ajouter des photos</h3>
-      <p class="photo-help-text">💡 Vous pouvez ajouter jusqu'à 5 photos</p>
       <input type="file" id="photoFile" accept="image/*" multiple required />
       <div id="photoPreviewModal" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin:1rem 0;"></div>
       <textarea id="photoDescription" placeholder="Commentaire pour toutes les photos (optionnel)"></textarea>
@@ -291,17 +287,16 @@ function showAddPhotoForm(id_produit) {
   `;
   document.body.appendChild(formModal);
 
-  document.getElementById("photoFile").addEventListener("change", function(e) {
+  document.getElementById("photoFile").addEventListener("change", function (e) {
     const files = e.target.files;
     const preview = document.getElementById("photoPreviewModal");
-    if (files.length > 5) { alert("Maximum 5 photos"); e.target.value = ""; preview.innerHTML = ""; return; }
     preview.innerHTML = "";
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = ev => {
         const img = document.createElement("img");
         img.src = ev.target.result;
-        Object.assign(img.style, { maxWidth:'150px', maxHeight:'150px', borderRadius:'8px', border:'2px solid #DEE2E6', objectFit:'cover' });
+        Object.assign(img.style, { maxWidth: '150px', maxHeight: '150px', borderRadius: '8px', border: '2px solid #DEE2E6', objectFit: 'cover' });
         preview.appendChild(img);
       };
       reader.readAsDataURL(file);
@@ -321,7 +316,6 @@ async function addPhoto(event) {
   const commentaire = document.getElementById("photoDescription").value;
   const files = fileInput?.files;
   if (!files || files.length === 0) { alert("Veuillez sélectionner au moins une photo"); return; }
-  if (files.length > 5) { alert("Maximum 5 photos autorisées"); return; }
 
   const formData = new FormData();
   Array.from(files).forEach(f => formData.append("photos", f));
@@ -400,7 +394,6 @@ async function addProduitToMaintenance(event) {
   if (!id_produit) { alert("Veuillez sélectionner un produit"); return; }
   const photoInput = document.getElementById("photoInput");
   const photoFiles = photoInput?.files;
-  if (photoFiles && photoFiles.length > 5) { alert("Maximum 5 photos autorisées"); return; }
 
   try {
     const resAssoc = await apiFetch(`${API}/maintenance-produits`, {
@@ -409,11 +402,11 @@ async function addProduitToMaintenance(event) {
       body: JSON.stringify({
         id_maintenance,
         id_produit,
-        etat:              document.getElementById("produitEtat").value || null,
-        commentaire:       document.getElementById("produitCommentaire").value || null,
-        etat_constate:     document.getElementById("produitEtatConstate").value || null,
+        etat: document.getElementById("produitEtat").value || null,
+        commentaire: document.getElementById("produitCommentaire").value || null,
+        etat_constate: document.getElementById("produitEtatConstate").value || null,
         travaux_effectues: document.getElementById("produitTravauxEffectues").value || null,
-        ri_interne:        document.getElementById("produitRiInterne").value || null
+        ri_interne: document.getElementById("produitRiInterne").value || null
       })
     });
     if (!resAssoc.ok) { const e = await resAssoc.json(); alert(e.error || "Erreur"); return; }
@@ -463,11 +456,11 @@ async function updateProduitMaintenance(event) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        etat:              document.getElementById("editProduitEtat").value || null,
-        commentaire:       document.getElementById("editProduitCommentaire").value || null,
-        etat_constate:     document.getElementById("editProduitEtatConstate").value || null,
+        etat: document.getElementById("editProduitEtat").value || null,
+        commentaire: document.getElementById("editProduitCommentaire").value || null,
+        etat_constate: document.getElementById("editProduitEtatConstate").value || null,
         travaux_effectues: document.getElementById("editProduitTravauxEffectues").value || null,
-        ri_interne:        document.getElementById("editProduitRiInterne").value || null
+        ri_interne: document.getElementById("editProduitRiInterne").value || null
       })
     });
     if (!res.ok) { alert("Erreur lors de la modification"); return; }
@@ -493,10 +486,9 @@ function initPhotoInput() {
   if (!photoInput) return;
   const newInput = photoInput.cloneNode(true);
   photoInput.parentNode.replaceChild(newInput, photoInput);
-  newInput.addEventListener("change", function(e) {
+  newInput.addEventListener("change", function (e) {
     const files = e.target.files;
     const preview = document.getElementById("photoPreview");
-    if (files.length > 5) { alert("Maximum 5 photos"); e.target.value = ""; if (preview) preview.innerHTML = ""; return; }
     if (preview) {
       preview.innerHTML = "";
       preview.style.display = files.length > 0 ? "flex" : "none";

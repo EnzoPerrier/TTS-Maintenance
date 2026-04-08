@@ -8,10 +8,11 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -24,12 +25,52 @@ import { api } from '../../utils/api';
 import { formatDate } from '../../utils/formatters';
 import { getEtatColor, getStatusConfig } from '../../utils/helpers';
 
-// Même logique que le front web
+// ─── Constantes formulaire ────────────────────────────────────────────────────
+const TYPES_MAINTENANCE = [
+  'Installation',
+  'Intervention curative',
+  'Révision',
+  'Contrat de maintenance',
+  'Location',
+  'Accident',
+  'Vandalisme',
+  'Orage',
+  'Autre',
+];
+
+const ETATS_MAINTENANCE = ['Planifiée', 'En cours', 'Terminée'];
+
+// ─── Helpers date ─────────────────────────────────────────────────────────────
+function isoToDisplay(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function displayToISO(display: string): string {
+  const parts = display.split('/');
+  if (parts.length !== 3 || parts[2].length !== 4) return '';
+  return `${parts[2]}-${parts[1]}-${parts[0]}`;
+}
+
+function formatDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+// ─── Parser opérateurs ────────────────────────────────────────────────────────
 function parseOperateurs(str?: string | null): string[] {
   if (!str) return [];
   return str.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
 }
 
+// ─── Composant principal ──────────────────────────────────────────────────────
 export default function MaintenanceDetailsScreen() {
   const { id_maintenance, scanned_product_id } = useLocalSearchParams();
   const router = useRouter();
@@ -38,13 +79,11 @@ export default function MaintenanceDetailsScreen() {
   const [produitsNonAssocies, setProduitsNonAssocies] = useState<Produit[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Modal
+  // ── Modal produit ─────────────────────────────────────────────────────────
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedProduitId, setSelectedProduitId] = useState<number | null>(null);
   const [selectedProduitName, setSelectedProduitName] = useState<string>('');
-
-  // Formulaire produit
   const [formData, setFormData] = useState({
     etat: '',
     commentaire: '',
@@ -54,6 +93,28 @@ export default function MaintenanceDetailsScreen() {
   });
   const [photos, setPhotos] = useState<string[]>([]);
 
+  // ── Modal édition maintenance ─────────────────────────────────────────────
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [editForm, setEditForm] = useState({
+    type: '',
+    date: '',
+    etat: '',
+    departement: '',
+    commentaire: '',
+    commentaire_interne: '',
+    contact: '',
+    type_produit: '',
+    designation_produit_site: '',
+    numero_commande: '',
+    numero_ri: '',
+    garantie: false,
+    operateurs: [] as string[],
+    operateurInput: '',
+  });
+
+  // ── Chargement ────────────────────────────────────────────────────────────
   const loadData = async () => {
     try {
       const [maintData, produitsData] = await Promise.all([
@@ -67,8 +128,7 @@ export default function MaintenanceDetailsScreen() {
       if (maintData.id_site) {
         const allProduits = await api.getProductsBySite(maintData.id_site);
         const associatedIds = produitsData.map(p => p.id_produit);
-        const nonAssocies = allProduits.filter(p => !associatedIds.includes(p.id_produit));
-        setProduitsNonAssocies(nonAssocies);
+        setProduitsNonAssocies(allProduits.filter(p => !associatedIds.includes(p.id_produit)));
       }
     } catch (err) {
       Alert.alert('Erreur', 'Impossible de charger les données');
@@ -77,48 +137,115 @@ export default function MaintenanceDetailsScreen() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [id_maintenance]);
+  useEffect(() => { loadData(); }, [id_maintenance]);
 
+  // ── Pré-remplissage du formulaire d'édition ───────────────────────────────
+  const openEditModal = () => {
+    if (!maintenance) return;
+    const ops = parseOperateurs(maintenance.operateurs);
+    setEditForm({
+      type: maintenance.type || '',
+      date: isoToDisplay(maintenance.date_maintenance),
+      etat: maintenance.etat || '',
+      departement: maintenance.departement || '',
+      commentaire: maintenance.commentaire || '',
+      commentaire_interne: maintenance.commentaire_interne || '',
+      contact: maintenance.contact || '',
+      type_produit: maintenance.type_produit || '',
+      designation_produit_site: maintenance.designation_produit_site || '',
+      numero_commande: maintenance.numero_commande || '',
+      numero_ri: maintenance.numero_ri || '',
+      garantie: maintenance.garantie === 1 || maintenance.garantie === true,
+      operateurs: ops,
+      operateurInput: '',
+    });
+    setShowTypeDropdown(false);
+    setEditModalVisible(true);
+  };
+
+  // ── Soumission de l'édition ───────────────────────────────────────────────
+  const handleEditSubmit = async () => {
+    if (!editForm.type) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un type de maintenance');
+      return;
+    }
+    const isoDate = displayToISO(editForm.date);
+    if (!isoDate) {
+      Alert.alert('Erreur', 'Format de date invalide. Utilisez JJ/MM/AAAA');
+      return;
+    }
+
+    setEditSubmitting(true);
+    try {
+      await api.updateMaintenance(Number(id_maintenance), {
+        type: editForm.type,
+        date_maintenance: isoDate,
+        etat: editForm.etat || null,
+        departement: editForm.departement || null,
+        commentaire: editForm.commentaire || null,
+        commentaire_interne: editForm.commentaire_interne || null,
+        contact: editForm.contact || null,
+        type_produit: editForm.type_produit || null,
+        designation_produit_site: editForm.designation_produit_site || null,
+        numero_commande: editForm.numero_commande || null,
+        numero_ri: editForm.numero_ri || null,
+        garantie: editForm.garantie ? 1 : 0,
+        operateurs: editForm.operateurs.length > 0 ? editForm.operateurs.join('\n') : null,
+      });
+
+      Alert.alert('Succès', 'Maintenance modifiée avec succès');
+      setEditModalVisible(false);
+      loadData();
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible de modifier la maintenance');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  // ── Opérateurs (formulaire édition) ──────────────────────────────────────
+  const addOperateur = () => {
+    const val = editForm.operateurInput.trim().toUpperCase();
+    if (!val || editForm.operateurs.includes(val)) {
+      setEditForm(f => ({ ...f, operateurInput: '' }));
+      return;
+    }
+    setEditForm(f => ({ ...f, operateurs: [...f.operateurs, val], operateurInput: '' }));
+  };
+
+  const removeOperateur = (initiale: string) => {
+    setEditForm(f => ({ ...f, operateurs: f.operateurs.filter(o => o !== initiale) }));
+  };
+
+  // ── Scan produit ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (scanned_product_id && maintenance) {
       const productId = Number(scanned_product_id);
       const isAssociated = produitsAssocies.some(p => p.id_produit === productId);
-
       if (isAssociated) {
-        Alert.alert('Produit déjà associé', 'Ce produit est déjà associé à cette maintenance', [{ text: 'OK' }]);
+        Alert.alert('Produit déjà associé', 'Ce produit est déjà associé à cette maintenance');
         router.setParams({ scanned_product_id: undefined });
         return;
       }
-
-      const verifyAndAddProduct = async () => {
+      const verifyAndAdd = async () => {
         try {
           const produit = await api.getProductById(productId);
           if (produit.id_site !== maintenance.id_site) {
-            Alert.alert(
-              'Produit incompatible',
-              `Ce produit appartient à un autre site.\n\nProduit: ${produit.nom}\nSite: ${produit.id_site}\nMaintenance site: ${maintenance.id_site}`,
-              [{ text: 'OK' }]
-            );
+            Alert.alert('Produit incompatible', `Ce produit appartient à un autre site.`);
           } else {
             openAddProductForm(productId, produit.nom);
           }
         } catch (err: any) {
-          Alert.alert('Produit introuvable', err.message || "Ce produit n'existe pas dans la base de données", [{ text: 'OK' }]);
+          Alert.alert('Produit introuvable', err.message || "Ce produit n'existe pas");
         } finally {
           router.setParams({ scanned_product_id: undefined });
         }
       };
-
-      verifyAndAddProduct();
+      verifyAndAdd();
     }
   }, [scanned_product_id, maintenance, produitsAssocies]);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-  };
+  const onRefresh = async () => { setRefreshing(true); await loadData(); };
 
   const handleScanPress = () => {
     router.push({
@@ -127,6 +254,7 @@ export default function MaintenanceDetailsScreen() {
     });
   };
 
+  // ── Modal produit — ouverture ─────────────────────────────────────────────
   const openAddProductForm = (id_produit: number, produitName = '') => {
     setIsEditMode(false);
     setSelectedProduitId(id_produit);
@@ -153,10 +281,7 @@ export default function MaintenanceDetailsScreen() {
 
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission refusée', 'Nous avons besoin de la permission pour accéder à vos photos');
-      return;
-    }
+    if (status !== 'granted') { Alert.alert('Permission refusée'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -170,14 +295,8 @@ export default function MaintenanceDetailsScreen() {
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission refusée', 'Nous avons besoin de la permission pour accéder à la caméra');
-      return;
-    }
-    if (photos.length >= 5) {
-      Alert.alert('Limite atteinte', 'Vous ne pouvez ajouter que 5 photos maximum');
-      return;
-    }
+    if (status !== 'granted') { Alert.alert('Permission refusée'); return; }
+    if (photos.length >= 5) { Alert.alert('Limite atteinte', '5 photos maximum'); return; }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled && result.assets?.[0]) {
       setPhotos([...photos, result.assets[0].uri]);
@@ -186,12 +305,11 @@ export default function MaintenanceDetailsScreen() {
 
   const removePhoto = (index: number) => setPhotos(photos.filter((_, i) => i !== index));
 
-  const handleCancel = () => {
-    Alert.alert('Annuler', 'Êtes-vous sûr de vouloir annuler ? Les données saisies seront perdues.', [
+  const handleCancelProduit = () => {
+    Alert.alert('Annuler', 'Annuler les modifications ?', [
       { text: 'Non', style: 'cancel' },
       {
-        text: 'Oui',
-        style: 'destructive',
+        text: 'Oui', style: 'destructive',
         onPress: () => {
           setModalVisible(false);
           setIsEditMode(false);
@@ -204,36 +322,23 @@ export default function MaintenanceDetailsScreen() {
     ]);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitProduit = async () => {
     if (!selectedProduitId) return;
-    if (!formData.etat) {
-      Alert.alert('Erreur', 'Veuillez sélectionner un état');
-      return;
-    }
-
+    if (!formData.etat) { Alert.alert('Erreur', 'Veuillez sélectionner un état'); return; }
     try {
       if (isEditMode) {
         await api.updateProductMaintenance({
           id_maintenance: Number(id_maintenance),
           id_produit: selectedProduitId,
-          etat: formData.etat,
-          commentaire: formData.commentaire || '',
-          etat_constate: formData.etat_constate || '',
-          travaux_effectues: formData.travaux_effectues || '',
-          ri_interne: formData.ri_interne || '',
+          ...formData,
         });
       } else {
         await api.addProductToMaintenance({
           id_maintenance: Number(id_maintenance),
           id_produit: selectedProduitId,
-          etat: formData.etat,
-          commentaire: formData.commentaire || '',
-          etat_constate: formData.etat_constate || '',
-          travaux_effectues: formData.travaux_effectues || '',
-          ri_interne: formData.ri_interne || '',
+          ...formData,
         });
       }
-
       if (photos.length > 0) {
         const form = new FormData();
         photos.forEach(uri => {
@@ -243,13 +348,8 @@ export default function MaintenanceDetailsScreen() {
         });
         form.append('id_maintenance', String(id_maintenance));
         form.append('id_produit', String(selectedProduitId));
-        await fetch(`${Config.API_URL}/photos/multiple`, {
-          method: 'POST',
-          body: form,
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await fetch(`${Config.API_URL}/photos/multiple`, { method: 'POST', body: form, headers: { 'Content-Type': 'multipart/form-data' } });
       }
-
       Alert.alert('Succès', isEditMode ? 'Informations mises à jour' : 'Produit associé avec succès');
       setModalVisible(false);
       setIsEditMode(false);
@@ -264,73 +364,56 @@ export default function MaintenanceDetailsScreen() {
   };
 
   const handleDeleteProduct = (id_produit: number, id_maint: number, nom: string) => {
-    Alert.alert('Retirer le produit', `Voulez-vous retirer "${nom}" de cette maintenance ?`, [
+    Alert.alert('Retirer le produit', `Retirer "${nom}" de cette maintenance ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
-        text: 'Retirer',
-        style: 'destructive',
+        text: 'Retirer', style: 'destructive',
         onPress: async () => {
           try {
             await api.removeProductFromMaintenance(id_maint, id_produit);
-            Alert.alert('Succès', 'Produit retiré de la maintenance');
+            Alert.alert('Succès', 'Produit retiré');
             loadData();
-          } catch {
-            Alert.alert('Erreur', 'Impossible de retirer le produit');
-          }
+          } catch { Alert.alert('Erreur', 'Impossible de retirer le produit'); }
         },
       },
     ]);
   };
 
+  // ── Rendu ─────────────────────────────────────────────────────────────────
   if (!maintenance) {
     return (
       <View style={GlobalStyles.container}>
-        <Text>Chargement...</Text>
+        <Text style={{ color: Colors.textSecondary, textAlign: 'center', marginTop: 40 }}>Chargement...</Text>
       </View>
     );
   }
 
   const { color, icon } = getStatusConfig(maintenance.etat);
-
-  // Préparer les opérateurs depuis la string
   const operateurs = parseOperateurs(maintenance.operateurs);
   const operateursDisplay = operateurs.length > 0 ? operateurs.join(' / ') : null;
 
-  // Construire les lignes de l'InfoCard — identique à l'affichage web
   const infoRows = [
     { label: 'N° RI / Chrono :', value: maintenance.numero_ri || 'N/A' },
-    { label: 'Désignation produit / site :', value: maintenance.designation_produit_site || 'N/A' },
+    { label: 'Désignation :', value: maintenance.designation_produit_site || 'N/A' },
     { label: "Type d'intervention :", value: maintenance.types_intervention || maintenance.type || 'N/A' },
     { label: 'Département :', value: maintenance.departement || 'N/A' },
-    ...(maintenance.date_demande
-      ? [{ label: 'Date demande :', value: formatDate(maintenance.date_demande) }]
-      : []),
-    ...(maintenance.date_accord_client
-      ? [{ label: 'Date accord client :', value: formatDate(maintenance.date_accord_client) }]
-      : []),
+    ...(maintenance.date_demande ? [{ label: 'Date demande :', value: formatDate(maintenance.date_demande) }] : []),
+    ...(maintenance.date_accord_client ? [{ label: 'Date accord client :', value: formatDate(maintenance.date_accord_client) }] : []),
     { label: 'Date intervention :', value: formatDate(maintenance.date_maintenance) },
-    ...(maintenance.client_nom || maintenance.site_nom
-      ? [{ label: 'Client :', value: maintenance.client_nom || maintenance.site_nom || 'N/A' }]
-      : []),
+    ...(maintenance.client_nom || maintenance.site_nom ? [{ label: 'Client :', value: maintenance.client_nom || maintenance.site_nom || 'N/A' }] : []),
     { label: 'Contact :', value: maintenance.contact || 'N/A' },
     { label: 'Type panneau / produit :', value: maintenance.type_produit || 'N/A' },
     { label: 'N° Affaire / CDE :', value: maintenance.numero_commande || 'N/A' },
     { label: 'Personnes affectées :', value: operateursDisplay || 'N/A' },
     { label: 'État :', value: maintenance.etat || 'N/A', valueColor: color },
-    {
-      label: 'Garantie :',
-      value: maintenance.garantie === 1 || maintenance.garantie === true ? '✅ Oui' : '❌ Non',
-    },
-    ...(maintenance.commentaire
-      ? [{ label: 'Commentaire :', value: maintenance.commentaire }]
-      : []),
-    ...(maintenance.commentaire_interne
-      ? [{ label: '🔒 Commentaire interne :', value: maintenance.commentaire_interne }]
-      : []),
+    { label: 'Garantie :', value: maintenance.garantie === 1 || maintenance.garantie === true ? '✅ Oui' : '❌ Non' },
+    ...(maintenance.commentaire ? [{ label: 'Commentaire :', value: maintenance.commentaire }] : []),
+    ...(maintenance.commentaire_interne ? [{ label: '🔒 Commentaire interne :', value: maintenance.commentaire_interne }] : []),
   ];
 
   return (
     <View style={GlobalStyles.container}>
+      {/* ── HEADER ── */}
       <View style={GlobalStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={GlobalStyles.backButton}>
           <Text style={GlobalStyles.backButtonText}>← Retour</Text>
@@ -345,58 +428,34 @@ export default function MaintenanceDetailsScreen() {
       >
         <InfoCard title="Informations" icon="📋" rows={infoRows} />
 
+        {/* ── BOUTON MODIFIER MAINTENANCE ── */}
+        <TouchableOpacity style={styles.editMaintenanceBtn} onPress={openEditModal}>
+          <Text style={styles.editMaintenanceBtnText}>✏️ Modifier la maintenance</Text>
+        </TouchableOpacity>
+
+        {/* ── BOUTON SCANNER ── */}
         <TouchableOpacity style={styles.scanButton} onPress={handleScanPress}>
           <Text style={styles.scanButtonText}>📷 Scanner un produit</Text>
         </TouchableOpacity>
 
-        {/* ── Produits associés ── */}
+        {/* ── PRODUITS ASSOCIÉS ── */}
         <View style={{ marginBottom: 16 }}>
-          <Text style={styles.sectionTitle}>
-            ✅ Produits associés ({produitsAssocies.length})
-          </Text>
+          <Text style={styles.sectionTitle}>✅ Produits associés ({produitsAssocies.length})</Text>
           {produitsAssocies.length === 0 ? (
-            <EmptyState
-              icon="📦"
-              title="Aucun produit associé"
-              subtitle="Scannez un QR code pour ajouter un produit"
-            />
+            <EmptyState icon="📦" title="Aucun produit associé" subtitle="Scannez un QR code pour ajouter un produit" />
           ) : (
             produitsAssocies.map(produit => (
-              <TouchableOpacity
-                key={produit.id_produit}
-                onPress={() => router.push(`../products/${produit.id_produit}`)}
-                activeOpacity={0.7}
-              >
-                <Card
-                  title={produit.nom}
-                  badge={produit.etat || 'N/A'}
-                  badgeColor={getEtatColor(produit.etat)}
-                  borderLeftColor={getEtatColor(produit.etat)}
-                >
-                  {produit.departement && (
-                    <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
-                  )}
-                  {produit.commentaire && (
-                    <Text style={CardStyles.cardComment}>💬 {produit.commentaire}</Text>
-                  )}
-                  {produit.etat_constate && (
-                    <Text style={CardStyles.cardText}>📋 État constaté: {produit.etat_constate}</Text>
-                  )}
-                  {produit.travaux_effectues && (
-                    <Text style={CardStyles.cardText}>🔧 Travaux: {produit.travaux_effectues}</Text>
-                  )}
-
+              <TouchableOpacity key={produit.id_produit} onPress={() => router.push(`../products/${produit.id_produit}`)} activeOpacity={0.7}>
+                <Card title={produit.nom} badge={produit.etat || 'N/A'} badgeColor={getEtatColor(produit.etat)} borderLeftColor={getEtatColor(produit.etat)}>
+                  {produit.departement && <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>}
+                  {produit.commentaire && <Text style={CardStyles.cardComment}>💬 {produit.commentaire}</Text>}
+                  {produit.etat_constate && <Text style={CardStyles.cardText}>📋 État constaté: {produit.etat_constate}</Text>}
+                  {produit.travaux_effectues && <Text style={CardStyles.cardText}>🔧 Travaux: {produit.travaux_effectues}</Text>}
                   <View style={styles.cardActions}>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={(e: any) => { e.stopPropagation(); openEditProductForm(produit); }}
-                    >
+                    <TouchableOpacity style={styles.editButton} onPress={(e: any) => { e.stopPropagation(); openEditProductForm(produit); }}>
                       <Text style={styles.editButtonText}>✏️ Modifier</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={(e: any) => { e.stopPropagation(); handleDeleteProduct(produit.id_produit, Number(id_maintenance), produit.nom); }}
-                    >
+                    <TouchableOpacity style={styles.deleteButton} onPress={(e: any) => { e.stopPropagation(); handleDeleteProduct(produit.id_produit, Number(id_maintenance), produit.nom); }}>
                       <Text style={styles.deleteButtonText}>🗑️ Retirer</Text>
                     </TouchableOpacity>
                   </View>
@@ -407,31 +466,17 @@ export default function MaintenanceDetailsScreen() {
           )}
         </View>
 
-        {/* ── Produits non associés ── */}
+        {/* ── PRODUITS NON ASSOCIÉS ── */}
         <View style={{ marginBottom: 16 }}>
-          <Text style={styles.sectionTitle}>
-            ⏳ Produits non associés ({produitsNonAssocies.length})
-          </Text>
+          <Text style={styles.sectionTitle}>⏳ Produits non associés ({produitsNonAssocies.length})</Text>
           {produitsNonAssocies.length === 0 ? (
-            <EmptyState
-              icon="✅"
-              title="Tous les produits sont associés"
-              subtitle="Tous les équipements du site ont été traités"
-            />
+            <EmptyState icon="✅" title="Tous les produits sont associés" subtitle="Tous les équipements du site ont été traités" />
           ) : (
             produitsNonAssocies.map(produit => (
-              <TouchableOpacity
-                key={produit.id_produit}
-                onPress={() => openAddProductForm(produit.id_produit, produit.nom)}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity key={produit.id_produit} onPress={() => openAddProductForm(produit.id_produit, produit.nom)} activeOpacity={0.7}>
                 <Card title={produit.nom} borderLeftColor={Colors.gray}>
-                  {produit.departement && (
-                    <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>
-                  )}
-                  {produit.description && (
-                    <Text style={CardStyles.cardText}>📝 {produit.description}</Text>
-                  )}
+                  {produit.departement && <Text style={CardStyles.cardText}>📂 {produit.departement}</Text>}
+                  {produit.description && <Text style={CardStyles.cardText}>📝 {produit.description}</Text>}
                   <Text style={styles.addHint}>Appuyez pour associer à cette maintenance</Text>
                 </Card>
               </TouchableOpacity>
@@ -440,23 +485,176 @@ export default function MaintenanceDetailsScreen() {
         </View>
       </ScrollView>
 
-      {/* ── Modal produit ── */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={handleCancel}
-      >
+      {/* ═══════════════════════════════════════════════════════════════════
+          MODAL — MODIFIER LA MAINTENANCE
+      ═══════════════════════════════════════════════════════════════════ */}
+      <Modal visible={editModalVisible} animationType="slide" transparent onRequestClose={() => setEditModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+              {/* Titre */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📝 Modifier la maintenance</Text>
+              </View>
+
+              {/* ── Type ── */}
+              <Text style={styles.label}>🔧 Type *</Text>
+              <TouchableOpacity
+                style={styles.dropdownBtn}
+                onPress={() => setShowTypeDropdown(!showTypeDropdown)}
+              >
+                <Text style={[styles.dropdownBtnText, !editForm.type && { color: Colors.textMuted }]}>
+                  {editForm.type || '-- Sélectionner --'}
+                </Text>
+                <Text style={{ color: Colors.textSecondary }}>{showTypeDropdown ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {showTypeDropdown && (
+                <View style={styles.dropdownList}>
+                  {TYPES_MAINTENANCE.map(t => (
+                    <TouchableOpacity
+                      key={t}
+                      style={[styles.dropdownItem, editForm.type === t && styles.dropdownItemActive]}
+                      onPress={() => { setEditForm(f => ({ ...f, type: t })); setShowTypeDropdown(false); }}
+                    >
+                      <Text style={[styles.dropdownItemText, editForm.type === t && styles.dropdownItemTextActive]}>{t}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* ── Date ── */}
+              <Text style={styles.label}>📅 Date *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.date}
+                onChangeText={text => setEditForm(f => ({ ...f, date: formatDateInput(text) }))}
+                placeholder="JJ/MM/AAAA"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="numeric"
+                maxLength={10}
+              />
+
+              {/* ── État ── */}
+              <Text style={styles.label}>📊 État</Text>
+              <View style={styles.chipRow}>
+                {ETATS_MAINTENANCE.map(e => {
+                  const c = e === 'Terminée' ? Colors.success : e === 'En cours' ? Colors.warning : Colors.primary;
+                  return (
+                    <TouchableOpacity
+                      key={e}
+                      style={[styles.chip, editForm.etat === e && { backgroundColor: c, borderColor: c }]}
+                      onPress={() => setEditForm(f => ({ ...f, etat: e }))}
+                    >
+                      <Text style={[styles.chipText, editForm.etat === e && { color: Colors.white }]}>
+                        {e === 'Terminée' ? '✅' : e === 'En cours' ? '⚙️' : '📅'} {e}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* ── N° RI ── */}
+              <Text style={styles.label}>📄 N° RI / Chrono</Text>
+              <TextInput style={styles.input} value={editForm.numero_ri} onChangeText={t => setEditForm(f => ({ ...f, numero_ri: t }))} placeholder="Ex: RI251210" placeholderTextColor={Colors.textMuted} />
+
+              {/* ── Département ── */}
+              <Text style={styles.label}>🏷️ Département</Text>
+              <TextInput style={styles.input} value={editForm.departement} onChangeText={t => setEditForm(f => ({ ...f, departement: t }))} placeholder="Ex: STEP, SDRT..." placeholderTextColor={Colors.textMuted} />
+
+              {/* ── Contact ── */}
+              <Text style={styles.label}>👤 Contact</Text>
+              <TextInput style={styles.input} value={editForm.contact} onChangeText={t => setEditForm(f => ({ ...f, contact: t }))} placeholder="Contact sur site" placeholderTextColor={Colors.textMuted} />
+
+              {/* ── Type produit ── */}
+              <Text style={styles.label}>📦 Type panneau / produit</Text>
+              <TextInput style={styles.input} value={editForm.type_produit} onChangeText={t => setEditForm(f => ({ ...f, type_produit: t }))} placeholder="Ex: TJT, PMV..." placeholderTextColor={Colors.textMuted} />
+
+              {/* ── Désignation ── */}
+              <Text style={styles.label}>🏷️ Désignation produit / site</Text>
+              <TextInput style={styles.input} value={editForm.designation_produit_site} onChangeText={t => setEditForm(f => ({ ...f, designation_produit_site: t }))} placeholder="Désignation" placeholderTextColor={Colors.textMuted} />
+
+              {/* ── N° commande ── */}
+              <Text style={styles.label}>🔢 N° Affaire / CDE</Text>
+              <TextInput style={styles.input} value={editForm.numero_commande} onChangeText={t => setEditForm(f => ({ ...f, numero_commande: t }))} placeholder="N° commande" placeholderTextColor={Colors.textMuted} />
+
+              {/* ── Commentaire ── */}
+              <Text style={styles.label}>💬 Commentaire</Text>
+              <TextInput style={styles.textArea} value={editForm.commentaire} onChangeText={t => setEditForm(f => ({ ...f, commentaire: t }))} placeholder="Commentaire visible par le client" placeholderTextColor={Colors.textMuted} multiline numberOfLines={3} textAlignVertical="top" />
+
+              {/* ── Commentaire interne ── */}
+              <Text style={styles.label}>🔒 Commentaire interne</Text>
+              <TextInput style={styles.textArea} value={editForm.commentaire_interne} onChangeText={t => setEditForm(f => ({ ...f, commentaire_interne: t }))} placeholder="Non visible par le client" placeholderTextColor={Colors.textMuted} multiline numberOfLines={3} textAlignVertical="top" />
+
+              {/* ── Opérateurs ── */}
+              <Text style={styles.label}>👷 Opérateurs (initiales)</Text>
+              <View style={styles.operateurInputRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  value={editForm.operateurInput}
+                  onChangeText={t => setEditForm(f => ({ ...f, operateurInput: t }))}
+                  placeholder="Ex: JD"
+                  placeholderTextColor={Colors.textMuted}
+                  maxLength={3}
+                  autoCapitalize="characters"
+                  onSubmitEditing={addOperateur}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity style={styles.addTagButton} onPress={addOperateur}>
+                  <Text style={styles.addTagButtonText}>＋</Text>
+                </TouchableOpacity>
+              </View>
+              {editForm.operateurs.length > 0 && (
+                <View style={styles.tagsRow}>
+                  {editForm.operateurs.map(op => (
+                    <TouchableOpacity key={op} style={styles.tag} onPress={() => removeOperateur(op)}>
+                      <Text style={styles.tagText}>{op}</Text>
+                      <Text style={styles.tagRemove}> ✕</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              <Text style={styles.hint}>Tapez les initiales puis ＋. Appuyez sur un tag pour le retirer.</Text>
+
+              {/* ── Garantie ── */}
+              <View style={styles.garantieRow}>
+                <Text style={styles.garantieLabel}>{editForm.garantie ? '✅' : '☐'} Sous garantie</Text>
+                <Switch
+                  value={editForm.garantie}
+                  onValueChange={v => setEditForm(f => ({ ...f, garantie: v }))}
+                  trackColor={{ false: Colors.gray300, true: Colors.success }}
+                  thumbColor={editForm.garantie ? Colors.white : Colors.textSecondary}
+                />
+              </View>
+
+              {/* ── Boutons ── */}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+                  <Text style={styles.modalBtnText}>✕ Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.submitButton, editSubmitting && { opacity: 0.6 }]}
+                  onPress={handleEditSubmit}
+                  disabled={editSubmitting}
+                >
+                  <Text style={styles.modalBtnText}>{editSubmitting ? '⏳ Enregistrement...' : '✓ Enregistrer'}</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          MODAL — PRODUIT
+      ═══════════════════════════════════════════════════════════════════ */}
+      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={handleCancelProduit}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {isEditMode ? 'Modifier le produit' : 'Associer un produit'}
-                </Text>
-                {selectedProduitName && (
-                  <Text style={styles.modalSubtitle}>{selectedProduitName}</Text>
-                )}
+                <Text style={styles.modalTitle}>{isEditMode ? 'Modifier le produit' : 'Associer un produit'}</Text>
+                {selectedProduitName ? <Text style={styles.modalSubtitle}>{selectedProduitName}</Text> : null}
               </View>
 
               <Text style={styles.label}>État *</Text>
@@ -467,71 +665,34 @@ export default function MaintenanceDetailsScreen() {
                     style={[styles.etatButton, formData.etat === etat && styles.etatButtonActive]}
                     onPress={() => setFormData({ ...formData, etat })}
                   >
-                    <Text style={[styles.etatButtonText, formData.etat === etat && styles.etatButtonTextActive]}>
-                      {etat}
-                    </Text>
+                    <Text style={[styles.etatButtonText, formData.etat === etat && styles.etatButtonTextActive]}>{etat}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               <Text style={styles.label}>Commentaire général</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Commentaire sur l'état du produit"
-                value={formData.commentaire}
-                onChangeText={text => setFormData({ ...formData, commentaire: text })}
-                multiline
-                numberOfLines={3}
-              />
+              <TextInput style={styles.textArea} placeholder="Commentaire sur l'état du produit" placeholderTextColor={Colors.textMuted} value={formData.commentaire} onChangeText={text => setFormData({ ...formData, commentaire: text })} multiline numberOfLines={3} />
 
               <Text style={styles.label}>État constaté</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Décrivez l'état constaté lors de la maintenance"
-                value={formData.etat_constate}
-                onChangeText={text => setFormData({ ...formData, etat_constate: text })}
-                multiline
-                numberOfLines={4}
-              />
+              <TextInput style={styles.textArea} placeholder="Décrivez l'état constaté" placeholderTextColor={Colors.textMuted} value={formData.etat_constate} onChangeText={text => setFormData({ ...formData, etat_constate: text })} multiline numberOfLines={4} />
 
               <Text style={styles.label}>Travaux effectués</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Détaillez les travaux effectués sur ce produit"
-                value={formData.travaux_effectues}
-                onChangeText={text => setFormData({ ...formData, travaux_effectues: text })}
-                multiline
-                numberOfLines={4}
-              />
+              <TextInput style={styles.textArea} placeholder="Détaillez les travaux effectués" placeholderTextColor={Colors.textMuted} value={formData.travaux_effectues} onChangeText={text => setFormData({ ...formData, travaux_effectues: text })} multiline numberOfLines={4} />
 
               <Text style={styles.label}>RI interne</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="RI interne non visible par le client"
-                value={formData.ri_interne}
-                onChangeText={text => setFormData({ ...formData, ri_interne: text })}
-              />
+              <TextInput style={styles.input} placeholder="RI interne non visible par le client" placeholderTextColor={Colors.textMuted} value={formData.ri_interne} onChangeText={text => setFormData({ ...formData, ri_interne: text })} />
 
               {!isEditMode && (
                 <>
                   <Text style={styles.label}>Photos ({photos.length}/5)</Text>
                   <View style={styles.photoButtonsContainer}>
-                    <TouchableOpacity
-                      style={[styles.photoButton, styles.cameraButton]}
-                      onPress={takePhoto}
-                      disabled={photos.length >= 5}
-                    >
+                    <TouchableOpacity style={[styles.photoButton, styles.cameraButton]} onPress={takePhoto} disabled={photos.length >= 5}>
                       <Text style={styles.photoButtonText}>📷 Prendre une photo</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.photoButton, styles.galleryButton]}
-                      onPress={pickImages}
-                      disabled={photos.length >= 5}
-                    >
+                    <TouchableOpacity style={[styles.photoButton, styles.galleryButton]} onPress={pickImages} disabled={photos.length >= 5}>
                       <Text style={styles.photoButtonText}>🖼️ Galerie</Text>
                     </TouchableOpacity>
                   </View>
-
                   {photos.length > 0 && (
                     <View style={styles.photosPreview}>
                       {photos.map((uri, index) => (
@@ -548,13 +709,11 @@ export default function MaintenanceDetailsScreen() {
               )}
 
               <View style={styles.modalButtons}>
-                <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={handleCancel}>
-                  <Text style={styles.cancelButtonText}>✕ Annuler</Text>
+                <TouchableOpacity style={[styles.cancelButton]} onPress={handleCancelProduit}>
+                  <Text style={styles.modalBtnText}>✕ Annuler</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalButton, styles.submitButton]} onPress={handleSubmit}>
-                  <Text style={styles.submitButtonText}>
-                    {isEditMode ? '✓ Enregistrer' : '✓ Associer'}
-                  </Text>
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmitProduit}>
+                  <Text style={styles.modalBtnText}>{isEditMode ? '✓ Enregistrer' : '✓ Associer'}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -565,7 +724,53 @@ export default function MaintenanceDetailsScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  // ── Bouton modifier maintenance ──────────────────────────────────────────
+  editMaintenanceBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  editMaintenanceBtnText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // ── Scan ─────────────────────────────────────────────────────────────────
+  scanButton: {
+    backgroundColor: Colors.success,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: Colors.success,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  scanButtonText: { color: Colors.white, fontSize: 18, fontWeight: '600' },
+
+  // ── Sections ─────────────────────────────────────────────────────────────
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 12,
+  },
+  tapHint: { marginTop: 8, fontSize: 12, color: Colors.primary, fontWeight: '500', fontStyle: 'italic' },
+  addHint: { marginTop: 8, fontSize: 12, color: Colors.success, fontWeight: '600', fontStyle: 'italic' },
+
+  // ── Card actions ──────────────────────────────────────────────────────────
   cardActions: {
     flexDirection: 'row',
     gap: 8,
@@ -592,38 +797,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButtonText: { color: Colors.white, fontSize: 12, fontWeight: '600' },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.primary,
-    marginBottom: 12,
-  },
-  scanButton: {
-    backgroundColor: Colors.success,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-    elevation: 4,
-  },
-  scanButtonText: { color: Colors.white, fontSize: 18, fontWeight: '600' },
-  tapHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: '500',
-    fontStyle: 'italic',
-  },
-  addHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: Colors.success,
-    fontWeight: '600',
-    fontStyle: 'italic',
-  },
+
+  // ── Modal commun ──────────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -631,7 +809,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    maxHeight: '90%',
+    maxHeight: '92%',
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
@@ -644,81 +822,173 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: Colors.primary,
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
   },
+
+  // ── Formulaire ────────────────────────────────────────────────────────────
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: Colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginTop: 14,
+    marginBottom: 6,
   },
   input: {
+    backgroundColor: Colors.surface2,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
-    backgroundColor: Colors.surface2,
+    fontSize: 15,
     color: Colors.text,
   },
   textArea: {
+    backgroundColor: Colors.surface2,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
-    backgroundColor: Colors.surface2,
+    fontSize: 15,
     color: Colors.text,
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  etatContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  etatButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+
+  // ── Dropdown type ─────────────────────────────────────────────────────────
+  dropdownBtn: {
+    backgroundColor: Colors.surface2,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownBtnText: { fontSize: 15, color: Colors.text },
+  dropdownList: {
+    backgroundColor: Colors.surface2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  dropdownItemActive: { backgroundColor: Colors.blueDim },
+  dropdownItemText: { fontSize: 14, color: Colors.text },
+  dropdownItemTextActive: { color: Colors.primary, fontWeight: '600' },
+
+  // ── Chips état ────────────────────────────────────────────────────────────
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface3,
+    backgroundColor: Colors.surface2,
   },
-  etatButtonActive: { borderColor: Colors.primary, backgroundColor: Colors.primary },
-  etatButtonText: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  etatButtonTextActive: { color: Colors.white },
-  photoButtonsContainer: { flexDirection: 'row', gap: 8 },
-  photoButton: { flex: 1, borderRadius: 8, padding: 14, alignItems: 'center' },
-  cameraButton: { backgroundColor: Colors.primary },
-  galleryButton: { backgroundColor: Colors.secondary },
-  photoButtonText: { color: Colors.white, fontSize: 14, fontWeight: '600' },
-  photosPreview: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  photoItem: { position: 'relative', width: 100, height: 100 },
-  photoImage: { width: '100%', height: '100%', borderRadius: 8 },
-  removePhotoButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: Colors.danger,
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+  chipText: { fontSize: 13, fontWeight: '600', color: Colors.text },
+
+  // ── Opérateurs ────────────────────────────────────────────────────────────
+  operateurInputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  addTagButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removePhotoText: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 20 },
-  modalButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center' },
-  cancelButton: { backgroundColor: Colors.danger },
-  cancelButtonText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
-  submitButton: { backgroundColor: Colors.success },
-  submitButtonText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
+  addTagButtonText: { color: Colors.white, fontSize: 18, fontWeight: '700' },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  tagText: { color: Colors.white, fontWeight: '700', fontSize: 13, letterSpacing: 1 },
+  tagRemove: { color: Colors.white, fontSize: 11, opacity: 0.8 },
+  hint: { fontSize: 12, color: Colors.textMuted, marginTop: 5, fontStyle: 'italic' },
+
+  // ── Garantie ─────────────────────────────────────────────────────────────
+  garantieRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    padding: 12,
+    backgroundColor: Colors.surface2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  garantieLabel: { fontSize: 15, fontWeight: '600', color: Colors.text },
+
+  // ── Boutons modal ─────────────────────────────────────────────────────────
+  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 8 },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Colors.danger,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: Colors.success,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalBtnText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+
+  // ── Photos produit ────────────────────────────────────────────────────────
+  etatContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  etatButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface2,
+  },
+  etatButtonActive: { borderColor: Colors.primary, backgroundColor: Colors.blueDim },
+  etatButtonText: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  etatButtonTextActive: { color: Colors.primary },
+  photoButtonsContainer: { flexDirection: 'row', gap: 8 },
+  photoButton: { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
+  cameraButton: { backgroundColor: Colors.primary },
+  galleryButton: { backgroundColor: Colors.secondary },
+  photoButtonText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
+  photosPreview: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  photoItem: { position: 'relative', width: 90, height: 90 },
+  photoImage: { width: '100%', height: '100%', borderRadius: 8 },
+  removePhotoButton: {
+    position: 'absolute', top: -8, right: -8,
+    backgroundColor: Colors.danger, borderRadius: 10,
+    width: 22, height: 22, alignItems: 'center', justifyContent: 'center',
+  },
+  removePhotoText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
 });
