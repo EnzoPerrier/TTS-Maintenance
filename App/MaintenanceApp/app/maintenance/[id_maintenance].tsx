@@ -25,6 +25,75 @@ import { api } from '../../utils/api';
 import { formatDate } from '../../utils/formatters';
 import { getEtatColor, getStatusConfig } from '../../utils/helpers';
 
+// ─── Constantes jours ────────────────────────────────────────────────────────
+const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] as const;
+const JOURS_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const JOURS_JS = [1, 2, 3, 4, 5, 6, 0]; // correspondance getDay()
+
+type Jour = typeof JOURS[number];
+type PeriodeSlot = 'matin_arr' | 'matin_dep' | 'apm_arr' | 'apm_dep';
+type HorairesState = Record<Jour, Record<PeriodeSlot, string>>;
+
+function emptyHoraires(): HorairesState {
+  const h: any = {};
+  JOURS.forEach(j => { h[j] = { matin_arr: '', matin_dep: '', apm_arr: '', apm_dep: '' }; });
+  return h;
+}
+
+function horairesFromMaintenance(maintenance: any): HorairesState {
+  const h = emptyHoraires();
+  let jours: any[] = [];
+  try {
+    const raw = maintenance.jours_intervention;
+    if (raw) jours = typeof raw === 'object' ? raw : JSON.parse(raw);
+  } catch { jours = []; }
+
+  if (jours.length > 0) {
+    jours.forEach((jour: any) => {
+      const d = new Date(jour.date_jour);
+      const idx = JOURS_JS.indexOf(d.getDay());
+      if (idx === -1) return;
+      const j = JOURS[idx];
+      h[j].matin_arr = (jour.heure_arrivee_matin || '').substring(0, 5);
+      h[j].matin_dep = (jour.heure_depart_matin  || '').substring(0, 5);
+      h[j].apm_arr   = (jour.heure_arrivee_aprem || '').substring(0, 5);
+      h[j].apm_dep   = (jour.heure_depart_aprem  || '').substring(0, 5);
+    });
+  } else if (maintenance.date_maintenance) {
+    const d = new Date(maintenance.date_maintenance);
+    const idx = JOURS_JS.indexOf(d.getDay());
+    if (idx !== -1) {
+      const j = JOURS[idx];
+      h[j].matin_arr = (maintenance.heure_arrivee_matin || '').substring(0, 5);
+      h[j].matin_dep = (maintenance.heure_depart_matin  || '').substring(0, 5);
+      h[j].apm_arr   = (maintenance.heure_arrivee_aprem || '').substring(0, 5);
+      h[j].apm_dep   = (maintenance.heure_depart_aprem  || '').substring(0, 5);
+    }
+  }
+  return h;
+}
+
+function horairesToJours(horaires: HorairesState, dateIntervention: string): any[] {
+  const isoDate = displayToISO(dateIntervention);
+  const baseDate = isoDate ? new Date(isoDate) : new Date();
+  const jours: any[] = [];
+  JOURS.forEach((j, idx) => {
+    const { matin_arr, matin_dep, apm_arr, apm_dep } = horaires[j];
+    if (matin_arr || matin_dep || apm_arr || apm_dep) {
+      const jourDate = new Date(baseDate);
+      jourDate.setDate(jourDate.getDate() + (JOURS_JS[idx] - baseDate.getDay()));
+      jours.push({
+        date_jour:           jourDate.toISOString().split('T')[0],
+        heure_arrivee_matin: matin_arr || null,
+        heure_depart_matin:  matin_dep || null,
+        heure_arrivee_aprem: apm_arr   || null,
+        heure_depart_aprem:  apm_dep   || null,
+      });
+    }
+  });
+  return jours;
+}
+
 // ─── Constantes formulaire ────────────────────────────────────────────────────
 const TYPES_MAINTENANCE = [
   'Installation',
@@ -97,6 +166,7 @@ export default function MaintenanceDetailsScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [editHoraires, setEditHoraires] = useState<HorairesState>(emptyHoraires());
   const [editForm, setEditForm] = useState({
     type: '',
     date: '',
@@ -159,6 +229,7 @@ export default function MaintenanceDetailsScreen() {
       operateurs: ops,
       operateurInput: '',
     });
+    setEditHoraires(horairesFromMaintenance(maintenance));
     setShowTypeDropdown(false);
     setEditModalVisible(true);
   };
@@ -177,6 +248,7 @@ export default function MaintenanceDetailsScreen() {
 
     setEditSubmitting(true);
     try {
+      const joursData = horairesToJours(editHoraires, editForm.date);
       await api.updateMaintenance(Number(id_maintenance), {
         type: editForm.type,
         date_maintenance: isoDate,
@@ -191,6 +263,7 @@ export default function MaintenanceDetailsScreen() {
         numero_ri: editForm.numero_ri || null,
         garantie: editForm.garantie ? 1 : 0,
         operateurs: editForm.operateurs.length > 0 ? editForm.operateurs.join('\n') : null,
+        jours_intervention: joursData.length > 0 ? JSON.stringify(joursData) : null,
       });
 
       Alert.alert('Succès', 'Maintenance modifiée avec succès');
@@ -616,14 +689,113 @@ export default function MaintenanceDetailsScreen() {
               )}
               <Text style={styles.hint}>Tapez les initiales puis ＋. Appuyez sur un tag pour le retirer.</Text>
 
+              {/* ── Horaires 7 jours ── */}
+              <Text style={styles.label}>🕐 Horaires d'intervention</Text>
+              <Text style={styles.horaireHint}>Matin ☀️ et Après-midi 🌤️ — laissez vide si non travaillé</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.horaireScroll}>
+                <View>
+                  {/* En-tête jours */}
+                  <View style={styles.horaireRow}>
+                    <View style={styles.horaireLabelCell} />
+                    {JOURS_LABELS.map(l => (
+                      <View key={l} style={styles.horaireHeaderCell}>
+                        <Text style={styles.horaireHeaderText}>{l}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {/* Matin Arrivée */}
+                  <View style={styles.horaireRow}>
+                    <View style={styles.horaireLabelCell}>
+                      <Text style={styles.horairePeriode}>☀️ Mat.</Text>
+                      <Text style={styles.horaireSlot}>Arr.</Text>
+                    </View>
+                    {JOURS.map(j => (
+                      <View key={j} style={styles.horaireCell}>
+                        <TextInput
+                          style={styles.horaireInput}
+                          value={editHoraires[j].matin_arr}
+                          onChangeText={v => setEditHoraires(h => ({ ...h, [j]: { ...h[j], matin_arr: v } }))}
+                          placeholder="--:--"
+                          placeholderTextColor={Colors.textMuted}
+                          keyboardType="numbers-and-punctuation"
+                          maxLength={5}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  {/* Matin Départ */}
+                  <View style={styles.horaireRow}>
+                    <View style={styles.horaireLabelCell}>
+                      <Text style={styles.horairePeriode} />
+                      <Text style={styles.horaireSlot}>Dép.</Text>
+                    </View>
+                    {JOURS.map(j => (
+                      <View key={j} style={styles.horaireCell}>
+                        <TextInput
+                          style={styles.horaireInput}
+                          value={editHoraires[j].matin_dep}
+                          onChangeText={v => setEditHoraires(h => ({ ...h, [j]: { ...h[j], matin_dep: v } }))}
+                          placeholder="--:--"
+                          placeholderTextColor={Colors.textMuted}
+                          keyboardType="numbers-and-punctuation"
+                          maxLength={5}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  {/* Séparateur */}
+                  <View style={styles.horaireSeparator} />
+                  {/* APM Arrivée */}
+                  <View style={styles.horaireRow}>
+                    <View style={styles.horaireLabelCell}>
+                      <Text style={styles.horairePeriode}>🌤️ APM.</Text>
+                      <Text style={styles.horaireSlot}>Arr.</Text>
+                    </View>
+                    {JOURS.map(j => (
+                      <View key={j} style={styles.horaireCell}>
+                        <TextInput
+                          style={styles.horaireInput}
+                          value={editHoraires[j].apm_arr}
+                          onChangeText={v => setEditHoraires(h => ({ ...h, [j]: { ...h[j], apm_arr: v } }))}
+                          placeholder="--:--"
+                          placeholderTextColor={Colors.textMuted}
+                          keyboardType="numbers-and-punctuation"
+                          maxLength={5}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  {/* APM Départ */}
+                  <View style={styles.horaireRow}>
+                    <View style={styles.horaireLabelCell}>
+                      <Text style={styles.horairePeriode} />
+                      <Text style={styles.horaireSlot}>Dép.</Text>
+                    </View>
+                    {JOURS.map(j => (
+                      <View key={j} style={styles.horaireCell}>
+                        <TextInput
+                          style={styles.horaireInput}
+                          value={editHoraires[j].apm_dep}
+                          onChangeText={v => setEditHoraires(h => ({ ...h, [j]: { ...h[j], apm_dep: v } }))}
+                          placeholder="--:--"
+                          placeholderTextColor={Colors.textMuted}
+                          keyboardType="numbers-and-punctuation"
+                          maxLength={5}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </ScrollView>
+
               {/* ── Garantie ── */}
               <View style={styles.garantieRow}>
-                <Text style={styles.garantieLabel}>{editForm.garantie ? '✅' : '☐'} Sous garantie</Text>
+                <Text style={styles.garantieLabel}>{editForm.garantie ? '✅' : '❌'} Sous garantie</Text>
                 <Switch
                   value={editForm.garantie}
                   onValueChange={v => setEditForm(f => ({ ...f, garantie: v }))}
                   trackColor={{ false: Colors.gray300, true: Colors.success }}
-                  thumbColor={editForm.garantie ? Colors.white : Colors.textSecondary}
+                  thumbColor={editForm.garantie ? Colors.black : Colors.textSecondary}
                 />
               </View>
 
@@ -991,4 +1163,71 @@ const styles = StyleSheet.create({
     width: 22, height: 22, alignItems: 'center', justifyContent: 'center',
   },
   removePhotoText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
+
+  // ── Tableau horaires ──────────────────────────────────────────────────────
+  horaireHint: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  horaireScroll: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  horaireRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  horaireHeaderCell: {
+    width: 52,
+    alignItems: 'center',
+    paddingVertical: 6,
+    backgroundColor: Colors.primary,
+    marginHorizontal: 1,
+    borderRadius: 4,
+  },
+  horaireHeaderText: {
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  horaireLabelCell: {
+    width: 58,
+    paddingRight: 6,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  horairePeriode: {
+    fontSize: 10,
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  horaireSlot: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  horaireCell: {
+    width: 52,
+    marginHorizontal: 1,
+  },
+  horaireInput: {
+    backgroundColor: Colors.surface3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
+    fontSize: 12,
+    color: Colors.text,
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
+  horaireSeparator: {
+    height: 6,
+  },
 });
