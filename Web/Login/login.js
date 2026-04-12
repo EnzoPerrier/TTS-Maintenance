@@ -1,4 +1,4 @@
-const API = "http://192.168.1.127:3000";
+const API = "/api";
 
 // ── Redirection immédiate si déjà connecté ───────────────────────────────────
 const existingToken = localStorage.getItem("token") || sessionStorage.getItem("token");

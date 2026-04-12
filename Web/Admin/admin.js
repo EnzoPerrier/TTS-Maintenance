@@ -2,7 +2,7 @@
 //  admin.js — Panneau d'administration TTSmaintenance
 // =====================================================
 
-const API = "http://192.168.1.127:3000";
+const API = "/api";
 let adminToken    = null;
 let allUsers      = [];
 let allLogs       = [];

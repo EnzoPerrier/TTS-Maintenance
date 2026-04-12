@@ -4,21 +4,19 @@ const dotenv = require("dotenv");
 const path = require("path");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 
-// ── Sécurité HTTP headers
+app.set("trust proxy", 1);
 app.use(helmet());
 
-// ── CORS restrictif (liste blanche)
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-// ── Rate limiting global (100 req / 15min par IP)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000,
@@ -26,9 +24,8 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ── Rate limiting spécifique sur le login (anti brute-force)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 10 req / 15 min
+  windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: "Trop de tentatives de connexion" },
 });
@@ -36,29 +33,33 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ── Fichiers statiques
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/Ressources", express.static(path.join(__dirname, "pdf", "Ressources")));
 
-// ── Route test
 app.get("/", (req, res) => {
   res.json({ message: "API TTSmaintenance opérationnelle" });
 });
 
-// ── Middleware auth (importé une seule fois ici)
 const { verifyToken, isAdmin } = require("./auth/authMiddleware.js");
 
-// ─────────────────────────────────────────────
-//  ROUTES PUBLIQUES (pas de token requis)
-// ─────────────────────────────────────────────
+// ── TOUS LES REQUIRES EN PREMIER ──
 const AuthRoutes = require("./routes/auth.routes.js");
+const QrCodesRoutes = require("./routes/qrcodes.routes.js");
+const clientsRoutes = require("./routes/clients.routes.js");
+const produitsRoutes = require("./routes/produits.routes.js");
+const sitesRoutes = require("./routes/sites.routes.js");
+const maintenancesRoutes = require("./routes/maintenances.routes.js");
+const maintenanceProduitsRoutes = require("./routes/maintenanceProduits.routes.js");
+const photosRoutes = require("./routes/photos.routes.js");
+const AdminRoutes = require("./routes/admin.routes.js");
+
+// ── ROUTES PUBLIQUES ──
 app.use("/auth", authLimiter, AuthRoutes);
 
-// QR code scan : public car scanné par n'importe qui via l'app mobile
-const QrCodesRoutes = require("./routes/qrcodes.routes.js");
+// QR public - showqr et scan AVANT la route protégée
+app.use("/qrcodes/showqr", QrCodesRoutes);
 app.use("/qrcodes/scan", QrCodesRoutes);
 
-// ── Stats publiques pour la page de login ──
 app.get("/stats/public", async (req, res) => {
   try {
     const db = require("./config/db.js");
@@ -71,44 +72,21 @@ app.get("/stats/public", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────
-//  ROUTES PROTÉGÉES (token JWT obligatoire)
-// ─────────────────────────────────────────────
-const clientsRoutes = require("./routes/clients.routes.js");
+// ── ROUTES PROTÉGÉES ──
 app.use("/clients", verifyToken, clientsRoutes);
-
-const produitsRoutes = require("./routes/produits.routes.js");
 app.use("/produits", verifyToken, produitsRoutes);
-
-const sitesRoutes = require("./routes/sites.routes.js");
 app.use("/sites", verifyToken, sitesRoutes);
-
-const maintenancesRoutes = require("./routes/maintenances.routes.js");
 app.use("/maintenances", verifyToken, maintenancesRoutes);
-
-const maintenanceProduitsRoutes = require("./routes/maintenanceProduits.routes.js");
 app.use("/maintenance-produits", verifyToken, maintenanceProduitsRoutes);
-
-const photosRoutes = require("./routes/photos.routes.js");
 app.use("/photos", verifyToken, photosRoutes);
-
-// QR code management : protégé (création, suppression, listing)
 app.use("/qrcodes", verifyToken, QrCodesRoutes);
 
-// ─────────────────────────────────────────────
-//  ROUTES ADMIN (token + rôle admin requis)
-//  req.user → req.admin pour compatibilité
-//  avec AdminController.js qui lit req.admin
-// ─────────────────────────────────────────────
-const AdminRoutes = require("./routes/admin.routes.js");
+// ── ROUTES ADMIN ──
 app.use("/admin", verifyToken, isAdmin, (req, res, next) => {
-  req.admin = req.user; // ← pont de compatibilité
+  req.admin = req.user;
   next();
 }, AdminRoutes);
 
-// ─────────────────────────────────────────────
-//  GESTION GLOBALE DES ERREURS
-// ─────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: "Erreur serveur interne" });

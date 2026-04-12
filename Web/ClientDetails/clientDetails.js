@@ -1,4 +1,4 @@
-const API = "http://192.168.1.127:3000";
+const API = "/api";
 
 const params = new URLSearchParams(window.location.search);
 const id_client = params.get("id_client");
@@ -58,6 +58,7 @@ async function deleteMaintenance(id_maintenance) {
 loadMaintenanceForm("maintenance-form-container");
 loadClientDetails();
 loadSites();
+
 
 // ─── CHARGEMENT CLIENT ────────────────────────────────────────────────────────
 

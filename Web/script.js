@@ -4,7 +4,7 @@ let allSitesMap      = null;
 let allClients       = [];
 let allMaintenances  = [];
 
-const API = "http://192.168.1.127:3000";
+const API = "/api";
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 function logout() {
