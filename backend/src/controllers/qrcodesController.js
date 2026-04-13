@@ -63,7 +63,6 @@ exports.showQRCode = async (req, res) => {
   const { id } = req.params; // id_produit passé depuis printQR
 
   try {
-    console.log('Affichage QR pour produit:', id);
 
     // Récupérer le QR code via id_produit
     const [rows] = await db.query(
@@ -76,7 +75,6 @@ exports.showQRCode = async (req, res) => {
     }
 
     const { id_qr, id_produit } = rows[0];
-    console.log('QR trouvé - id_qr:', id_qr, 'id_produit:', id_produit);
 
     // Générer le QR code avec id_qr ET id_produit
     const qrContent = JSON.stringify({ 

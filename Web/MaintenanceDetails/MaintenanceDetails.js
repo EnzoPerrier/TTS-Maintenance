@@ -200,19 +200,29 @@ async function loadProduitsAssocies() {
     }
 
     for (const p of produitsAssocies) {
-      const photosRes = await apiFetch(`${API}/photos/maintenance/${id_maintenance}/${p.id_produit}`);
-      const photos = photosRes.ok ? await photosRes.json() : [];
+    const photosRes = await apiFetch(`${API}/photos/maintenance/${id_maintenance}/${p.id_produit}`);
+    const photos = photosRes.ok ? await photosRes.json() : [];
 
-      const details = document.createElement("details");
-      const etat = (p.etat || "").toLowerCase();
-      if (etat === "ok") details.classList.add("equipement-ok");
-      else if (etat === "nok") details.classList.add("equipement-nok");
-      else if (etat === "passable") details.classList.add("equipement-passable");
-      else details.classList.add("equipement-autre");
+    const details = document.createElement("details");
+    
+    
+    const etat = (p.etat || "").toLowerCase();
+    if (etat === "ok")            details.classList.add("equipement-ok");
+    else if (etat === "nok")      details.classList.add("equipement-nok");
+    else if (etat === "passable") details.classList.add("equipement-passable");
+    else                          details.classList.add("equipement-autre");
 
-      const summary = document.createElement("summary");
-      summary.textContent = `${p.nom} — ${p.etat || "N/A"}`;
-      details.appendChild(summary);
+    // La couleur du texte change selon l'état
+    let etatColor = "var(--text-dim)";
+    if (etat === "ok")            etatColor = "var(--success)";
+    else if (etat === "nok")      etatColor = "var(--danger)";
+    else if (etat === "passable") etatColor = "var(--warning)";
+
+    const summary = document.createElement("summary");
+    summary.innerHTML = `${p.nom} — <span style="color:${etatColor};font-weight:700;">${p.etat || "N/A"}</span>`;
+    details.appendChild(summary);
+
+    // ... reste du code inchangé
 
       const content = document.createElement("div");
       content.innerHTML = `

@@ -65,7 +65,7 @@ loadSites();
 async function loadClientDetails() {
   if (!id_client) { document.getElementById("clientDetails").textContent = "ID du client manquant."; return; }
   try {
-    const res = await fetch(`${API}/clients/${id_client}`);
+    const res = await apiFetch(`${API}/clients/${id_client}`);
     if (!res.ok) throw new Error("Erreur lors du chargement du client");
     const client = await res.json();
     document.getElementById("clientDetails").innerHTML = `

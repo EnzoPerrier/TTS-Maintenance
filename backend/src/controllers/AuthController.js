@@ -4,13 +4,13 @@
 //  SÉPARÉ de adminController.js — secret JWT différent
 // =====================================================
 
-const db      = require("../config/db.js");
-const jwt     = require("jsonwebtoken");
-const bcrypt  = require("bcrypt");
+const db = require("../config/db.js");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
-const JWT_SECRET      = process.env.JWT_SECRET;
-const JWT_EXPIRY      = process.env.JWT_EXPIRY || "24h";
-const SALT_ROUNDS     = 12;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRY = process.env.JWT_EXPIRY || "24h";
+const SALT_ROUNDS = 12;
 
 // =====================================================
 //  REGISTER
@@ -96,12 +96,17 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Identifiants incorrects" });
     }
 
+    const now = new Date();
+    console.log(
+      `[LOGIN] Utilisateur: ${user.username} | Date: ${now.toLocaleString()} | IP: ${req.ip}`
+    );
+
     // Générer le token JWT (secret utilisateur, différent du secret admin)
     const token = jwt.sign(
       {
-        id:       user.id_user,
+        id: user.id_user,
         username: user.username,
-        role:     user.role,
+        role: user.role,
         // id_client optionnel si système lie un user à un client
         ...(user.id_client ? { id_client: user.id_client } : {}),
       },
@@ -138,10 +143,10 @@ exports.login = async (req, res) => {
     return res.json({
       token,
       user: {
-        id_user:  user.id_user,
+        id_user: user.id_user,
         username: user.username,
-        email:    user.email,
-        role:     user.role,
+        email: user.email,
+        role: user.role,
       },
     });
 

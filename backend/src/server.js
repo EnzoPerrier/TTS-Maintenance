@@ -9,7 +9,10 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 const app = express();
 
 app.set("trust proxy", 1);
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
@@ -56,9 +59,15 @@ const AdminRoutes = require("./routes/admin.routes.js");
 // ── ROUTES PUBLIQUES ──
 app.use("/auth", authLimiter, AuthRoutes);
 
-// QR public - showqr et scan AVANT la route protégée
-app.use("/qrcodes/showqr", QrCodesRoutes);
-app.use("/qrcodes/scan", QrCodesRoutes);
+// QR public - routes directes SANS passer par le router
+const qrController = require("./controllers/qrcodesController.js");
+app.get("/qrcodes/showqr/:id", qrController.showQRCode);
+app.get("/qrcodes/scan/:id", qrController.scanQRCode);
+
+// Rapports d'intervention publics (HTML + PDF)
+const maintenancesController = require("./controllers/maintenancesController.js");
+app.get("/maintenances/:id/html", maintenancesController.generateMaintenanceHTML);
+app.get("/maintenances/:id/pdf", maintenancesController.generateMaintenancePDF);
 
 app.get("/stats/public", async (req, res) => {
   try {
