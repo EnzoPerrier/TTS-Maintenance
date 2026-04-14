@@ -3,7 +3,7 @@ version: '3.9'
 services:
   mysql:
     image: mysql:8.0
-    container_name: tts_mysql
+    container_name: maintenanceApp_mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
@@ -24,7 +24,7 @@ services:
 
   backend:
     build: ./backend
-    container_name: tts_backend
+    container_name: maintenanceApp_backend
     restart: unless-stopped
     depends_on:
       mysql:
@@ -44,7 +44,7 @@ services:
 
   nginx:
     build: ./nginx
-    container_name: tts_nginx
+    container_name: maintenanceApp_nginx
     restart: unless-stopped
     depends_on:
       - backend
