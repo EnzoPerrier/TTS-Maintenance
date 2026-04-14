@@ -59,7 +59,7 @@ services:
 
   backup:
     image: mysql:8.0
-    container_name: tts_backup
+    container_name: maintenanceApp_backup
     restart: unless-stopped
     depends_on:
       mysql:
