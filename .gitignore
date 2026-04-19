@@ -74,8 +74,11 @@ docker-compose.override.yml
 
 # =========================
 
-backups/
-uploads/
+backups/*
+!backups/.gitkeep
+
+uploads/*
+!uploads/.gitkeep
 
 # garder les dossiers vides 
 
