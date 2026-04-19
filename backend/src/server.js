@@ -37,7 +37,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-app.use("/Ressources", express.static(path.join(__dirname, "pdf", "Ressources")));
+app.use("/RessourcesPDF", express.static(path.join(__dirname, "pdf", "Ressources")));
 
 app.get("/", (req, res) => {
   res.json({ message: "API TTSmaintenance opérationnelle" });
