@@ -1,5 +1,5 @@
 export const Config = {
-  API_URL: 'http://192.168.1.127:3000',
+  API_URL: 'http://192.168.1.127/api',
   
   MAX_PHOTO_SIZE: 10 * 1024 * 1024, // 10MB
   

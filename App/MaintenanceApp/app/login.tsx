@@ -19,7 +19,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const result = await api.login({ username, password });
-      // Mettre à jour le state global → déclenche la redirection dans _layout
+      // Mettre à jour le state global --> déclenche la redirection dans _layout
       setGlobalToken(result.token);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Identifiants incorrects');

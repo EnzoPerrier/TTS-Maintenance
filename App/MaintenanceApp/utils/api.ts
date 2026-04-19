@@ -92,6 +92,13 @@ export const api = {
     await tokenStorage.remove();
   },
 
+  // ─── Auth ────────────────────────────────────────────────────────────────
+  getMe: async () => {
+  const res = await authFetch(`${API}/auth/me`);
+  if (!res.ok) throw new Error('Non authentifié');
+  return res.json();
+},
+
   // ─── SITES ────────────────────────────────────────────────────────────────
 
   getSites: async (): Promise<Site[]> => {
