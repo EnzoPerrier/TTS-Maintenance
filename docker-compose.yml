@@ -72,7 +72,8 @@ services:
     volumes:
       - ./backups:/backups
       - ./scripts/backup.sh:/backup.sh:ro
-    entrypoint: ["/bin/sh", "-c", "chmod +x /backup.sh && crond -f"]
+      - ./scripts/crontab:/etc/crontabs/root:ro
+    entrypoint: ["/bin/sh", "-c", "chmod +x /backup.sh && crond -f -l 2"]
     networks:
       - tts_network
 
