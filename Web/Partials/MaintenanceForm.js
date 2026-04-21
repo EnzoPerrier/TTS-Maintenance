@@ -63,7 +63,7 @@ const _MAINTENANCE_FORM_HTML = `
         </div>
         <div class="form-group">
           <label for="mf_contact">Contact</label>
-          <input type="text" id="mf_contact" placeholder="Nom du contact" />
+          <input type="text" id="mf_contact" placeholder="Vide = contact du site" />
         </div>
       </div>
 
