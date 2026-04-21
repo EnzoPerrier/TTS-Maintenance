@@ -2,7 +2,7 @@
 
 > API REST Node.js / Express — Base de données MySQL 8.0
 >
-> URL de base : `http://<host>:3000`
+> URL de base : `http://<host>/api`
 
 ---
 
@@ -508,7 +508,7 @@ Crée une nouvelle maintenance.
 
 **Champ `operateurs` :** tableau de strings ou string séparée par `\n` ou `,`
 
-**Champ `jours` :** tableau d'objets horaires par jour. Si fourni, remplace les champs `heure_*` simples.
+**Champ `jours` :** tableau d'objets horaires par jour. 
 
 **Réponse `201` :**
 ```json
