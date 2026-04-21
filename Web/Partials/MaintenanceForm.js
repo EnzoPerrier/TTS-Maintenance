@@ -43,7 +43,7 @@ const _MAINTENANCE_FORM_HTML = `
 
       <div class="form-row">
         <div class="form-group">
-          <label for="mf_chrono">Chrono d'interv. <span class="required-star">*</span></label>
+          <label for="mf_chrono">Chrono d'inter. <span class="required-star">*</span></label>
           <input type="text" id="mf_chrono" placeholder="Ex: RI251210" required />
         </div>
         <div class="form-group">
@@ -69,7 +69,7 @@ const _MAINTENANCE_FORM_HTML = `
 
       <div class="form-row form-row-3">
         <div class="form-group">
-          <label for="mf_date_intervention">Date intervention</label>
+          <label for="mf_date_intervention">Date inter. <span class="required-star">*</span></label>
           <input type="date" id="mf_date_intervention" />
         </div>
         <div class="form-group">
