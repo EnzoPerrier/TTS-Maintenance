@@ -236,8 +236,8 @@ export default function MaintenanceDetailsScreen() {
 
   // ── Soumission de l'édition ───────────────────────────────────────────────
   const handleEditSubmit = async () => {
-    if (!editForm.type) {
-      Alert.alert('Erreur', 'Veuillez sélectionner un type de maintenance');
+    if (!editForm.numero_ri) {
+      Alert.alert('Erreur', 'Veuillez saisir un numéro de RI');
       return;
     }
     const isoDate = displayToISO(editForm.date);
@@ -571,8 +571,24 @@ export default function MaintenanceDetailsScreen() {
                 <Text style={styles.modalTitle}>📝 Modifier la maintenance</Text>
               </View>
 
+              {/* ── N° RI ── */}
+              <Text style={styles.label}>📄 N° RI / Chrono * </Text>
+              <TextInput style={styles.input} value={editForm.numero_ri} onChangeText={t => setEditForm(f => ({ ...f, numero_ri: t }))} placeholder="Ex: RI251210" placeholderTextColor={Colors.textMuted} />
+
+              {/* ── Date ── */}
+              <Text style={styles.label}>📅 Date *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.date}
+                onChangeText={text => setEditForm(f => ({ ...f, date: formatDateInput(text) }))}
+                placeholder="JJ/MM/AAAA"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="numeric"
+                maxLength={10}
+              />
+
               {/* ── Type ── */}
-              <Text style={styles.label}>🔧 Type *</Text>
+              <Text style={styles.label}>🔧 Type</Text>
               <TouchableOpacity
                 style={styles.dropdownBtn}
                 onPress={() => setShowTypeDropdown(!showTypeDropdown)}
@@ -596,18 +612,6 @@ export default function MaintenanceDetailsScreen() {
                 </View>
               )}
 
-              {/* ── Date ── */}
-              <Text style={styles.label}>📅 Date *</Text>
-              <TextInput
-                style={styles.input}
-                value={editForm.date}
-                onChangeText={text => setEditForm(f => ({ ...f, date: formatDateInput(text) }))}
-                placeholder="JJ/MM/AAAA"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="numeric"
-                maxLength={10}
-              />
-
               {/* ── État ── */}
               <Text style={styles.label}>📊 État</Text>
               <View style={styles.chipRow}>
@@ -626,10 +630,6 @@ export default function MaintenanceDetailsScreen() {
                   );
                 })}
               </View>
-
-              {/* ── N° RI ── */}
-              <Text style={styles.label}>📄 N° RI / Chrono</Text>
-              <TextInput style={styles.input} value={editForm.numero_ri} onChangeText={t => setEditForm(f => ({ ...f, numero_ri: t }))} placeholder="Ex: RI251210" placeholderTextColor={Colors.textMuted} />
 
               {/* ── Département ── */}
               <Text style={styles.label}>🏷️ Département</Text>

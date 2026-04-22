@@ -70,7 +70,7 @@ const _MAINTENANCE_FORM_HTML = `
       <div class="form-row form-row-3">
         <div class="form-group">
           <label for="mf_date_intervention">Date inter. <span class="required-star">*</span></label>
-          <input type="date" id="mf_date_intervention" />
+          <input type="date" id="mf_date_intervention" required/>
         </div>
         <div class="form-group">
           <label for="mf_type_produit">Type panneau / produit</label>
