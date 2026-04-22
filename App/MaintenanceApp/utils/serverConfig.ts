@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SERVER_IP_KEY = 'server_ip';
-const DEFAULT_IP = '192.168.1.127';
+const DEFAULT_IP = '90.8.218.210';
 
 /** Retourne l'IP stockée, ou l'IP par défaut */
 export const getServerIp = async (): Promise<string> => {
@@ -21,3 +21,4 @@ export const getApiUrl = async (): Promise<string> => {
 };
 
 export { DEFAULT_IP };
+
