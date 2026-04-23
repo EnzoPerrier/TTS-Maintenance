@@ -5,9 +5,6 @@
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
 
-SET NAMES utf8mb4;
-SET time_zone = '+00:00';
-
 -- =========================================
 -- USERS
 -- =========================================
@@ -157,7 +154,7 @@ PRIMARY KEY (`id_qr`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================
--- ACTIVITY LOGS (CLEANED)
+-- ACTIVITY LOGS
 -- =========================================
 CREATE TABLE `activity_logs` (
 `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -171,4 +168,27 @@ CREATE TABLE `activity_logs` (
 PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- =========================================
+-- USER SESSIONS  ← MANQUAIT
+-- =========================================
+CREATE TABLE `user_sessions` (
+`session_id` int(11) NOT NULL AUTO_INCREMENT,
+`id_user` int(11) NOT NULL,
+`ip_address` varchar(45) DEFAULT NULL,
+`created_at` datetime DEFAULT current_timestamp(),
+`last_activity` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+`expires_at` datetime NOT NULL,
+PRIMARY KEY (`session_id`),
+KEY `idx_user_sessions_user` (`id_user`),
+KEY `idx_user_sessions_expires` (`expires_at`),
+CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- =========================================
+-- APP CONFIG (verrou global)
+-- =========================================
+CREATE TABLE `app_config` (
+`config_key` varchar(100) NOT NULL,
+`config_value` text DEFAULT NULL,
+PRIMARY KEY (`config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

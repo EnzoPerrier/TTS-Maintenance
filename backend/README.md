@@ -1035,8 +1035,21 @@ users
   └── id_user (PK)
   └── username (UNIQUE)
 
+user_sessions
+  └── session_id (PK)
+  └── id_user (FK → users, ON DELETE CASCADE)
+  └── ip_address
+  └── created_at
+  └── last_activity
+  └── expires_at
+
 activity_logs
   └── id (PK)
+  └── id_user (→ users, nullable)
+
+app_config
+  └── config_key (PK)
+  └── config_value
 ```
 
 ---
