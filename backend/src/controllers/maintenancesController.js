@@ -64,13 +64,13 @@ let logoBase64 = null;
 function injectAssetsIntoHTML(html) {
   if (fontBase64) {
     html = html.replace(
-      'src: url("http://localhost/Ressources/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf") format("opentype");',
+      'src: url("/Ressources/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf") format("opentype");',
       `src: url("data:font/opentype;base64,${fontBase64}") format("opentype");`
     );
   }
   if (logoBase64) {
     html = html.replace(
-      'src="http://localhost/Ressources/Images/logoTTS.svg"',
+      'src="/Ressources/Images/logoTTS.svg"',
       `src="data:image/svg+xml;base64,${logoBase64}"`
     );
   }
