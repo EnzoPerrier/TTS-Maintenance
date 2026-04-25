@@ -64,16 +64,18 @@ let logoBase64 = null;
 function injectAssetsIntoHTML(html) {
   if (fontBase64) {
     html = html.replace(
-      'src: url("/Ressources/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf") format("opentype");',
-      `src: url("data:font/opentype;base64,${fontBase64}") format("opentype");`
+      /url\("?.*bf4548faa85fa5f642f192e6b07ac814\.otf"?\)/,
+      `url("data:font/opentype;base64,${fontBase64}")`
     );
   }
+
   if (logoBase64) {
     html = html.replace(
-      'src="/Ressources/Images/logoTTS.svg"',
+      /src=["']\/Ressources\/Images\/logoTTS\.svg["']/,
       `src="data:image/svg+xml;base64,${logoBase64}"`
     );
   }
+
   return html;
 }
 
@@ -248,15 +250,6 @@ function transformDataForTemplate(maintenance, site, produits) {
     departement: maintenance.departement || '',
     designation: maintenance.designation_produit_site || '',
     etat: maintenance.etat || '',
-
-    //AJOUT FONT + LOGO
-    squareTLFont: fontBase64
-      ? `data:font/opentype;base64,${fontBase64}`
-      : null,
-
-    logoBase64: logoBase64
-      ? `data:image/svg+xml;base64,${logoBase64}`
-      : null,
 
     // temps
     lundiMatin: tempsParJour.lundi.matin.arrivee,
