@@ -303,8 +303,13 @@ function transformDataForTemplate(maintenance, site, produits) {
 
     interventionTermineeChecked: (maintenance.etat === 'Terminée') ? 'checked' : '',
     signatureTTS: operateurs || '',
-    signatureClient: ''
+    signatureClient: '',
+
+    squareTLFontBase64: fontBase64,
+    logoBase64: logoBase64,
+    
   };
+  
 }
 
 // GET /maintenances
