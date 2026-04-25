@@ -14,7 +14,7 @@
 
     @font-face {
       font-family: "SquareTL";
-      src: url("http://localhost:3000/RessourcesPDF/Fonts/bf4548faa85fa5f642f192e6b07ac814.otf") format("opentype");
+      src: url(data:font/otf;base64,{{squareTLFontBase64}}) format("opentype");
       font-style: normal;
     }
 
@@ -360,7 +360,9 @@
     <!-- Header -->
     <div class="header">
       <div class="logo">
-        <img src="http://localhost:8080/RessourcesPDF/Images/logoTTS.svg" alt="[LOGO TTS]" style="width: 5.5rem; height: 4.5rem;" />
+        <img src="data:image/svg+xml;base64,{{logoTTSBase64}}" 
+     alt="[LOGO TTS]" 
+     style="width: 5.5rem; height: 4.5rem;" />
       </div>
       <h1>Rapport d'intervention</h1>
       <div class="logo">
