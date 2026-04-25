@@ -648,8 +648,11 @@ async function loadMaintenances() {
           <div style="display:flex;overflow:hidden;border-radius:8px;">
             <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
               style="background:#198754;color:white;padding:0.6rem 1rem;text-decoration:none;border-right:1px solid rgba(255,255,255,0.3);">👁 Aperçu RI</a>
-            <a href="${API}/maintenances/${m.id_maintenance}/pdf"
-              style="background:#157347;color:white;padding:0.6rem 1rem;text-decoration:none;">⬇ PDF</a>
+            <a href="#"
+              onclick="downloadPdf(${m.id_maintenance}); return false;"
+              style="background:#157347;color:white;padding:0.6rem 1rem;text-decoration:none;">
+              ⬇ PDF
+            </a>
           </div>
         </div>
       `;
@@ -662,6 +665,28 @@ async function loadMaintenances() {
     });
   } catch (err) {
     document.getElementById("maintenancesList").innerHTML = `<li style="color:#DC3545;">${err.message}</li>`;
+  }
+}
+
+async function downloadPdf(id_maintenance) {
+  try {
+    const res = await apiFetch(`${API}/maintenances/${id_maintenance}/pdf`);
+    if (!res.ok) throw new Error("Erreur serveur");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RI_maintenance_${id_maintenance}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Erreur lors du téléchargement du PDF");
+    console.error(err);
   }
 }
 

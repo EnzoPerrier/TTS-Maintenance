@@ -14,9 +14,27 @@ let currentProduitPhotos = null;
 document.getElementById("btnApercuRI").addEventListener("click", () => {
   window.open(`${API}/maintenances/${id_maintenance}/html`, "_blank");
 });
-document.getElementById("btnPdfRI").addEventListener("click", () => {
-  window.location.href = `${API}/maintenances/${id_maintenance}/pdf`;
+document.getElementById("btnPdfRI").addEventListener("click", async () => {
+  try {
+    const res = await apiFetch(`${API}/maintenances/${id_maintenance}/pdf`);
+    if (!res.ok) throw new Error("Erreur serveur");
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RI_${id_maintenance}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Erreur lors du téléchargement du PDF");
+    console.error(err);
+  }
 });
+
 document.getElementById("backBtn").addEventListener("click", () => window.history.back());
 
 // Callback déclenché par maintenanceForm.js après un PUT réussi
