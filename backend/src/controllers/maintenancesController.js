@@ -61,7 +61,7 @@ let logoBase64 = null;
   }
 })();
 
-function injectAssetsIntoHTML(html) {
+/*function injectAssetsIntoHTML(html) {
   if (fontBase64) {
     html = html.replace(
       /url\("?.*bf4548faa85fa5f642f192e6b07ac814\.otf"?\)/,
@@ -77,7 +77,7 @@ function injectAssetsIntoHTML(html) {
   }
 
   return html;
-}
+}*/
 
 function formatDateForDisplay(dateString) {
   if (!dateString) return null;
@@ -306,7 +306,7 @@ function transformDataForTemplate(maintenance, site, produits) {
     signatureClient: '',
 
     squareTLFontBase64: fontBase64,
-    logoBase64: logoBase64,
+    logoBase64: logoTTSBase64,
     
   };
   
@@ -447,7 +447,7 @@ exports.generateMaintenancePDF = async (req, res) => {
     let html = template(data);
 
     // Injection des ressources en base64 (police + logo)
-    html = injectAssetsIntoHTML(html);
+    //html = injectAssetsIntoHTML(html);
 
     const browser = await getBrowser();
     page = await browser.newPage();
