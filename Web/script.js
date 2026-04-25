@@ -649,10 +649,10 @@ async function loadMaintenances() {
             <a href="${API}/maintenances/${m.id_maintenance}/html" target="_blank"
               style="background:#198754;color:white;padding:0.6rem 1rem;text-decoration:none;border-right:1px solid rgba(255,255,255,0.3);">👁 Aperçu RI</a>
             <a href="#"
-              onclick="downloadPdf(${m.id_maintenance}); return false;"
-              style="background:#157347;color:white;padding:0.6rem 1rem;text-decoration:none;">
-              ⬇ PDF
-            </a>
+            onclick="downloadPdf(${m.id_maintenance}); return false;"
+            style="background:#157347;color:white;padding:0.6rem 1rem;text-decoration:none;">
+            ⬇ PDF
+          </a>
           </div>
         </div>
       `;
