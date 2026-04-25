@@ -161,12 +161,17 @@ function combineTravauxEffectues(produits) {
 function transformDataForTemplate(maintenance, site, produits) {
   let operateurs = '';
   if (maintenance.operateurs) {
-    operateurs = maintenance.operateurs.split(/[\n,]/).map(s => s.trim()).filter(Boolean).join(' & ');
+    operateurs = maintenance.operateurs
+      .split(/[\n,]/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .join(' & ');
   }
 
   const nomsProduitsStr = produits.map(p => p.produit_nom).join(', ');
   const etatConstateHTML = combineEtatsConstates(produits);
   const travauxHTML = combineTravauxEffectues(produits);
+
   const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
   const tempsParJour = {
@@ -185,7 +190,9 @@ function transformDataForTemplate(maintenance, site, produits) {
       jours = typeof maintenance.jours_intervention === 'object'
         ? maintenance.jours_intervention
         : JSON.parse(maintenance.jours_intervention);
-    } catch(e) { jours = []; }
+    } catch (e) {
+      jours = [];
+    }
   }
 
   if (jours.length > 0) {
@@ -216,76 +223,93 @@ function transformDataForTemplate(maintenance, site, produits) {
 
   const typeChecked = {
     installation: hasType('Installation') ? 'checked' : '',
-    curatif:      (hasType('Intervention Curative') || hasType('Curatif')) ? 'checked' : '',
-    revision:     (hasType('Révision') || hasType('Revision') || hasType('Preventif')) ? 'checked' : '',
-    contrat:      hasType('Contrat de maintenance') ? 'checked' : '',
-    location:     hasType('Location') ? 'checked' : '',
-    accident:     hasType('Accident') ? 'checked' : '',
-    vandalisme:   hasType('Vandalisme') ? 'checked' : '',
-    orage:        hasType('Orage') ? 'checked' : '',
-    autre:        (hasType('Autres') || hasType('Autre')) ? 'checked' : '',
-    garantie:     maintenance.garantie ? 'checked' : ''
+    curatif: (hasType('Intervention Curative') || hasType('Curatif')) ? 'checked' : '',
+    revision: (hasType('Révision') || hasType('Revision') || hasType('Preventif')) ? 'checked' : '',
+    contrat: hasType('Contrat de maintenance') ? 'checked' : '',
+    location: hasType('Location') ? 'checked' : '',
+    accident: hasType('Accident') ? 'checked' : '',
+    vandalisme: hasType('Vandalisme') ? 'checked' : '',
+    orage: hasType('Orage') ? 'checked' : '',
+    autre: (hasType('Autres') || hasType('Autre')) ? 'checked' : '',
+    garantie: maintenance.garantie ? 'checked' : ''
   };
 
   return {
-    chrono:      maintenance.numero_ri || '',
-    date:        formatDateForDisplay(maintenance.date_maintenance),
+    chrono: maintenance.numero_ri || '',
+    date: formatDateForDisplay(maintenance.date_maintenance),
     dateDemande: formatDateForDisplay(maintenance.date_demande),
-    dateAccord:  formatDateForDisplay(maintenance.date_accord_client),
-    technicien:  operateurs || '',
-    client:      maintenance.site_nom || '',
-    contact:     maintenance.contact || maintenance.client_contact || '',
+    dateAccord: formatDateForDisplay(maintenance.date_accord_client),
+
+    technicien: operateurs || '',
+    client: maintenance.site_nom || '',
+    contact: maintenance.contact || maintenance.client_contact || '',
     typePanneau: maintenance.type_produit || nomsProduitsStr,
-    numAffaire:  maintenance.numero_commande || '',
+    numAffaire: maintenance.numero_commande || '',
     departement: maintenance.departement || '',
     designation: maintenance.designation_produit_site || '',
-    etat:        maintenance.etat || '',
+    etat: maintenance.etat || '',
 
-    lundiMatin:          tempsParJour.lundi.matin.arrivee,
-    lundiMatinDepart:    tempsParJour.lundi.matin.depart,
-    lundiApm:            tempsParJour.lundi.apm.arrivee,
-    lundiApmDepart:      tempsParJour.lundi.apm.depart,
-    mardiMatin:          tempsParJour.mardi.matin.arrivee,
-    mardiMatinDepart:    tempsParJour.mardi.matin.depart,
-    mardiApm:            tempsParJour.mardi.apm.arrivee,
-    mardiApmDepart:      tempsParJour.mardi.apm.depart,
-    mercrediMatin:       tempsParJour.mercredi.matin.arrivee,
+    //AJOUT FONT + LOGO
+    squareTLFont: fontBase64
+      ? `data:font/opentype;base64,${fontBase64}`
+      : null,
+
+    logoBase64: logoBase64
+      ? `data:image/svg+xml;base64,${logoBase64}`
+      : null,
+
+    // temps
+    lundiMatin: tempsParJour.lundi.matin.arrivee,
+    lundiMatinDepart: tempsParJour.lundi.matin.depart,
+    lundiApm: tempsParJour.lundi.apm.arrivee,
+    lundiApmDepart: tempsParJour.lundi.apm.depart,
+
+    mardiMatin: tempsParJour.mardi.matin.arrivee,
+    mardiMatinDepart: tempsParJour.mardi.matin.depart,
+    mardiApm: tempsParJour.mardi.apm.arrivee,
+    mardiApmDepart: tempsParJour.mardi.apm.depart,
+
+    mercrediMatin: tempsParJour.mercredi.matin.arrivee,
     mercrediMatinDepart: tempsParJour.mercredi.matin.depart,
-    mercrediApm:         tempsParJour.mercredi.apm.arrivee,
-    mercrediApmDepart:   tempsParJour.mercredi.apm.depart,
-    jeudiMatin:          tempsParJour.jeudi.matin.arrivee,
-    jeudiMatinDepart:    tempsParJour.jeudi.matin.depart,
-    jeudiApm:            tempsParJour.jeudi.apm.arrivee,
-    jeudiApmDepart:      tempsParJour.jeudi.apm.depart,
-    vendrediMatin:       tempsParJour.vendredi.matin.arrivee,
+    mercrediApm: tempsParJour.mercredi.apm.arrivee,
+    mercrediApmDepart: tempsParJour.mercredi.apm.depart,
+
+    jeudiMatin: tempsParJour.jeudi.matin.arrivee,
+    jeudiMatinDepart: tempsParJour.jeudi.matin.depart,
+    jeudiApm: tempsParJour.jeudi.apm.arrivee,
+    jeudiApmDepart: tempsParJour.jeudi.apm.depart,
+
+    vendrediMatin: tempsParJour.vendredi.matin.arrivee,
     vendrediMatinDepart: tempsParJour.vendredi.matin.depart,
-    vendrediApm:         tempsParJour.vendredi.apm.arrivee,
-    vendrediApmDepart:   tempsParJour.vendredi.apm.depart,
-    samediMatin:         tempsParJour.samedi.matin.arrivee,
-    samediMatinDepart:   tempsParJour.samedi.matin.depart,
-    samediApm:           tempsParJour.samedi.apm.arrivee,
-    samediApmDepart:     tempsParJour.samedi.apm.depart,
-    dimancheMatin:       tempsParJour.dimanche.matin.arrivee,
+    vendrediApm: tempsParJour.vendredi.apm.arrivee,
+    vendrediApmDepart: tempsParJour.vendredi.apm.depart,
+
+    samediMatin: tempsParJour.samedi.matin.arrivee,
+    samediMatinDepart: tempsParJour.samedi.matin.depart,
+    samediApm: tempsParJour.samedi.apm.arrivee,
+    samediApmDepart: tempsParJour.samedi.apm.depart,
+
+    dimancheMatin: tempsParJour.dimanche.matin.arrivee,
     dimancheMatinDepart: tempsParJour.dimanche.matin.depart,
-    dimancheApm:         tempsParJour.dimanche.apm.arrivee,
-    dimancheApmDepart:   tempsParJour.dimanche.apm.depart,
+    dimancheApm: tempsParJour.dimanche.apm.arrivee,
+    dimancheApmDepart: tempsParJour.dimanche.apm.depart,
 
     installationChecked: typeChecked.installation,
-    curatifChecked:      typeChecked.curatif,
-    revisionChecked:     typeChecked.revision,
-    garantieChecked:     typeChecked.garantie,
-    contratChecked:      typeChecked.contrat,
-    locationChecked:     typeChecked.location,
-    accidentChecked:     typeChecked.accident,
-    vandalismeChecked:   typeChecked.vandalisme,
-    orageChecked:        typeChecked.orage,
-    autreChecked:        typeChecked.autre,
+    curatifChecked: typeChecked.curatif,
+    revisionChecked: typeChecked.revision,
+    garantieChecked: typeChecked.garantie,
+    contratChecked: typeChecked.contrat,
+    locationChecked: typeChecked.location,
+    accidentChecked: typeChecked.accident,
+    vandalismeChecked: typeChecked.vandalisme,
+    orageChecked: typeChecked.orage,
+    autreChecked: typeChecked.autre,
 
-    etatConstateContent:     etatConstateHTML,
+    etatConstateContent: etatConstateHTML,
     travauxEffectuesContent: travauxHTML,
 
     interventionTermineeChecked: (maintenance.etat === 'Terminée') ? 'checked' : '',
-    signatureTTS:    operateurs || '',
+    signatureTTS: operateurs || '',
     signatureClient: ''
   };
 }
