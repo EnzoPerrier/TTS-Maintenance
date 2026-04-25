@@ -306,7 +306,7 @@ function transformDataForTemplate(maintenance, site, produits) {
     signatureClient: '',
 
     squareTLFontBase64: fontBase64
-  ? `data:font/opentype;base64,${fontBase64}`
+  ? `data:font/otf;base64,${fontBase64}`
   : null,
 
 logoTTSBase64: logoBase64
