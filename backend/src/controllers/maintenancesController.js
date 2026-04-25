@@ -305,8 +305,13 @@ function transformDataForTemplate(maintenance, site, produits) {
     signatureTTS: operateurs || '',
     signatureClient: '',
 
-    squareTLFontBase64: fontBase64,
-    logoBase64: logoTTSBase64,
+    squareTLFontBase64: fontBase64
+  ? `data:font/opentype;base64,${fontBase64}`
+  : null,
+
+logoTTSBase64: logoBase64
+  ? `data:image/svg+xml;base64,${logoBase64}`
+  : null,
     
   };
   
