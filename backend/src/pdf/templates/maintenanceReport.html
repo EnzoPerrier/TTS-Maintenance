@@ -181,14 +181,31 @@
       border: 1px solid #000;
       display: inline-block;
       position: relative;
+      flex-shrink: 0;
     }
 
-    .checkbox.checked::after {
-      content: '✓';
+    /* Coche dessinée en CSS pur — aucune dépendance police */
+    .checkbox.checked::before {
+      content: '';
       position: absolute;
-      top: -3px;
-      left: 1px;
-      font-size: 14px;
+      left: 2px;
+      top: 5px;
+      width: 3px;
+      height: 2px;
+      background: #000;
+      transform: rotate(45deg);
+      transform-origin: bottom left;
+    }
+    .checkbox.checked::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 2px;
+      width: 2px;
+      height: 7px;
+      background: #000;
+      transform: rotate(35deg);
+      transform-origin: bottom left;
     }
 
     /* État constaté section */
@@ -326,13 +343,28 @@
       position: relative;
     }
 
-    .checkbox-large.checked::after {
-      content: '✓';
+    /* Grande coche CSS pure */
+    .checkbox-large.checked::before {
+      content: '';
       position: absolute;
-      top: -5px;
-      left: 2px;
-      font-size: 20px;
-      font-weight: bold;
+      left: 3px;
+      top: 8px;
+      width: 4px;
+      height: 3px;
+      background: #000;
+      transform: rotate(45deg);
+      transform-origin: bottom left;
+    }
+    .checkbox-large.checked::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 3px;
+      width: 3px;
+      height: 10px;
+      background: #000;
+      transform: rotate(35deg);
+      transform-origin: bottom left;
     }
 
     /* Footer */
