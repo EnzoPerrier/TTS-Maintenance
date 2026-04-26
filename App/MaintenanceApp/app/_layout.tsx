@@ -1,8 +1,9 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { Colors } from '../constants/Colors';
 import { setUnauthorizedHandler, tokenStorage } from '../utils/api';
 
-// Setter global accessible depuis login.tsx
 export let setGlobalToken: (token: string | null) => void = () => {};
 
 export default function RootLayout() {
@@ -10,14 +11,23 @@ export default function RootLayout() {
   const segments = useSegments();
   const [token, setToken] = useState<string | null | undefined>(undefined);
 
-  // Exposer le setter globalement
   useEffect(() => {
     setGlobalToken = setToken;
   }, []);
 
-  // Charger le token au démarrage
+  // Charger le token au démarrage — protégé contre la corruption
   useEffect(() => {
-    tokenStorage.get().then(setToken).catch(() => setToken(null));
+    const loadToken = async () => {
+      try {
+        const stored = await tokenStorage.get();
+        setToken(stored ?? null);
+      } catch {
+        // SecureStore corrompu → on repart sans token
+        try { await tokenStorage.remove(); } catch { /* ignore */ }
+        setToken(null);
+      }
+    };
+    loadToken();
   }, []);
 
   // Rediriger selon l'état du token
@@ -33,14 +43,18 @@ export default function RootLayout() {
     }
   }, [token, segments]);
 
-  // Handler de déconnexion
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      setToken(null);
-    });
+    setUnauthorizedHandler(() => setToken(null));
   }, []);
 
-  if (token === undefined) return null;
+  // Écran de chargement au lieu de null
+  if (token === undefined) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.bg, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <Stack>
