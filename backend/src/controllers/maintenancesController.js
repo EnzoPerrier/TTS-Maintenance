@@ -457,8 +457,9 @@ exports.generateMaintenancePDF = async (req, res) => {
     const browser = await getBrowser();
     page = await browser.newPage();
 
-    // domcontentloaded est suffisant car toutes les ressources sont embarquées en base64
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+  // Pour s'assurer que les fonts soient bien chargées
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     const pdf = await page.pdf({
       format: 'A4',
