@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SERVER_IP_KEY = 'server_ip';
-export const DEFAULT_IP = '90.8.218.210';
+export const DEFAULT_IP = 'www.ttsmaintenance.com';
 
 export const getServerIp = async (): Promise<string> => {
   try {
@@ -28,5 +28,5 @@ export const setServerIp = async (ip: string): Promise<void> => {
 
 export const getApiUrl = async (): Promise<string> => {
   const ip = await getServerIp();
-  return `http://${ip}/api`;
+  return `https://${ip}/api`;
 };
